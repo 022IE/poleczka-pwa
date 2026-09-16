@@ -50,6 +50,23 @@ jobs:
             -X POST "$PWA_URL/api/pipeline-event" \
             --data "$payload" >/dev/null
 
+      - name: Push status — work handed off
+        if: github.event_name == 'push' && github.ref_name == 'dev'
+        continue-on-error: true
+        shell: bash
+        run: |
+          payload="$(jq -nc \
+            --arg type 'work' \
+            --arg branch "$GITHUB_REF_NAME" \
+            --arg state 'awaiting_publish' \
+            --arg label 'Poprawki przekazane' \
+            --arg task "Commit $GITHUB_SHA przekazany do builda" \
+            '{type:$type,branch:$branch,work:{state:$state,label:$label,task:$task}}')"
+          curl --connect-timeout 3 --max-time 8 -fsS \
+            -H 'Content-Type: application/json' \
+            -X POST "$PWA_URL/api/pipeline-event" \
+            --data "$payload" >/dev/null
+
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
