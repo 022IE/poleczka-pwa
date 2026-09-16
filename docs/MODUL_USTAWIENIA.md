@@ -1,7 +1,7 @@
 # PÓŁECZKA IWONKI — MODUŁ USTAWIENIA
 
 **Moduł:** 06 — USTAWIENIA  
-**Status:** specyfikacja wdrożeniowa v0.1  
+**Status:** specyfikacja wdrożeniowa v0.2  
 **Dokument nadrzędny:** `POLECZKA_PWA_MASTER.md`  
 **Aktualizacja:** 16.09.2026
 
@@ -9,21 +9,32 @@
 
 # 1. Cel modułu
 
-Moduł USTAWIENIA ma centralizować całą konfigurację aplikacji PWA.
+Moduł USTAWIENIA centralizuje konfigurację aplikacji PWA.
 
 Użytkownik powinien móc tutaj:
-
 - ustawić dane firmy / marki,
 - skonfigurować działalność nierejestrowaną,
 - ustawić limit kwartalny,
-- zarządzać rabatami,
 - zarządzać słownikami,
 - skonfigurować integracje,
 - ustawić wygląd i zachowanie aplikacji,
 - sprawdzić stan połączeń,
 - wykonać import / eksport ustawień.
 
-Wersja 1 jest projektowana przede wszystkim dla **działalności nierejestrowanej**.
+## Rabaty — obowiązujące ustalenie
+
+W v1 **nie ma konfiguracji rabatów w module USTAWIENIA**.
+
+Rabaty pozostają obsługiwane tak jak dotychczas z poziomu **POS / Loyverse**.
+
+PWA jedynie odczytuje informacje o rabatach zapisane przy sprzedaży i wykorzystuje je w prezentacji oraz analizach.
+
+Nie wdrażamy tutaj:
+- CRUD rabatów,
+- aktywacji / dezaktywacji,
+- kolejności rabatów,
+- przypinania rabatów do kafelków,
+- tabeli definicji rabatów jako ustawienia PWA.
 
 ---
 
@@ -33,14 +44,14 @@ Ekran ustawień dzielimy na sekcje / zakładki:
 
 1. Firma
 2. Działalność nierejestrowana
-3. Rabaty
-4. Kategorie
-5. Artykuły
-6. Dostawcy
-7. Formy płatności
-8. Integracje
-9. Google Drive
-10. Synchronizacja
+3. Kategorie
+4. Artykuły
+5. Dostawcy
+6. Formy płatności
+7. Integracje
+8. Google Drive
+9. Synchronizacja
+10. Powiadomienia
 11. Wygląd
 12. Import / eksport
 13. Informacje o aplikacji
@@ -57,7 +68,6 @@ Na telefonie:
 # 3. Sekcja FIRMA
 
 Pola:
-
 - nazwa marki / firmy,
 - nazwa wyświetlana w aplikacji,
 - waluta,
@@ -66,8 +76,7 @@ Pola:
 - logo,
 - domyślny widok po uruchomieniu.
 
-Domyślne wartości dla projektu:
-
+Domyślne wartości:
 - Marka: `Półeczka Iwonki`
 - Waluta: `PLN`
 - Język: `pl`
@@ -82,7 +91,6 @@ W v1 aktywny typ:
 `Działalność nierejestrowana`
 
 Pole może być przygotowane przyszłościowo jako:
-
 - Działalność nierejestrowana
 - JDG — nieaktywne / przyszłość
 
@@ -92,8 +100,7 @@ Na tym etapie JDG nie wdrażamy funkcjonalnie.
 
 # 5. Działalność nierejestrowana
 
-Sekcja powinna zawierać:
-
+Sekcja zawiera:
 - obowiązujący limit kwartalny,
 - rok,
 - kwartał,
@@ -104,7 +111,6 @@ Sekcja powinna zawierać:
 - widoczność kafelka limitu na stronie głównej.
 
 Przykładowe progi:
-
 - 70%
 - 85%
 - 95%
@@ -116,78 +122,19 @@ Limit nie może być zaszyty na stałe w kodzie.
 
 # 6. Kafelek limitu na stronie głównej
 
-Ustawienia powinny sterować tym, czy na dashboardzie pokazywane są:
-
-- wykorzystana kwota,
+Ustawienia sterują tym, czy dashboard pokazuje:
+- wykorzystaną kwotę,
 - limit,
 - % wykorzystania,
-- pozostała kwota,
-- numer / nazwa kwartału,
+- pozostałą kwotę,
+- numer / nazwę kwartału,
 - komunikat ostrzegawczy.
 
-Przykład:
-
-**III kwartał 2026**  
-`7 850,00 zł / 10 813,50 zł`  
-`72,6%`
-
 ---
 
-# 7. Moduł RABATY w ustawieniach
-
-Rabaty mają własną tabelę definicji.
-
-Minimalne pola:
-
-- Nazwa
-- Wartość
-- Typ
-
-Typ:
-
-- procent
-- kwota
-
-Przykłady:
-
-| Nazwa | Wartość | Typ |
-|---|---:|---|
-| Stały klient | 10 | procent |
-| Wyprzedaż | 20 | procent |
-| Promocja | 10 | kwota |
-
-Operacje:
-
-- dodaj,
-- edytuj,
-- usuń,
-- aktywuj / dezaktywuj,
-- ustaw kolejność.
-
----
-
-# 8. Zastosowanie rabatów
-
-Definicja rabatu nie zawiera pola „pozycja / paragon”.
-
-Ten sam rabat może być zastosowany:
-
-- na pojedynczą pozycję,
-- na cały paragon.
-
-Zakres wynika z miejsca użycia rabatu.
-
-W przyszłym POS:
-- rabaty można przypinać do kafelków,
-- kliknięcie kafelka rabatu stosuje go do paragonu,
-- przy edycji pozycji rabat może być zastosowany do pozycji.
-
----
-
-# 9. Kategorie
+# 7. Kategorie
 
 Sekcja zarządzania kategoriami:
-
 - lista kategorii,
 - aktywne / nieaktywne,
 - kolejność,
@@ -197,17 +144,14 @@ Sekcja zarządzania kategoriami:
 
 Kategorie pochodzą głównie z Loyverse / D1.
 
-Użytkownik nie powinien przypadkowo usuwać kategorii potrzebnej do historii.
-
 Preferowane:
-- dezaktywacja zamiast twardego usunięcia.
+- dezaktywacja zamiast twardego usunięcia, jeśli rekord jest potrzebny do historii.
 
 ---
 
-# 10. Artykuły
+# 8. Artykuły
 
-Sekcja artykułów powinna pokazywać:
-
+Sekcja artykułów pokazuje:
 - nazwę,
 - kategorię,
 - SKU,
@@ -219,55 +163,47 @@ Podstawowym źródłem artykułów jest Loyverse / D1.
 
 ---
 
-# 11. Dostawcy
+# 9. Dostawcy
 
-Lista dostawców powinna być edytowalna.
+Lista dostawców jest edytowalna.
 
 Minimalne pola:
-
 - nazwa,
 - aktywny / nieaktywny,
 - notatka,
 - data utworzenia.
 
 Obowiązujące historyczne przykłady:
-
 - Iwonka
 - MAT Fortuna Targowisko
 - Talia Brzesko
 - StockHurt Skawina
 
-Lista ma być konfigurowalna.
-
 ---
 
-# 12. Formy płatności
+# 10. Formy płatności
 
 Lista form płatności:
-
 - pobierana z D1 / Loyverse,
 - dostępna jako słownik,
 - wykorzystywana w filtrach sprzedaży.
 
-Widok powinien pokazywać:
-
-- nazwa,
+Widok pokazuje:
+- nazwę,
 - aktywna / nieaktywna,
 - identyfikator źródłowy,
-- ostatnia synchronizacja.
+- ostatnią synchronizację.
 
 ---
 
-# 13. Integracje
+# 11. Integracje
 
 Sekcja integracji pokazuje kafelki:
-
 - Loyverse
 - Cloudflare D1
 - Google Drive
 
-Każdy kafelek powinien pokazywać:
-
+Każdy kafelek pokazuje:
 - status,
 - nazwę połączenia,
 - ostatni poprawny kontakt,
@@ -275,7 +211,6 @@ Każdy kafelek powinien pokazywać:
 - przycisk konfiguracji.
 
 Statusy:
-
 - Połączono
 - Nie połączono
 - Błąd
@@ -283,10 +218,9 @@ Statusy:
 
 ---
 
-# 14. Loyverse
+# 12. Loyverse
 
 Pola / funkcje:
-
 - status tokenu,
 - merchant / konto,
 - test połączenia,
@@ -295,17 +229,16 @@ Pola / funkcje:
 - historia ostatnich błędów.
 
 Token:
-- nie powinien być wyświetlany w pełnej postaci po zapisaniu,
-- powinien być przechowywany bezpiecznie poza frontendem.
+- nie jest wyświetlany w pełnej postaci po zapisaniu,
+- jest przechowywany bezpiecznie poza frontendem.
 
 Frontend nie może mieć trwałego, jawnego tokenu API.
 
 ---
 
-# 15. Cloudflare D1
+# 13. Cloudflare D1
 
 Sekcja informacyjna:
-
 - nazwa bazy,
 - status połączenia,
 - wersja schematu,
@@ -314,16 +247,13 @@ Sekcja informacyjna:
 - ostatnia synchronizacja,
 - stan migracji.
 
-Nie pokazujemy użytkownikowi surowych danych dostępowych, jeśli nie są potrzebne.
-
 ---
 
-# 16. Google Drive
+# 14. Google Drive
 
 Google Drive służy do przechowywania dokumentów kosztowych.
 
-Sekcja powinna umożliwiać:
-
+Sekcja umożliwia:
 - połączenie konta Google,
 - rozłączenie,
 - wybór folderu głównego,
@@ -337,10 +267,9 @@ Przykładowa struktura:
 
 ---
 
-# 17. Dokumenty kosztowe
+# 15. Dokumenty kosztowe
 
 D1 przechowuje tylko:
-
 - `cost_id`,
 - `provider`,
 - `file_id`,
@@ -355,10 +284,9 @@ Jeden koszt może mieć wiele dokumentów.
 
 ---
 
-# 18. Synchronizacja
+# 16. Synchronizacja
 
 Ustawienia synchronizacji:
-
 - automatyczna synchronizacja,
 - ręczne odświeżenie,
 - częstotliwość dodatkowych importów API,
@@ -367,31 +295,24 @@ Ustawienia synchronizacji:
 - alerty o błędach.
 
 Na stronie ustawień widoczny:
-
-**Ostatnia poprawna synchronizacja**
-
-oraz:
-
-**Ostatni błąd**
+- **Ostatnia poprawna synchronizacja**
+- **Ostatni błąd**
 
 ---
 
-# 19. Powiadomienia
+# 17. Powiadomienia
 
 Docelowo możliwe kanały:
-
 - powiadomienia PWA,
 - Telegram,
 - e-mail.
 
-Na tym etapie należy przygotować strukturę ustawień:
-
+Struktura ustawień:
 - włącz / wyłącz,
 - typ alertu,
 - kanał.
 
 Przykładowe alerty:
-
 - błąd synchronizacji,
 - nieznana dostawa,
 - zbliżenie do limitu działalności nierejestrowanej,
@@ -399,18 +320,16 @@ Przykładowe alerty:
 
 ---
 
-# 20. Wygląd
+# 18. Wygląd
 
-Sekcja powinna umożliwiać:
-
+Sekcja umożliwia:
 - motyw jasny / systemowy,
 - akcent kolorystyczny,
 - gęstość tabel,
 - wielkość kafelków,
 - domyślny ekran startowy.
 
-W v1 styl bazowy:
-
+Styl bazowy v1:
 - jasny,
 - butikowy,
 - premium,
@@ -418,23 +337,21 @@ W v1 styl bazowy:
 
 ---
 
-# 21. Branding
+# 19. Branding
 
-Użytkownik docelowo powinien móc zmienić:
-
+Użytkownik docelowo może zmienić:
 - nazwę firmy,
 - logo,
 - krótką nazwę aplikacji,
-- ewentualnie kolor akcentu.
+- kolor akcentu.
 
 Nie hardkodujemy „Półeczka Iwonki” jako jedynej możliwej marki produktu.
 
 ---
 
-# 22. Import / eksport ustawień
+# 20. Import / eksport ustawień
 
 Docelowo:
-
 - eksport konfiguracji do JSON,
 - import konfiguracji z JSON,
 - kopia bezpieczeństwa ustawień,
@@ -447,30 +364,15 @@ Nie eksportujemy wprost:
 
 ---
 
-# 23. Dane konfiguracyjne — proponowane tabele
+# 21. Dane konfiguracyjne — proponowane tabele
 
 ## `app_settings`
-
-Przykładowe pola:
-
 - key
 - value
 - type
 - updated_at
 
-## `discounts`
-
-- id
-- name
-- value
-- type
-- is_active
-- sort_order
-- created_at
-- updated_at
-
 ## `suppliers`
-
 - id
 - name
 - is_active
@@ -479,7 +381,6 @@ Przykładowe pola:
 - updated_at
 
 ## `cost_documents`
-
 - id
 - cost_id
 - provider
@@ -488,12 +389,16 @@ Przykładowe pola:
 - mime_type
 - created_at
 
+### Rabaty
+W v1 **nie tworzymy tabeli `discounts` na potrzeby konfiguracji PWA**. Rabaty pozostają zarządzane w POS / Loyverse.
+
+Jeżeli dane o użytym rabacie są potrzebne do historii i analiz, zachowujemy je jako część danych sprzedażowych synchronizowanych z POS.
+
 ---
 
-# 24. Bezpieczeństwo
+# 22. Bezpieczeństwo
 
 Sekrety:
-
 - Loyverse token,
 - Google OAuth credentials,
 - Cloudflare secrets
@@ -507,43 +412,38 @@ Preferowane:
 
 ---
 
-# 25. Walidacja
+# 23. Walidacja
 
 Każdy formularz powinien:
-
 - walidować dane przed zapisem,
 - pokazywać czytelny błąd,
 - blokować niepoprawne wartości.
 
 Przykłady:
-
-- procent rabatu: 0–100,
-- kwotowy rabat: >= 0,
 - limit kwartalny: > 0,
 - próg ostrzeżenia: 0–100.
 
+Walidacja definicji rabatów nie należy do tego modułu, ponieważ rabaty nie są konfigurowane w PWA v1.
+
 ---
 
-# 26. Zapisywanie ustawień
+# 24. Zapisywanie ustawień
 
 Po zmianie:
-
 - użytkownik klika **Zapisz**,
 - widzi komunikat sukcesu,
 - aplikacja od razu odświeża zależne elementy.
 
 Dla krytycznych zmian:
-
 - dodatkowe potwierdzenie.
 
-Przykład:
+Przykłady:
 - rozłączenie integracji,
-- usunięcie rabatu,
 - reset ustawień.
 
 ---
 
-# 27. Responsywność
+# 25. Responsywność
 
 Desktop:
 - menu ustawień z lewej,
@@ -559,10 +459,9 @@ Telefon:
 
 ---
 
-# 28. Stany interfejsu
+# 26. Stany interfejsu
 
 Muszą istnieć:
-
 - ładowanie,
 - zapis w toku,
 - zapisano,
@@ -573,15 +472,13 @@ Muszą istnieć:
 
 ---
 
-# 29. Kryteria odbioru modułu
+# 27. Kryteria odbioru modułu
 
 Moduł USTAWIENIA uznajemy za gotowy w v1, gdy:
-
 - [ ] działa sekcja Firma,
 - [ ] działa konfiguracja działalności nierejestrowanej,
 - [ ] można ustawić limit kwartalny,
 - [ ] działają progi ostrzegawcze,
-- [ ] działa CRUD rabatów,
 - [ ] widoczne są kategorie,
 - [ ] widoczne są artykuły,
 - [ ] działa lista dostawców,
@@ -592,109 +489,24 @@ Moduł USTAWIENIA uznajemy za gotowy w v1, gdy:
 - [ ] działa test integracji,
 - [ ] można ustawić podstawowe opcje wyglądu,
 - [ ] ustawienia zapisują się w D1,
-- [ ] sekrety nie są przechowywane jawnie w frontendzie,
-- [ ] ekran działa na desktopie, tablecie i telefonie.
+- [ ] sekrety nie są przechowywane jawnie w frontendzie.
+
+**CRUD rabatów nie jest kryterium odbioru v1.**
 
 ---
 
-# 30. Zakres v1 — czego NIE robimy
+# 28. Kolejność wdrażania
 
-Nie wdrażamy jeszcze:
-
-- pełnej konfiguracji JDG,
-- VAT,
-- księgowości,
-- numeracji faktur,
-- podatków,
-- pełnej obsługi wielu firm,
-- rozbudowanych ról użytkowników,
-- centralnego panelu SaaS.
-
----
-
-# 31. Proponowana struktura frontendu
-
-```text
-src/
-  modules/
-    settings/
-      pages/
-        SettingsPage.tsx
-      components/
-        SettingsNav.tsx
-        CompanySettings.tsx
-        UnregisteredBusinessSettings.tsx
-        DiscountsSettings.tsx
-        CategoriesSettings.tsx
-        ItemsSettings.tsx
-        SuppliersSettings.tsx
-        PaymentTypesSettings.tsx
-        IntegrationsSettings.tsx
-        GoogleDriveSettings.tsx
-        SyncSettings.tsx
-        AppearanceSettings.tsx
-        BackupSettings.tsx
-      api/
-        settingsApi.ts
-      hooks/
-        useSettings.ts
-      types/
-        settings.ts
-```
-
----
-
-# 32. Proponowane endpointy
-
-## Ustawienia ogólne
-
-`GET /api/settings`
-
-`PUT /api/settings`
-
-## Rabaty
-
-`GET /api/settings/discounts`
-
-`POST /api/settings/discounts`
-
-`PUT /api/settings/discounts/:id`
-
-`DELETE /api/settings/discounts/:id`
-
-## Dostawcy
-
-`GET /api/settings/suppliers`
-
-`POST /api/settings/suppliers`
-
-`PUT /api/settings/suppliers/:id`
-
-## Integracje
-
-`GET /api/settings/integrations`
-
-`POST /api/settings/integrations/loyverse/test`
-
-`POST /api/settings/integrations/drive/test`
-
-`POST /api/settings/integrations/d1/test`
-
----
-
-# 33. Kolejność implementacji
-
-## Etap A — ustawienia bazowe
+## Etap A — podstawy
 1. Firma
 2. działalność nierejestrowana
 3. limit kwartalny
 
 ## Etap B — słowniki
-1. rabaty
-2. dostawcy
-3. kategorie
-4. artykuły
-5. formy płatności
+1. dostawcy
+2. kategorie
+3. artykuły
+4. formy płatności
 
 ## Etap C — integracje
 1. Loyverse
@@ -702,20 +514,6 @@ src/
 3. Google Drive
 4. synchronizacja
 
-## Etap D — wygląd i backup
-1. motyw
-2. branding
-3. eksport / import konfiguracji
+## Etap D — wygląd i import / eksport
 
----
-
-# 34. Następny krok techniczny
-
-Przed implementacją modułu należy:
-
-1. zatwierdzić schemat `app_settings`,
-2. zatwierdzić schemat `discounts`,
-3. zatwierdzić schemat `suppliers`,
-4. ustalić sposób bezpiecznego zapisu integracji,
-5. przygotować endpoint `GET /api/settings`,
-6. przygotować ekran sekcji Firma + działalność nierejestrowana.
+Rabaty nie wchodzą do harmonogramu modułu USTAWIENIA v1. Pozostają obsługiwane w POS / Loyverse.
