@@ -777,3 +777,120 @@ Utworzyć:
 `MODUL_SPRZEDAZ.md`
 
 i rozpocząć realną implementację modułu sprzedaży.
+
+---
+
+## 26. Repozytorium jest źródłem prawdy
+
+Od 16.09.2026 obowiązuje praca bez ręcznego przekazywania ZIP-ów i rozpakowywania paczek.
+
+Repozytorium:
+
+`022IE/poleczka-pwa`
+
+jest wspólnym źródłem prawdy dla kodu, konfiguracji, dokumentacji i workflow publikacji.
+
+Obowiązujące gałęzie:
+- `main` — wersja stabilna,
+- `dev` — bieżące prace rozwojowe,
+- `pipeline-status` — wyłącznie szybki status pracy widoczny w widżecie; zmiany tej gałęzi nie mogą uruchamiać zwykłego builda PWA.
+
+Nie tworzymy równoległych lokalnych „finalnych” paczek jako podstawowego sposobu pracy.
+
+---
+
+## 27. Obowiązkowy workflow każdej zmiany PWA
+
+Plik `AGENTS.md` w głównym katalogu repozytorium jest instrukcją obowiązującą każdy czat / agenta pracującego na tym repo.
+
+### Przed pierwszą zmianą kodu
+
+Pierwszy zapis musi dotyczyć:
+
+`pipeline-status/status/work-status.json`
+
+i ustawić:
+
+- `state = editing`,
+- etykietę **Wprowadzanie poprawek**,
+- krótki opis aktualnego zadania,
+- aktualny czas `updatedAt`.
+
+**Dopiero po zgłoszeniu statusu wolno modyfikować `dev`.**
+
+Dzięki temu użytkownik widzi rozpoczęcie pracy jeszcze przed pierwszym commitem kodu.
+
+### Po zakończeniu własnej serii zmian
+
+Status przechodzi na:
+
+- `state = awaiting_publish`,
+- etykietę **Oczekiwanie na publikację**.
+
+Dalsze etapy są aktualizowane automatycznie.
+
+### Prace równoległe w kilku czatach
+
+Nie wolno bezmyślnie kasować aktywnego statusu innego czatu. Jeżeli kilka czatów pracuje równolegle, opis `task` powinien uwzględniać aktywne prace albo pozostać w stanie `editing`, dopóki faktycznie trwa co najmniej jedno zadanie.
+
+System nie może wykryć samego „myślenia” innego czatu przed wykonaniem przez niego pierwszego zapisu — dlatego zgłoszenie `editing` jest obowiązkowym pierwszym krokiem każdego agenta.
+
+---
+
+## 28. Widżet pipeline — zasady developerskie
+
+Na czas budowy PWA w górnym panelu znajduje się developerski widżet publikacji.
+
+Położenie:
+- środek górnego panelu,
+- pomiędzy **„Dzień dobry, Iwonko!”** a blokiem kalendarza / ikon.
+
+Rozmiar obecnie uznajemy za właściwy.
+
+Widżet pokazuje pełną ścieżkę:
+
+`Prace → GitHub → Build → Cloudflare → Online`
+
+### Znaczenie etapów
+
+- **Prace** — agent wprowadza poprawki; źródłem jest `pipeline-status`.
+- **GitHub** — commit został wysłany do `dev`.
+- **Build** — rzeczywista kompilacja GitHub Actions.
+- **Cloudflare** — osobny etap oczekiwania na wdrożenie.
+- **Online** — aktualny commit jest faktycznie dostępny w działającej PWA.
+
+**Build i Cloudflare są rozdzielone.** Build nie może pozostawać w stanie „trwa” tylko dlatego, że wdrożenie Cloudflare jeszcze się nie zakończyło.
+
+`Online` może być zielone tylko wtedy, gdy najnowszy commit / SHA został potwierdzony jako wdrożony. Działanie poprzedniej wersji aplikacji nie oznacza sukcesu nowej publikacji.
+
+### Aktualizacja statusów
+
+Podstawowy mechanizm:
+- Cloudflare Durable Object,
+- WebSocket,
+- aktualizacje push do otwartej PWA.
+
+Fallback:
+- HTTP tylko po utracie połączenia WebSocket,
+- automatyczny reconnect,
+- widoczny stan połączenia: `LIVE`, `ŁĄCZENIE`, `AWARYJNY`, `BRAK POŁ.`.
+
+Snapshot statusu nie może bezterminowo przechowywać starego stanu. Po ponownym połączeniu / ręcznym odświeżeniu należy uzgodnić go z rzeczywistym stanem GitHub Actions i aktualnie wdrożonym SHA.
+
+### Wersja finalna
+
+Widżet jest narzędziem developerskim. W finalnej wersji produkcyjnej ma być wyłączony przełącznikiem konfiguracyjnym, bez konieczności usuwania mechanizmu diagnostycznego z kodu.
+
+---
+
+## 29. Aktualny sposób pracy
+
+Od teraz typowy cykl wygląda następująco:
+
+`polecenie użytkownika → Wprowadzanie poprawek → zmiany na dev → GitHub → Build → Cloudflare → Online → weryfikacja w PWA`
+
+Użytkownik nie powinien pobierać i rozpakowywać plików, jeżeli zmiana może zostać wykonana bezpośrednio w repozytorium.
+
+Dokumenty `POLECZKA_PWA_MASTER.md` i pliki `MODUL_*.md` mają być aktualizowane razem z decyzjami projektowymi, żeby nowe czaty nie musiały odtwarzać ustaleń z historii rozmów.
+
+Sekcje 26–29 są nowsze i w razie konfliktu zastępują starsze informacje organizacyjne w tym dokumencie.
