@@ -123,11 +123,12 @@ body {
 }
 
 /*
- * Pasek górny jest nieruchomy, ale nie ruszamy geometrii siatki dashboardu.
- * Rezerwujemy tylko jego miejsce pionowe w .dashboard-wrap.
+ * Pasek górny jest nieruchomy. Po powiększeniu widżetu publikacji
+ * rezerwujemy więcej miejsca pionowego, żeby pierwszy panel dashboardu
+ * zawsze zaczynał się wyraźnie poniżej nagłówka.
  */
 .dashboard-wrap {
-  padding-top: 86px;
+  padding-top: 128px;
 }
 
 .dashboard-header {
