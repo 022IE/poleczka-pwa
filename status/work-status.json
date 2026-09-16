@@ -1,6 +1,6 @@
 {
-  "state": "editing",
-  "label": "Wprowadzanie poprawek",
-  "task": "Ustalenie i wdrożenie zasady: każda zmiana PWA najpierw zgłaszana do widżetu",
-  "updatedAt": "2026-09-16T08:35:30Z"
+  "state": "awaiting_publish",
+  "label": "Oczekiwanie na publikację",
+  "task": "Zasada zgłaszania każdej zmiany do widżetu przed rozpoczęciem prac",
+  "updatedAt": "2026-09-16T08:37:30Z"
 }
