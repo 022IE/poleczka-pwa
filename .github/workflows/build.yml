@@ -112,3 +112,56 @@ jobs:
             -H 'Content-Type: application/json' \
             -X POST "$PWA_URL/api/pipeline-event" \
             --data "$payload" >/dev/null
+
+  deploy:
+    name: Cloudflare deployment
+    needs: build
+    if: github.event_name == 'push' && github.ref_name == 'dev' && needs.build.result == 'success'
+    runs-on: ubuntu-latest
+    timeout-minutes: 7
+
+    steps:
+      - name: Wait for deployed commit
+        shell: bash
+        run: |
+          echo "Czekam na Cloudflare dla $GITHUB_SHA"
+
+          for attempt in $(seq 1 60); do
+            health="$(curl --connect-timeout 3 --max-time 8 -fsS "$PWA_URL/api/health" || true)"
+            deployed_sha="$(printf '%s' "$health" | jq -r '.deployedSha // empty' 2>/dev/null || true)"
+
+            if [ "$deployed_sha" = "$GITHUB_SHA" ]; then
+              payload="$(jq -nc \
+                --arg type 'online' \
+                --arg branch "$GITHUB_REF_NAME" \
+                --arg sha "$GITHUB_SHA" \
+                --arg url "https://github.com/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID" \
+                --argjson runNumber "$GITHUB_RUN_NUMBER" \
+                '{type:$type,branch:$branch,sha:$sha,url:$url,runNumber:$runNumber}')"
+
+              curl --connect-timeout 3 --max-time 8 -fsS \
+                -H 'Content-Type: application/json' \
+                -X POST "$PWA_URL/api/pipeline-event" \
+                --data "$payload" >/dev/null || true
+
+              echo "Cloudflare online: $GITHUB_SHA"
+              exit 0
+            fi
+
+            sleep 5
+          done
+
+          payload="$(jq -nc \
+            --arg type 'deploy_timeout' \
+            --arg branch "$GITHUB_REF_NAME" \
+            --arg sha "$GITHUB_SHA" \
+            --arg url "https://github.com/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID" \
+            --argjson runNumber "$GITHUB_RUN_NUMBER" \
+            '{type:$type,branch:$branch,sha:$sha,url:$url,runNumber:$runNumber}')"
+
+          curl --connect-timeout 3 --max-time 8 -fsS \
+            -H 'Content-Type: application/json' \
+            -X POST "$PWA_URL/api/pipeline-event" \
+            --data "$payload" >/dev/null || true
+
+          echo "Cloudflare nie potwierdził wdrożenia w 5 minut."
