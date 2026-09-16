@@ -1,6 +1,6 @@
 {
-  "state": "awaiting_publish",
-  "label": "Oczekiwanie na publikację",
-  "task": "Wycentrowano legendę, kwoty i procenty obok wykresu kategorii; kwoty wyrównano do prawej",
-  "updatedAt": "2026-09-16T15:58:30Z"
+  "state": "editing",
+  "label": "Wprowadzanie poprawek",
+  "task": "Rozbudowa porównania okresów: data końcowa, liczba okresów 1–5 oraz typ okresu tydzień/miesiąc/rok",
+  "updatedAt": "2026-09-16T16:03:00Z"
 }
