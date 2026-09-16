@@ -5,6 +5,14 @@ export interface Env {
 }
 
 type StageState = 'waiting' | 'running' | 'ready' | 'failed' | 'blocked' | 'unknown'
+type WorkState = 'idle' | 'editing' | 'awaiting_publish'
+
+type WorkStatus = {
+  state?: WorkState
+  label?: string
+  task?: string
+  updatedAt?: string | null
+}
 
 type GitHubWorkflowRun = {
   status?: string | null
@@ -25,23 +33,59 @@ function shortSha(value?: string | null) {
   return value && value !== 'unknown' ? value.slice(0, 8) : null
 }
 
-async function getBuildStatus(branch: string): Promise<Response> {
-  const endpoint = new URL('https://api.github.com/repos/022IE/poleczka-pwa/actions/runs')
-  endpoint.searchParams.set('branch', branch)
-  endpoint.searchParams.set('event', 'push')
-  endpoint.searchParams.set('per_page', '1')
+async function getWorkStatus(branch: string): Promise<WorkStatus> {
+  try {
+    const endpoint = `https://raw.githubusercontent.com/022IE/poleczka-pwa/${encodeURIComponent(branch)}/status/work-status.json?t=${Date.now()}`
+    const response = await fetch(endpoint, {
+      headers: {
+        Accept: 'application/json',
+        'User-Agent': 'poleczka-pwa-work-status',
+        'Cache-Control': 'no-cache',
+      },
+    })
 
-  const githubResponse = await fetch(endpoint, {
-    headers: {
-      Accept: 'application/vnd.github+json',
-      'User-Agent': 'poleczka-pwa-build-status',
-      'X-GitHub-Api-Version': '2022-11-28',
-    },
-  })
+    if (!response.ok) return { state: 'idle', label: 'Brak aktywnych zmian', updatedAt: null }
+    return (await response.json()) as WorkStatus
+  } catch {
+    return { state: 'idle', label: 'Brak aktywnych zmian', updatedAt: null }
+  }
+}
+
+function getWorkStage(workStatus: WorkStatus): { state: StageState; label: string } {
+  if (workStatus.state === 'editing') {
+    return { state: 'running', label: workStatus.label || 'Wprowadzanie poprawek' }
+  }
+
+  if (workStatus.state === 'awaiting_publish') {
+    return { state: 'ready', label: workStatus.label || 'Poprawki gotowe' }
+  }
+
+  return { state: 'ready', label: workStatus.label || 'Brak aktywnych zmian' }
+}
+
+async function getBuildStatus(branch: string): Promise<Response> {
+  const [workStatus, githubResponse] = await Promise.all([
+    getWorkStatus(branch),
+    fetch((() => {
+      const endpoint = new URL('https://api.github.com/repos/022IE/poleczka-pwa/actions/runs')
+      endpoint.searchParams.set('branch', branch)
+      endpoint.searchParams.set('event', 'push')
+      endpoint.searchParams.set('per_page', '1')
+      return endpoint
+    })(), {
+      headers: {
+        Accept: 'application/vnd.github+json',
+        'User-Agent': 'poleczka-pwa-build-status',
+        'X-GitHub-Api-Version': '2022-11-28',
+      },
+    }),
+  ])
+
+  const workStage = getWorkStage(workStatus)
 
   if (!githubResponse.ok) {
     return Response.json(
-      { ok: false, error: `GitHub API: ${githubResponse.status}` },
+      { ok: false, error: `GitHub API: ${githubResponse.status}`, workStatus },
       { status: 502, headers: { 'Cache-Control': 'no-store' } },
     )
   }
@@ -63,15 +107,17 @@ async function getBuildStatus(branch: string): Promise<Response> {
         deployedBranch: BUILD_BRANCH,
         deployedAt: BUILD_TIME,
         updatedAt: null,
+        workStatus,
         url: null,
         stages: {
-          github: { state: 'unknown' as StageState },
-          build: { state: 'unknown' as StageState },
-          cloudflare: { state: 'unknown' as StageState },
-          online: { state: 'unknown' as StageState },
+          work: workStage,
+          github: { state: 'unknown' as StageState, label: 'Status nieznany' },
+          build: { state: 'unknown' as StageState, label: 'Status nieznany' },
+          cloudflare: { state: 'unknown' as StageState, label: 'Status nieznany' },
+          online: { state: 'unknown' as StageState, label: 'Status nieznany' },
         },
       },
-      { headers: { 'Cache-Control': 'public, max-age=15' } },
+      { headers: { 'Cache-Control': 'no-store' } },
     )
   }
 
@@ -122,9 +168,11 @@ async function getBuildStatus(branch: string): Promise<Response> {
       deployedBranch: BUILD_BRANCH,
       deployedAt: BUILD_TIME,
       updatedAt: run.updated_at ?? null,
+      workStatus,
       url: run.html_url ?? null,
       latestOnline: isLatestOnline,
       stages: {
+        work: workStage,
         github: {
           state: 'ready' as StageState,
           label: 'Zmiana wysłana',
@@ -157,7 +205,7 @@ async function getBuildStatus(branch: string): Promise<Response> {
         },
       },
     },
-    { headers: { 'Cache-Control': 'public, max-age=15' } },
+    { headers: { 'Cache-Control': 'no-store' } },
   )
 }
 
