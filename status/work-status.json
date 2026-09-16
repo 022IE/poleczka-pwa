@@ -1,6 +1,6 @@
 {
-  "state": "awaiting_publish",
-  "label": "Oczekiwanie na publikację",
-  "task": "Porównanie okresów rozbudowane o datę końcową, wybór 1–5 okresów i typ okresu: tydzień / miesiąc / rok",
-  "updatedAt": "2026-09-16T16:07:30Z"
+  "state": "editing",
+  "label": "Wprowadzanie poprawek",
+  "task": "Aktualizacja dokumentacji MD o nowe zasady porównania okresów: data końcowa, 1–5 okresów, tydzień/miesiąc/rok",
+  "updatedAt": "2026-09-16T16:13:30Z"
 }
