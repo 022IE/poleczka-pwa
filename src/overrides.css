@@ -147,26 +147,26 @@ body {
 }
 
 /* Czytelniejsza typografia bez zmiany układu kart i wykresów. */
-.dashboard-header h1 { font-size: 27px; }
-.dashboard-header p { font-size: 15px; }
-.date-block div { font-size: 12px; }
-.sync-pill strong { font-size: 12px; }
+.dashboard-header h1 { font-size: 29px; }
+.dashboard-header p { font-size: 16px; }
+.date-block div { font-size: 13px; }
+.sync-pill strong { font-size: 13px; }
 .sync-pill small { font-size: 11px; }
 
-.limit-intro h2 { font-size: 19px; }
-.limit-intro p { font-size: 14px; }
-.limit-main > strong { font-size: 16px; }
-.limit-value { font-size: 17px; }
-.limit-value b { font-size: 21px; }
+.limit-intro h2 { font-size: 20px; }
+.limit-intro p { font-size: 15px; }
+.limit-main > strong { font-size: 17px; }
+.limit-value { font-size: 18px; }
+.limit-value b { font-size: 22px; }
 .limit-left span { font-size: 13px; }
-.limit-left > b { font-size: 21px; }
+.limit-left > b { font-size: 22px; }
 
-.kpi-copy > span { font-size: 12px; }
-.kpi-copy strong { font-size: 20px; }
+.kpi-copy > span { font-size: 13px; }
+.kpi-copy strong { font-size: 21px; }
 .kpi-copy b { font-size: 15px; }
 .kpi-copy small { font-size: 11px; }
 
-.panel-head h2 { font-size: 19px; }
+.panel-head h2 { font-size: 20px; }
 .panel-head select { font-size: 12px; }
 .y-labels,
 .x-labels,
@@ -189,9 +189,146 @@ body {
 .quick-card small { font-size: 10px; }
 .dashboard-footer { font-size: 10px; }
 
+/* Dolny rząd zgodny proporcjami z referencją. */
+.charts-row.secondary {
+  align-items: stretch;
+}
+
+.category-panel,
+.heat-panel,
+.right-stack {
+  height: 250px;
+  min-height: 250px;
+}
+
+.category-panel,
+.heat-panel {
+  overflow: hidden;
+}
+
+.category-panel .panel-head,
+.heat-panel .panel-head {
+  margin-bottom: 5px;
+}
+
+.category-body {
+  height: 194px;
+  gap: 14px;
+  padding: 2px 4px 0;
+}
+
+.donut {
+  width: 154px;
+  height: 154px;
+}
+
+.donut:after {
+  width: 92px;
+  height: 92px;
+}
+
+.donut b {
+  font-size: 16px;
+}
+
+.category-list {
+  gap: 6px;
+}
+
+/* Heatmapa w referencji ma prostokątne, niższe pola. */
+.heat-layout {
+  grid-template-columns: 26px 1fr;
+}
+
+.heat-y {
+  grid-template-rows: repeat(7, 23px);
+  gap: 3px;
+  padding-top: 18px;
+}
+
+.heat-x {
+  margin-bottom: 4px;
+}
+
+.heat-grid {
+  grid-template-rows: repeat(7, 23px);
+  gap: 3px;
+}
+
+.heat-grid i {
+  width: auto;
+  height: 23px;
+  aspect-ratio: auto;
+}
+
+.heat-legend {
+  margin-top: 7px;
+}
+
+/* Prawa kolumna: fotografia dokładnie z grafiki referencyjnej + zwarty tryb firmy. */
+.right-stack {
+  display: grid;
+  grid-template-rows: 145px 95px;
+  gap: 10px;
+}
+
+.quote-card {
+  min-height: 0;
+  height: 145px;
+  padding: 0;
+  background: url('/assets/home-right-quote.jpg') center center / cover no-repeat;
+  border-radius: 15px;
+}
+
+/* Tekst jest już częścią grafiki z referencji — nie dublujemy go HTML-em. */
+.quote-card > span,
+.quote-card > b,
+.quote-card > em,
+.quote-card::after {
+  display: none;
+}
+
+.company-mode {
+  min-height: 0;
+  height: 95px;
+  padding: 10px 12px;
+  gap: 10px;
+  overflow: hidden;
+}
+
+.mode-icon {
+  width: 42px;
+  height: 42px;
+  flex: 0 0 42px;
+}
+
+.company-mode b {
+  margin: 2px 0 4px;
+}
+
 @media (max-width: 1180px) {
   .dashboard-header {
     left: 150px;
+  }
+
+  .category-panel,
+  .heat-panel,
+  .right-stack {
+    height: auto;
+    min-height: 0;
+  }
+
+  .right-stack {
+    grid-template-rows: none;
+  }
+
+  .quote-card {
+    height: 170px;
+  }
+
+  .company-mode {
+    height: auto;
+    min-height: 96px;
   }
 }
 
