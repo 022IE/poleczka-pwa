@@ -239,8 +239,30 @@ body {
   font-size: 16px;
 }
 
+/* Lista kategorii: legenda i kwoty bliżej siebie + subtelna zebra. */
 .category-list {
-  gap: 6px;
+  gap: 4px;
+}
+
+.category-list p {
+  grid-template-columns: 12px 72px 82px 30px;
+  justify-content: start;
+  column-gap: 4px;
+  min-height: 28px;
+  padding: 5px 7px;
+  border-radius: 7px;
+}
+
+.category-list p:nth-child(even) {
+  background: rgba(181, 166, 141, 0.10);
+}
+
+.category-list p:nth-child(odd) {
+  background: rgba(255, 255, 255, 0.45);
+}
+
+.category-list p span {
+  text-align: right;
 }
 
 /* Heatmapa w referencji ma prostokątne, niższe pola. */
