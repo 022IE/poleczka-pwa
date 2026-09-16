@@ -1,6 +1,6 @@
 {
-  "state": "awaiting_publish",
-  "label": "Oczekiwanie na publikację",
-  "task": "Nadpisano grafikę „Mały biznes / Wielkie marzenia” poprawnym binarnym PNG w src/assets i zweryfikowano zgodność blob SHA w DEV",
-  "updatedAt": "2026-09-16T12:55:00Z"
+  "state": "editing",
+  "label": "Wprowadzanie poprawek",
+  "task": "Aktualizacja MASTER o obowiązujący workflow GitHub, pracę na dev i zasady obsługi binarnych assetów graficznych",
+  "updatedAt": "2026-09-16T13:02:45Z"
 }
