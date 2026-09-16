@@ -10,9 +10,9 @@
 
 Celem jest stworzenie lekkiej, estetycznej i wygodnej aplikacji PWA dla małej sprzedaży prowadzonej w ramach działalności nierejestrowanej.
 
-Pierwsza wersja PWA ma odtworzyć i rozwinąć funkcje, które obecnie działają w arkuszu LibreOffice, ale w formie znacznie wygodniejszej w obsłudze, bardziej atrakcyjnej wizualnie i bez ograniczeń typowych dla arkusza.
+Pierwsza wersja PWA ma odtworzyć i rozwinąć funkcje, które obecnie działają w arkuszu LibreOffice, ale w formie wygodniejszej w obsłudze, atrakcyjniejszej wizualnie i bez ograniczeń typowych dla arkusza.
 
-Na tym etapie **nie budujemy pełnego systemu dla JDG, VAT ani pełnej księgowości**. To będzie osobny etap w przyszłości.
+Na tym etapie **nie budujemy pełnego systemu dla JDG, VAT ani pełnej księgowości**.
 
 ---
 
@@ -24,7 +24,6 @@ W wersji 1 aplikacja obejmuje:
 - sprzedaż,
 - dostawy,
 - koszty,
-- rabaty,
 - artykuły,
 - kategorie,
 - analizy,
@@ -33,13 +32,26 @@ W wersji 1 aplikacja obejmuje:
 - kontrolę limitu działalności nierejestrowanej,
 - przechowywanie dokumentów kosztowych poza D1.
 
+### Rabaty — aktualne ustalenie
+
+W v1 **nie konfigurujemy rabatów w PWA** i nie utrzymujemy osobnego modułu konfiguracji rabatów.
+
+Rabaty są na razie obsługiwane tak jak dotychczas, czyli **z poziomu systemu POS / Loyverse**.
+
+PWA:
+- odczytuje dane o rabatach ze sprzedaży,
+- pokazuje kwoty rabatów w paragonach, KPI i analizach,
+- nie tworzy, nie edytuje, nie aktywuje i nie usuwa definicji rabatów.
+
+Osobny moduł zarządzania rabatami może wrócić w przyszłym etapie.
+
 ---
 
 ## 3. Architektura
 
 ### Frontend
 - PWA,
-- docelowo React + Vite,
+- React + Vite,
 - responsywna aplikacja instalowalna na komputerze, tablecie i telefonie.
 
 ### Backend
@@ -55,15 +67,13 @@ W wersji 1 aplikacja obejmuje:
 - Google Drive użytkownika,
 - D1 przechowuje tylko metadane i powiązania do plików.
 
-### Docelowy przepływ danych
+### Przepływ danych
 
 `Loyverse -> Webhook / API -> Cloudflare Worker -> D1 -> PWA`
 
 Dokumenty kosztowe:
 
 `PWA -> Google Drive użytkownika`
-
-D1 przechowuje tylko identyfikator pliku i metadane.
 
 ---
 
@@ -74,7 +84,7 @@ D1 przechowuje tylko identyfikator pliku i metadane.
 - Nie przechowujemy zdjęć ani PDF-ów dokumentów kosztowych w D1.
 - Każdy klient docelowo korzysta z własnego konta Cloudflare, własnej D1 i własnego Google Drive.
 - Tokeny API i dane dostępowe powinien wprowadzać sam użytkownik.
-- Krytyczne reguły biznesowe nie mogą być rozproszone wyłącznie po czatach — mają trafiać do tego dokumentu lub do specyfikacji modułów.
+- Krytyczne reguły biznesowe nie mogą być rozproszone wyłącznie po czatach — trafiają do MASTER lub specyfikacji modułów.
 
 ---
 
@@ -101,7 +111,7 @@ Kierunek wizualny:
 - złoty kontur wieszaka,
 - styl minimalistyczny i premium.
 
-W aplikacji nazwa i branding muszą być możliwe do zmiany w konfiguracji.
+W aplikacji nazwa i branding mają docelowo być możliwe do zmiany w konfiguracji.
 
 ---
 
@@ -116,29 +126,25 @@ W aplikacji nazwa i branding muszą być możliwe do zmiany w konfiguracji.
 - % zbytu.
 
 ### Działalność nierejestrowana
-Na stronie głównej widoczny jest specjalny panel:
-
-**Limit działalności nierejestrowanej**
-
-Pokazuje:
+Panel pokazuje:
 - bieżący kwartał,
 - kwotę wykorzystaną,
 - obowiązujący limit,
 - procent wykorzystania,
 - kwotę pozostałą,
 - pasek postępu,
-- ostrzeżenia po przekroczeniu ustalonych progów.
+- ostrzeżenia po przekroczeniu progów.
 
 Limit:
 - jest kwartalny,
 - nie może być na stałe wpisany w kod,
 - musi być konfigurowalny.
 
-### Wykresy na dashboardzie
+### Wykresy
 - sprzedaż w czasie,
 - porównanie tygodni,
 - sprzedaż wg kategorii,
-- heatmapa dzień tygodnia x godzina.
+- heatmapa dzień tygodnia × godzina.
 
 ---
 
@@ -153,6 +159,8 @@ Górne wskaźniki:
 - sprzedaż netto,
 - średni paragon.
 
+**Rabaty w tym module są wyłącznie danymi odczytanymi z POS/Loyverse. Nie konfigurujemy ich w PWA.**
+
 ### Filtry
 - zakres dat,
 - forma płatności,
@@ -161,7 +169,7 @@ Górne wskaźniki:
 - wyszukiwarka.
 
 ### Tabela paragonów
-Każdy paragon ma być jednym głównym wierszem.
+Każdy paragon jest jednym głównym wierszem.
 
 Kolumny:
 - numer paragonu,
@@ -173,14 +181,9 @@ Kolumny:
 - netto,
 - płatność.
 
-Przed paragonem ikona:
+Po kliknięciu `+` paragon rozwija swoje pozycje.
 
-`+`
-
-Po kliknięciu paragon rozwija swoje pozycje.
-
-### Rozwinięte pozycje paragonu
-Kolumny:
+### Pozycje
 - artykuł,
 - kategoria,
 - SKU,
@@ -191,29 +194,19 @@ Kolumny:
 - Lp. dostawy.
 
 ### Zebra
-Zebra jest osobna dla:
-- paragonów,
-- pozycji wewnątrz rozwiniętego paragonu.
-
-Nie stosujemy zebry mieszanej między paragonem i jego pozycjami.
+Osobna zebra dla paragonów i osobna dla pozycji rozwiniętego paragonu.
 
 ---
 
 ## 8. Reguły sprzedaży i dostaw
 
-Pole Loyverse:
-
-`line_note / komentarz`
-
-jest numerem Lp. dostawy.
+Pole Loyverse `line_note / komentarz` jest numerem Lp. dostawy.
 
 Reguły:
 - `0` = dostawa wewnętrzna,
 - pusty komentarz = `-1` niezidentyfikowana,
 - numer dostawy nieistniejący aktualnie w tabeli dostaw = tymczasowo `-1`,
 - przy kolejnej synchronizacji, jeżeli dana dostawa już istnieje, pozycja ma zostać ponownie przypisana prawidłowo.
-
-Nieznana dostawa ma być zawsze bezpiecznie sprowadzona do `-1`.
 
 ---
 
@@ -235,7 +228,6 @@ Nieznana dostawa ma być zawsze bezpiecznie sprowadzona do `-1`.
 - wyszukiwarka.
 
 ### Tabela
-Kolumny:
 - Lp. dostawy,
 - data,
 - dostawca,
@@ -247,23 +239,12 @@ Kolumny:
 - sprzedaż zł,
 - zysk.
 
-### Rozwijanie dostawy
-Po kliknięciu `+` rozwijane są szczegóły:
-- artykuł,
-- kategoria,
-- ilość,
-- cena/szt.,
-- sprzedane,
-- sprzedaż,
-- SKU / zakres SKU.
-
-### Analizy dostaw
-Planowane:
+### Analizy
 - sprzedaż wg dostawcy,
 - rentowność dostaw,
-- krzywa % zbytu dostaw w czasie,
-- wykres punktowy: % zbytu vs zysk,
-- Pareto 80/20 dla dostaw i dostawców.
+- krzywa % zbytu w czasie,
+- % zbytu vs zysk,
+- Pareto 80/20.
 
 ---
 
@@ -277,41 +258,8 @@ Planowane:
 - największa kategoria kosztowa,
 - udział kosztów w przychodzie.
 
-### Filtry
-- zakres dat,
-- kategoria kosztu,
-- forma płatności,
-- dostawca,
-- wyszukiwarka.
-
-### Tabela kosztów
-Każdy dokument kosztowy jest jednym głównym rekordem.
-
-Kolumny:
-- dokument,
-- data,
-- liczba pozycji,
-- dostawca,
-- brutto,
-- forma płatności,
-- kategoria główna.
-
-Po rozwinięciu:
-- pozycje dokumentu,
-- załączniki.
-
-### Pozycje kosztu
-- pozycja,
-- kategoria,
-- ilość,
-- cena,
-- wartość,
-- opis.
-
-### Dokumenty kosztowe
-Każdy koszt może mieć:
-- jeden dokument,
-- wiele dokumentów.
+### Dokumenty
+Każdy koszt może mieć jeden lub wiele dokumentów.
 
 Obsługiwane przykłady:
 - zdjęcie paragonu,
@@ -319,83 +267,38 @@ Obsługiwane przykłady:
 - potwierdzenie przelewu,
 - inny załącznik.
 
-Opcje:
-- Zrób zdjęcie,
-- Dodaj z plików,
-- Dodaj z Google Drive,
-- podgląd załącznika.
+Pliki fizyczne przechowuje Google Drive użytkownika, a D1 tylko identyfikatory i metadane.
 
-### Przechowywanie
-Pliki:
-- Google Drive użytkownika.
-
-D1:
-- `cost_id`,
-- `provider`,
-- `file_id`,
-- `filename`,
-- `mime_type`,
-- pozostałe metadane.
-
-Docelowo osobna tabela:
-
-`cost_documents`
-
-dla relacji wiele załączników -> jeden koszt.
+Docelowa tabela: `cost_documents`.
 
 ---
 
-## 11. Moduł RABATY
+## 11. Rabaty
 
-Rabaty mają własną tabelę definicji.
+### Stan obowiązujący w v1
 
-Minimalne pola:
-- nazwa,
-- wartość,
-- typ.
+Rabaty **nie są osobnym modułem konfiguracyjnym PWA**.
 
-Typ:
-- procent,
-- kwota.
+Źródłem definicji i sposobu stosowania rabatów pozostaje POS / Loyverse.
 
-Przykłady:
-- Stały klient | 10 | procent
-- Wyprzedaż | 20 | procent
-- Promocja | 10 | kwota
+PWA ma zachować i analizować dane przesłane ze sprzedaży, w szczególności:
+- wartość rabatu pozycji,
+- wartość rabatu paragonu, jeśli jest dostępna w danych źródłowych,
+- kwotę przed rabatem,
+- kwotę po rabacie.
 
-### Zastosowanie rabatu
-Ten sam rabat może być użyty:
-- na pozycję,
-- na cały paragon.
-
-Zakres nie musi być elementem definicji rabatu.
-
-Zakres wynika z miejsca zastosowania.
-
-### POS / ekran wyboru
-Rabaty można przypinać do kafelków na ekranie POS podobnie jak artykuły.
-
-Kliknięcie kafelka rabatu:
-- stosuje zdefiniowany rabat do całego paragonu.
-
-Podczas edycji ceny konkretnej pozycji:
-- rabat można zastosować tylko do tej pozycji.
-
-### Historia użycia rabatów
-D1 powinno umożliwiać analizę:
-- jaki rabat został użyty,
-- wartość,
-- typ,
-- zakres,
-- kwota przed rabatem,
-- kwota po rabacie.
+Nie wdrażamy w v1:
+- CRUD rabatów,
+- aktywacji / dezaktywacji rabatów,
+- kolejności kafelków rabatowych,
+- przypinania rabatów do kafelków z poziomu PWA,
+- własnej tabeli definicji rabatów jako elementu konfiguracji aplikacji.
 
 ---
 
 ## 12. Moduł ANALIZY
 
 ### Filtry wspólne
-Gdzie ma to sens:
 - zakres dat,
 - kategoria,
 - artykuł,
@@ -410,64 +313,35 @@ Gdzie ma to sens:
 - sprzedaż w czasie,
 - sprzedaż wg kategorii.
 
+Rabaty w analizach pochodzą z danych sprzedażowych POS/Loyverse.
+
 ### Porównanie wielu okresów
-Kluczowa analiza.
-
-Pola sterujące:
-- długość okresu,
-- jednostka,
-- liczba okresów.
-
-Przykład:
-
-`7 | dni | 10 okresów`
+Przykład: `7 | dni | 10 okresów`.
 
 Efekt:
 - jeden wykres,
-- 10 linii,
-- każda linia = osobny 7-dniowy okres,
-- oś X = dzień 1..7 lub poniedziałek..niedziela,
+- wiele linii,
+- każda linia = osobny okres,
 - najnowszy okres wyróżniony.
 
-Cel:
-- ocena powtarzalności,
-- ocena rozrzutu,
-- identyfikacja dni mocnych i słabych,
-- obserwacja trendu między okresami.
-
 ### Heatmapa
-Dzień tygodnia x godzina.
-
-Cel:
-- wskazanie godzin i dni o największej sprzedaży.
+Dzień tygodnia × godzina.
 
 ### Histogram cen
-Cel:
-- pokazanie przedziałów cenowych, w których sprzedaje się najwięcej,
-- analiza liczby sztuk i wartości sprzedaży.
-
-### Dostawy
-- krzywa zbytu w czasie,
-- rentowność,
-- Pareto 80/20.
+Analiza przedziałów cenowych wg liczby sztuk i wartości sprzedaży.
 
 ---
 
 ## 13. Moduł USTAWIENIA
 
 ### Firma
-Pola:
 - nazwa firmy / marki,
 - tryb firmy,
 - waluta,
 - strefa czasowa,
 - język.
 
-Na tym etapie obowiązuje:
-
-`Działalność nierejestrowana`
-
-JDG pozostaje poza zakresem v1.
+Na tym etapie obowiązuje `Działalność nierejestrowana`.
 
 ### Limit działalności nierejestrowanej
 - okres limitu: kwartalny,
@@ -481,24 +355,14 @@ JDG pozostaje poza zakresem v1.
 - Cloudflare D1,
 - Google Drive.
 
-Widoczny status:
-- połączono / nie połączono.
-
-Opcje:
-- synchronizacja automatyczna,
-- powiadomienia.
-
-### Rabaty
-CRUD:
-- dodaj,
-- edytuj,
-- usuń.
-
 ### Słowniki
 - Kategorie,
 - Artykuły,
 - Dostawcy,
 - Formy płatności.
+
+### Rabaty
+**Brak konfiguracji rabatów w USTAWIENIACH w v1.** Rabaty pozostają obsługiwane w POS/Loyverse.
 
 ### Wygląd
 - motyw,
@@ -506,17 +370,11 @@ CRUD:
 - układ menu bocznego,
 - wersja aplikacji.
 
-### Import / eksport ustawień
-Docelowo:
-- eksport ustawień,
-- import ustawień,
-- kopia ustawień.
-
 ---
 
 ## 14. Synchronizacja
 
-Obecny model synchronizacji:
+Obecny model:
 
 `Loyverse -> D1 -> aplikacja`
 
@@ -526,11 +384,6 @@ Należy zachować:
 - automatyczną synchronizację,
 - status ostatniej synchronizacji,
 - komunikaty o błędach.
-
-Na stronie aplikacji użytkownik powinien widzieć:
-- status synchronizacji,
-- czas ostatniego poprawnego pobrania,
-- ewentualny błąd.
 
 ---
 
@@ -608,39 +461,28 @@ Kategorie i artykuły:
 - są używane w filtrach,
 - mogą być używane w analizach.
 
-Listy filtrów zawsze mają opcję:
-
-`Wszystkie`
+Listy filtrów zawsze mają opcję `Wszystkie`.
 
 ---
 
 ## 18. Działalność nierejestrowana
 
-W v1 aplikacja jest projektowana przede wszystkim dla działalności nierejestrowanej.
-
-Obowiązuje:
+W v1 obowiązuje:
 - kontrola kwartalnego limitu,
 - możliwość konfiguracji limitu,
 - panel wykorzystania limitu na stronie głównej,
 - ostrzeżenia progowe.
 
-Nie projektujemy jeszcze:
-- pełnej obsługi JDG,
-- pełnego VAT,
-- pełnej księgowości,
-- rozbudowanej obsługi faktur VAT,
-- automatycznego składania PIT.
-
-Te elementy mogą powstać w kolejnych etapach.
+Poza v1 pozostają m.in. JDG, pełny VAT, pełna księgowość i automatyczne składanie PIT.
 
 ---
 
 ## 19. Potencjalny przyszły zakres — NIE v1
 
 Do późniejszego rozważenia:
-
 - pełny własny POS,
 - odejście od Loyverse,
+- własna konfiguracja i obsługa rabatów,
 - faktury,
 - rachunki,
 - paragony / dokumenty sprzedaży,
@@ -658,20 +500,11 @@ Do późniejszego rozważenia:
 
 ## 20. Model komercyjny — założenie projektowe
 
-Aplikacja ma być projektowana tak, aby w przyszłości mogła być sprzedawana.
-
-Założenia:
+Docelowo:
 - klient korzysta z własnego Cloudflare,
-- klient korzysta z własnej D1,
-- klient korzysta z własnego Google Drive,
-- klient podaje własny token Loyverse,
-- aplikacja nie musi centralnie przechowywać danych wielu klientów.
-
-Korzyści:
-- niższy koszt infrastruktury,
-- mniejsze ryzyko RODO,
-- łatwiejsze skalowanie,
-- brak konieczności utrzymywania dużego centralnego magazynu dokumentów.
+- własnej D1,
+- własnego Google Drive,
+- własnego tokenu Loyverse.
 
 ---
 
@@ -680,45 +513,25 @@ Korzyści:
 ### Czat główny
 `PWA — MASTER / ARCHITEKTURA`
 
-Służy do:
-- decyzji wspólnych,
-- modelu danych,
-- integracji,
-- standardów,
-- kolejności prac.
-
 ### Czaty modułowe
-Proponowany podział:
-
 - `01 — SPRZEDAŻ`
 - `02 — DOSTAWY`
 - `03 — KOSZTY`
 - `04 — ANALIZY`
-- `05 — RABATY`
 - `06 — USTAWIENIA`
 - `07 — STRONA GŁÓWNA`
 - `08 — INTEGRACJE / D1 / LOYVERSE`
 
-Każdy moduł powinien mieć własny plik specyfikacji, np.:
-
-`MODUL_SPRZEDAZ.md`
+`05 — RABATY` nie jest aktywnym modułem v1; temat wraca dopiero, gdy zdecydujemy o własnej obsłudze rabatów poza POS.
 
 ---
 
 ## 22. Wersjonowanie
 
-Nie używamy nazw typu:
-- final,
-- final2,
-- poprawiony_final.
-
-Docelowo:
-
-`poleczka-pwa-v0.1.0`  
-`poleczka-pwa-v0.2.0`  
-`poleczka-pwa-v1.0.0`
-
-MASTER powinien zawsze wskazywać aktualną bazę projektu.
+Stosujemy wersjonowanie semantyczne, np.:
+- `poleczka-pwa-v0.1.0`
+- `poleczka-pwa-v0.2.0`
+- `poleczka-pwa-v1.0.0`
 
 ---
 
@@ -726,32 +539,18 @@ MASTER powinien zawsze wskazywać aktualną bazę projektu.
 
 MASTER aktualizujemy, gdy:
 - zmienia się architektura,
-- zmienia się model danych,
-- dochodzi nowy moduł,
-- zmienia się reguła biznesowa,
-- zmienia się obowiązujący standard UI,
-- zmienia się sposób synchronizacji,
-- ustalamy coś, co ma obowiązywać więcej niż jeden moduł.
-
-Szczegóły lokalne trafiają do dokumentu danego modułu.
+- model danych,
+- zakres modułu,
+- reguła biznesowa,
+- standard UI,
+- sposób synchronizacji,
+- ustalenie obowiązujące więcej niż jeden moduł.
 
 ---
 
 ## 24. Aktualny priorytet
 
-Pierwszy moduł do realnego wykonania:
-
-**SPRZEDAŻ**
-
-Kolejność:
-1. utworzenie specyfikacji modułu,
-2. zaprojektowanie danych i endpointów,
-3. budowa widoku,
-4. integracja z D1,
-5. filtry,
-6. rozwijanie paragonów,
-7. testy,
-8. dopiero potem przejście do kolejnego modułu.
+Pierwszym głównym modułem funkcjonalnym pozostaje **SPRZEDAŻ**.
 
 ---
 
@@ -764,183 +563,73 @@ Kolejność:
 - działalność nierejestrowana jako zakres v1,
 - kwartalny limit działalności,
 - wygląd głównych ekranów,
-- model tabeli sprzedaży,
-- model tabeli kosztów,
-- model tabeli dostaw,
-- model rabatów,
+- model tabel sprzedaży, kosztów i dostaw,
 - główne analizy,
-- podział projektu na moduły.
-
-### Następny krok
-Utworzyć:
-
-`MODUL_SPRZEDAZ.md`
-
-i rozpocząć realną implementację modułu sprzedaży.
+- brak konfiguracji rabatów w PWA v1 — rabaty obsługuje POS/Loyverse.
 
 ---
 
 ## 26. Repozytorium jest źródłem prawdy
 
-Od 16.09.2026 obowiązuje praca bez ręcznego przekazywania ZIP-ów i rozpakowywania paczek.
+Repozytorium `022IE/poleczka-pwa` jest wspólnym źródłem prawdy dla kodu, konfiguracji, dokumentacji i workflow publikacji.
 
-Repozytorium:
-
-`022IE/poleczka-pwa`
-
-jest wspólnym źródłem prawdy dla kodu, konfiguracji, dokumentacji i workflow publikacji.
-
-Obowiązujące gałęzie:
+Gałęzie:
 - `main` — wersja stabilna,
 - `dev` — bieżące prace rozwojowe,
-- `pipeline-status` — wyłącznie szybki status pracy widoczny w widżecie; zmiany tej gałęzi nie mogą uruchamiać zwykłego builda PWA.
-
-Nie tworzymy równoległych lokalnych „finalnych” paczek jako podstawowego sposobu pracy.
+- `pipeline-status` — szybki status pracy widoczny w widżecie.
 
 ---
 
 ## 27. Obowiązkowy workflow każdej zmiany PWA
 
-Plik `AGENTS.md` w głównym katalogu repozytorium jest instrukcją obowiązującą każdy czat / agenta pracującego na tym repo.
+`AGENTS.md` obowiązuje każdy czat / agenta.
 
-### Przed pierwszą zmianą kodu
-
-Pierwszy zapis musi dotyczyć:
+Przed pierwszą zmianą na `dev` pierwszy zapis musi trafić do:
 
 `pipeline-status/status/work-status.json`
 
-i ustawić:
-
+ze stanem:
 - `state = editing`,
-- etykietę **Wprowadzanie poprawek**,
-- krótki opis aktualnego zadania,
-- aktualny czas `updatedAt`.
+- etykieta **Wprowadzanie poprawek**,
+- opis zadania,
+- aktualny `updatedAt`.
 
-**Dopiero po zgłoszeniu statusu wolno modyfikować `dev`.**
-
-Dzięki temu użytkownik widzi rozpoczęcie pracy jeszcze przed pierwszym commitem kodu.
-
-### Po zakończeniu własnej serii zmian
-
-Status przechodzi na:
-
+Po zakończeniu własnej serii zmian:
 - `state = awaiting_publish`,
-- etykietę **Oczekiwanie na publikację**.
+- etykieta **Oczekiwanie na publikację**.
 
-Dalsze etapy są aktualizowane automatycznie.
-
-### Prace równoległe w kilku czatach
-
-Nie wolno bezmyślnie kasować aktywnego statusu innego czatu. Jeżeli kilka czatów pracuje równolegle, opis `task` powinien uwzględniać aktywne prace albo pozostać w stanie `editing`, dopóki faktycznie trwa co najmniej jedno zadanie.
-
-System nie może wykryć samego „myślenia” innego czatu przed wykonaniem przez niego pierwszego zapisu — dlatego zgłoszenie `editing` jest obowiązkowym pierwszym krokiem każdego agenta.
+Nie wolno bez sprawdzenia nadpisywać aktywnego statusu innego czatu.
 
 ---
 
 ## 28. Widżet pipeline — zasady developerskie
 
-Na czas budowy PWA w górnym panelu znajduje się developerski widżet publikacji.
-
-Położenie:
-- środek górnego panelu,
-- pomiędzy **„Dzień dobry, Iwonko!”** a blokiem kalendarza / ikon.
-
-Rozmiar obecnie uznajemy za właściwy.
-
-Widżet pokazuje pełną ścieżkę:
+Widżet pokazuje:
 
 `Prace → GitHub → Build → Cloudflare → Online`
 
-### Znaczenie etapów
+Build i Cloudflare są osobnymi etapami. `Online` jest zielone dopiero po potwierdzeniu aktualnego SHA na działającej PWA.
 
-- **Prace** — agent wprowadza poprawki; źródłem jest `pipeline-status`.
-- **GitHub** — commit został wysłany do `dev`.
-- **Build** — rzeczywista kompilacja GitHub Actions.
-- **Cloudflare** — osobny etap oczekiwania na wdrożenie.
-- **Online** — aktualny commit jest faktycznie dostępny w działającej PWA.
-
-**Build i Cloudflare są rozdzielone.** Build nie może pozostawać w stanie „trwa” tylko dlatego, że wdrożenie Cloudflare jeszcze się nie zakończyło.
-
-`Online` może być zielone tylko wtedy, gdy najnowszy commit / SHA został potwierdzony jako wdrożony. Działanie poprzedniej wersji aplikacji nie oznacza sukcesu nowej publikacji.
-
-### Aktualizacja statusów
-
-Podstawowy mechanizm:
-- Cloudflare Durable Object,
-- WebSocket,
-- aktualizacje push do otwartej PWA.
-
-Fallback:
-- HTTP tylko po utracie połączenia WebSocket,
-- automatyczny reconnect,
-- widoczny stan połączenia: `LIVE`, `ŁĄCZENIE`, `AWARYJNY`, `BRAK POŁ.`.
-
-Snapshot statusu nie może bezterminowo przechowywać starego stanu. Po ponownym połączeniu / ręcznym odświeżeniu należy uzgodnić go z rzeczywistym stanem GitHub Actions i aktualnie wdrożonym SHA.
-
-### Wersja finalna
-
-Widżet jest narzędziem developerskim. W finalnej wersji produkcyjnej ma być wyłączony przełącznikiem konfiguracyjnym, bez konieczności usuwania mechanizmu diagnostycznego z kodu.
+Widżet jest narzędziem developerskim i w wersji produkcyjnej ma być możliwy do wyłączenia konfiguracją.
 
 ---
 
 ## 29. Aktualny sposób pracy
 
-Od teraz typowy cykl wygląda następująco:
+Typowy cykl:
 
 `polecenie użytkownika → Wprowadzanie poprawek → zmiany na dev → GitHub → Build → Cloudflare → Online → weryfikacja w PWA`
 
 Użytkownik nie powinien pobierać i rozpakowywać plików, jeżeli zmiana może zostać wykonana bezpośrednio w repozytorium.
 
-Dokumenty `POLECZKA_PWA_MASTER.md` i pliki `MODUL_*.md` mają być aktualizowane razem z decyzjami projektowymi, żeby nowe czaty nie musiały odtwarzać ustaleń z historii rozmów.
-
-Sekcje 26–29 są nowsze i w razie konfliktu zastępują starsze informacje organizacyjne w tym dokumencie.
-
 ---
 
-## 30. Obsługa plików graficznych i innych assetów binarnych
+## 30. Pliki binarne i assety graficzne
 
-Od 16.09.2026 obowiązuje jedna metoda pracy z obrazami i innymi plikami binarnymi w repozytorium.
+Dla plików `PNG`, `JPG`, `WEBP` i innych binarnych assetów:
+- zapis do GitHuba wykonujemy jako prawdziwy binarny Git blob,
+- nie używamy do nich mechanizmu przeznaczonego dla zwykłych plików tekstowych,
+- po zapisie weryfikujemy blob SHA i rozmiar,
+- jeśli użytkownik przekazuje konkretną grafikę referencyjną, używamy dokładnie tej grafiki; nie rekonstruujemy jej samodzielnie bez wyraźnej prośby.
 
-Dotyczy w szczególności:
-- `PNG`,
-- `JPG` / `JPEG`,
-- `WEBP`,
-- innych assetów binarnych używanych przez PWA.
-
-### Zasada techniczna
-
-Pliki binarne muszą być zapisywane do GitHuba jako **rzeczywiste binarne Git bloby**.
-
-Nie wolno używać do nich mechanizmu przeznaczonego dla zwykłych plików UTF-8 w sposób, który może zmienić lub uszkodzić ich zawartość. Dla binarnego assetu właściwy przebieg to:
-
-`bajty pliku → base64 dla API → create_blob → create_tree → create_commit → update_ref(dev)`
-
-Base64 jest wyłącznie transportowym kodowaniem dla API. Plik zapisany w repozytorium ma pozostać normalnym plikiem binarnym.
-
-### Weryfikacja po zapisie
-
-Zmiany assetu nie uznajemy za zakończoną wyłącznie na podstawie udanego commita.
-
-Po zapisie należy sprawdzić co najmniej:
-- ścieżkę pliku w `dev`,
-- rozmiar pliku,
-- Git blob SHA,
-- zgodność SHA pliku lokalnego z SHA pliku w repo, jeżeli lokalny plik jest źródłem zmiany,
-- źródło używane przez kod / CSS / import Vite,
-- wynik po buildzie i wdrożeniu, jeżeli asset wpływa na UI.
-
-### Źródła grafik
-
-Jeżeli użytkownik przekazuje konkretną grafikę jako obowiązującą referencję, należy używać **tego konkretnego pliku** jako źródła. Nie należy samodzielnie zastępować go inną grafiką, rekonstrukcją ani przybliżeniem, chyba że użytkownik wyraźnie o to poprosi.
-
-Jeżeli użytkownik poleca przyciąć obraz, należy wykonać wyłącznie wymagane kadrowanie / usunięcie zbędnych ramek i zachować właściwą treść grafiki bez nieuzgodnionych zmian stylistycznych.
-
-### Praca z repozytorium
-
-Jeżeli zmiana może zostać wykonana bezpośrednio w `022IE/poleczka-pwa`, wykonujemy ją w repozytorium zamiast przekazywać użytkownikowi ręczne instrukcje kopiowania plików.
-
-Dla bieżących prac obowiązuje `dev`. `main` pozostaje wersją stabilną.
-
-Przed każdą taką zmianą nadal obowiązuje workflow z `AGENTS.md` i sekcji 27: najpierw status **Wprowadzanie poprawek** na `pipeline-status`, potem zmiana na `dev`, a po zakończeniu status **Oczekiwanie na publikację**.
-
-Sekcja 30 jest obowiązującym standardem dla wszystkich przyszłych zmian assetów binarnych w projekcie.
+To jest obowiązujący standard projektu.
