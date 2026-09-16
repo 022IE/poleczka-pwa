@@ -1,6 +1,6 @@
 {
-  "state": "editing",
-  "label": "Wprowadzanie poprawek",
+  "state": "awaiting_publish",
+  "label": "Oczekiwanie na publikację",
   "task": "Push WebSocket dla widżetu publikacji + przeniesienie widżetu do górnego panelu między powitanie a kalendarz",
-  "updatedAt": "2026-09-16T08:41:55Z"
+  "updatedAt": "2026-09-16T08:46:30Z"
 }
