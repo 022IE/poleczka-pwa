@@ -109,18 +109,34 @@ body {
   padding-top: 5px;
 }
 
-/* Górny pasek dashboardu pozostaje widoczny podczas przewijania zawartości. */
+/*
+ * Pasek górny jest nieruchomy, ale nie ruszamy geometrii siatki dashboardu.
+ * Rezerwujemy tylko jego miejsce pionowe w .dashboard-wrap.
+ */
+.dashboard-wrap {
+  padding-top: 86px;
+}
+
 .dashboard-header {
-  position: sticky;
+  position: fixed;
   top: 0;
-  z-index: 40;
-  margin: -13px -18px 12px;
+  left: 178px;
+  right: 0;
+  z-index: 60;
+  min-height: 74px;
+  margin: 0;
   padding: 13px 25px 12px;
-  background: rgba(247, 246, 243, 0.96);
-  border-bottom: 1px solid rgba(229, 225, 218, 0.9);
-  box-shadow: 0 5px 16px rgba(71, 60, 45, 0.05);
+  background: rgba(247, 246, 243, 0.98);
+  border-bottom: 1px solid rgba(229, 225, 218, 0.95);
+  box-shadow: 0 5px 16px rgba(71, 60, 45, 0.06);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
+}
+
+@media (max-width: 1180px) {
+  .dashboard-header {
+    left: 150px;
+  }
 }
 
 @media (max-width: 820px) {
@@ -134,7 +150,16 @@ body {
     overflow: visible;
   }
 
+  .dashboard-wrap {
+    padding-top: 13px;
+  }
+
   .dashboard-header {
+    position: sticky;
+    top: 0;
+    left: auto;
+    right: auto;
+    min-height: auto;
     margin: -13px -12px 12px;
     padding: 12px 16px;
   }
