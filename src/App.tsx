@@ -1,8 +1,11 @@
+import { useState } from 'react'
 import { NavLink, Route, Routes } from 'react-router-dom'
 import BuildStatus from './components/BuildStatus'
 
 // Widget publikacji jest narzędziem developerskim. W wersji finalnej ustawiamy false.
 const SHOW_DEV_PIPELINE = true
+
+type ComparisonPeriod = 'week' | 'month' | 'year'
 
 const nav = [
   ['/', 'Strona główna', '⌂'],
@@ -30,6 +33,7 @@ const weeks = [
   { c: '#9eb89a', p: '15,48 90,34 165,56 240,42 315,50 390,32 465,58' },
   { c: '#d1a84f', p: '15,54 90,28 165,40 240,16 315,52 390,58 465,44' },
   { c: '#c98378', p: '15,58 90,43 165,52 240,41 315,46 390,30 465,47' },
+  { c: '#7f9d8a', p: '15,44 90,31 165,46 240,34 315,43 390,22 465,38' },
   { c: '#46705a', p: '15,49 90,25 165,35 240,28 315,36 390,15 465,30' },
 ]
 
@@ -50,6 +54,42 @@ const quickLinks = [
   ['/ustawienia','Ustawienia','Dostosuj aplikację','⚙','gray'],
 ] as const
 
+function shiftPeriod(date: Date, period: ComparisonPeriod, amount: number) {
+  const result = new Date(date)
+
+  if (period === 'week') {
+    result.setDate(result.getDate() - (7 * amount))
+    return result
+  }
+
+  const day = result.getDate()
+  result.setDate(1)
+
+  if (period === 'month') {
+    result.setMonth(result.getMonth() - amount)
+  } else {
+    result.setFullYear(result.getFullYear() - amount)
+  }
+
+  const lastDay = new Date(result.getFullYear(), result.getMonth() + 1, 0).getDate()
+  result.setDate(Math.min(day, lastDay))
+  return result
+}
+
+function formatPeriodDate(date: Date) {
+  return new Intl.DateTimeFormat('pl-PL', { day: 'numeric', month: 'short', year: '2-digit' })
+    .format(date)
+    .replace('.', '')
+}
+
+function getPeriodLabel(endDateValue: string, period: ComparisonPeriod, offset: number) {
+  const baseEnd = new Date(`${endDateValue}T12:00:00`)
+  const periodEnd = shiftPeriod(baseEnd, period, offset)
+  const periodStart = shiftPeriod(periodEnd, period, 1)
+  periodStart.setDate(periodStart.getDate() + 1)
+  return `${formatPeriodDate(periodStart)} – ${formatPeriodDate(periodEnd)}`
+}
+
 function Placeholder({ title, text }: { title: string; text: string }) {
   return (
     <section className="page-card">
@@ -64,6 +104,20 @@ function Dashboard() {
   const now = new Date()
   const weekday = new Intl.DateTimeFormat('pl-PL', { weekday: 'long' }).format(now)
   const date = new Intl.DateTimeFormat('pl-PL', { day: 'numeric', month: 'long', year: 'numeric' }).format(now)
+  const todayValue = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`
+  const [comparisonEndDate, setComparisonEndDate] = useState(todayValue)
+  const [comparisonCount, setComparisonCount] = useState(4)
+  const [comparisonType, setComparisonType] = useState<ComparisonPeriod>('week')
+
+  const comparisonLabels = Array.from({ length: comparisonCount }, (_, index) =>
+    getPeriodLabel(comparisonEndDate, comparisonType, index),
+  ).reverse()
+  const comparisonSeries = weeks.slice(-comparisonCount)
+  const comparisonAxis = comparisonType === 'week'
+    ? ['Pn', 'Wt', 'Śr', 'Cz', 'Pt', 'Sob', 'Nd']
+    : comparisonType === 'month'
+      ? ['1', '5', '10', '15', '20', '25', '30']
+      : ['sty', 'mar', 'maj', 'lip', 'wrz', 'lis', 'gru']
 
   return (
     <div className="dashboard-wrap">
@@ -117,10 +171,17 @@ function Dashboard() {
         </article>
 
         <article className="panel weeks-panel">
-          <div className="panel-head"><h2><span>↗</span> Porównanie tygodni</h2><select defaultValue="4"><option value="4">Ostatnie 4 tygodnie</option></select></div>
-          <div className="legend"><span><i className="l1"/>29 cze – 5 lip</span><span><i className="l2"/>6 lip – 12 lip</span><span><i className="l3"/>13 lip – 19 lip</span><span><i className="l4"/>20 lip – 26 lip</span></div>
-          <div className="line-chart"><svg viewBox="0 0 480 80" preserveAspectRatio="none"><g className="gridlines"><line x1="0" y1="20" x2="480" y2="20"/><line x1="0" y1="40" x2="480" y2="40"/><line x1="0" y1="60" x2="480" y2="60"/></g>{weeks.map((w,i)=><polyline key={i} points={w.p} fill="none" stroke={w.c} strokeWidth="2.4" strokeLinejoin="round" strokeLinecap="round" />)}</svg></div>
-          <div className="week-days"><span>Pn</span><span>Wt</span><span>Śr</span><span>Cz</span><span>Pt</span><span>Sob</span><span>Nd</span></div>
+          <div className="panel-head comparison-head">
+            <h2><span>↗</span> Porównanie okresów</h2>
+            <div className="comparison-controls">
+              <label className="comparison-date"><span>Do</span><input type="date" value={comparisonEndDate} onChange={(event) => setComparisonEndDate(event.target.value)} aria-label="Data końcowa porównania" /></label>
+              <label className="comparison-count"><span>Ile</span><select value={comparisonCount} onChange={(event) => setComparisonCount(Number(event.target.value))} aria-label="Liczba okresów">{[1,2,3,4,5].map((count) => <option key={count} value={count}>{count}</option>)}</select></label>
+              <label className="comparison-type"><span>Typ</span><select value={comparisonType} onChange={(event) => setComparisonType(event.target.value as ComparisonPeriod)} aria-label="Typ okresu"><option value="week">Tydzień</option><option value="month">Miesiąc</option><option value="year">Rok</option></select></label>
+            </div>
+          </div>
+          <div className="legend">{comparisonLabels.map((label, index) => <span key={label}><i style={{ backgroundColor: comparisonSeries[index].c }} />{label}</span>)}</div>
+          <div className="line-chart"><svg viewBox="0 0 480 80" preserveAspectRatio="none"><g className="gridlines"><line x1="0" y1="20" x2="480" y2="20"/><line x1="0" y1="40" x2="480" y2="40"/><line x1="0" y1="60" x2="480" y2="60"/></g>{comparisonSeries.map((series,i)=><polyline key={i} points={series.p} fill="none" stroke={series.c} strokeWidth="2.4" strokeLinejoin="round" strokeLinecap="round" />)}</svg></div>
+          <div className="week-days">{comparisonAxis.map((label) => <span key={label}>{label}</span>)}</div>
         </article>
       </section>
 
