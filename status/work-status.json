@@ -1,6 +1,6 @@
 {
-  "state": "awaiting_publish",
-  "label": "Oczekiwanie na publikację",
-  "task": "Przycięto grafikę „Mały biznes / Wielkie marzenia”, dodano poprawny plik SVG do src/assets i podpięto go do panelu dashboardu; usunięto uszkodzone i tymczasowe pliki",
-  "updatedAt": "2026-09-16T11:50:00Z"
+  "state": "editing",
+  "label": "Wprowadzanie poprawek",
+  "task": "Przycięcie przesłanej grafiki „Mały biznes / Wielkie marzenia”, zapis jako PNG i podpięcie poprawnego źródła w DEV",
+  "updatedAt": "2026-09-16T12:25:45Z"
 }
