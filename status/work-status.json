@@ -1,6 +1,6 @@
 {
-  "state": "awaiting_publish",
-  "label": "Oczekiwanie na publikację",
-  "task": "Naprawa statusu Build/Cloudflare/Online — stan jest teraz uzgadniany z faktycznym workflow GitHub i wdrożeniem Cloudflare",
-  "updatedAt": "2026-09-16T10:15:10Z"
+  "state": "editing",
+  "label": "Wprowadzanie poprawek",
+  "task": "Dokończenie naprawy pipeline: rozdzielenie jobu Build i Cloudflare oraz odczyt statusu z jobów GitHub Actions",
+  "updatedAt": "2026-09-16T10:17:10Z"
 }
