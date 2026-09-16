@@ -1,6 +1,6 @@
 {
-  "state": "editing",
-  "label": "Wprowadzanie poprawek",
+  "state": "awaiting_publish",
+  "label": "Oczekiwanie na publikację",
   "task": "Powiększenie widżetu i naprawa logiki statusów / WebSocket / fallback",
-  "updatedAt": "2026-09-16T09:32:10Z"
+  "updatedAt": "2026-09-16T09:37:30Z"
 }
