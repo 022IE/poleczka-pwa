@@ -5,9 +5,13 @@ on:
     branches:
       - dev
       - main
+    paths-ignore:
+      - 'status/**'
   pull_request:
     branches:
       - main
+    paths-ignore:
+      - 'status/**'
 
 permissions:
   contents: read
