@@ -11,7 +11,6 @@ const nav = [
   ['/artykuly', 'Artykuły', '♧'],
   ['/kategorie', 'Kategorie', '◇'],
   ['/koszty', 'Koszty', '◉'],
-  ['/rabaty', 'Rabaty', '%'],
   ['/analizy', 'Analizy', '▥'],
   ['/synchronizacja', 'Synchronizacja', '↻'],
   ['/ustawienia', 'Ustawienia', '⚙'],
@@ -46,7 +45,6 @@ const quickLinks = [
   ['/artykuly','Artykuły','Zarządzaj asortymentem','♧','mint'],
   ['/kategorie','Kategorie','Porządkuj produkty','◇','gold'],
   ['/koszty','Koszty','Dodaj wydatek','◉','blue'],
-  ['/rabaty','Rabaty','Zarządzaj promocjami','%','rose'],
   ['/analizy','Analizy','Poznaj swoje wyniki','▥','lavender'],
   ['/synchronizacja','Synchronizacja','Zsynchronizuj dane','↻','aqua'],
   ['/ustawienia','Ustawienia','Dostosuj aplikację','⚙','gray'],
@@ -168,7 +166,6 @@ function App() {
         <Route path="/artykuly" element={<Placeholder title="Artykuły" text="Zarządzanie asortymentem i danymi artykułów."/>}/>
         <Route path="/kategorie" element={<Placeholder title="Kategorie" text="Kategorie wykorzystywane w sprzedaży, filtrach i analizach."/>}/>
         <Route path="/koszty" element={<Placeholder title="Koszty" text="Koszty oraz dokumenty powiązane z Google Drive."/>}/>
-        <Route path="/rabaty" element={<Placeholder title="Rabaty" text="Definicje rabatów i historia ich zastosowania."/>}/>
         <Route path="/analizy" element={<Placeholder title="Analizy" text="Porównania okresów, heatmapy, histogramy i analizy dostaw."/>}/>
         <Route path="/synchronizacja" element={<Placeholder title="Synchronizacja" text="Status Loyverse → D1 oraz historia synchronizacji."/>}/>
         <Route path="/ustawienia" element={<Placeholder title="Ustawienia" text="Firma, limit działalności, integracje, słowniki i wygląd."/>}/>
