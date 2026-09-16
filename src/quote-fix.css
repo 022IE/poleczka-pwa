@@ -1,9 +1,9 @@
 /* Grafika referencyjna prawego panelu strony głównej.
- * Używamy nowego, przyciętego pliku SVG osadzającego poprawny obraz z referencji.
+ * Używamy przyciętego pliku PNG przygotowanego bezpośrednio z grafiki przesłanej przez użytkownika.
  * Plik znajduje się w src/assets, więc Vite bundluje go i nadaje poprawny URL przy deployu.
  */
 .quote-card {
-  background-image: url('./assets/home-right-quote.svg') !important;
+  background-image: url('./assets/home-right-quote.png') !important;
   background-size: cover !important;
   background-position: center center !important;
   background-repeat: no-repeat !important;
