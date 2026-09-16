@@ -16,8 +16,16 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 2
     steps:
+      - name: Checkout status branch
+        uses: actions/checkout@v4
+
       - name: Push current work status through Worker WebSocket hub
         continue-on-error: true
+        shell: bash
         run: |
-          curl --connect-timeout 3 --max-time 8 --retry 2 --retry-delay 1 -fsS -X POST \
-            "https://poleczkaiwonki.dpdns.org/api/pipeline-refresh?branch=dev" >/dev/null
+          work="$(jq -c '.' status/work-status.json)"
+          payload="$(jq -nc --argjson work "$work" '{type:"work",branch:"dev",work:$work}')"
+          curl --connect-timeout 3 --max-time 8 --retry 2 --retry-delay 1 -fsS \
+            -H 'Content-Type: application/json' \
+            -X POST "https://poleczkaiwonki.dpdns.org/api/pipeline-event" \
+            --data "$payload" >/dev/null
