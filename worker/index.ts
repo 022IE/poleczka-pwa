@@ -52,11 +52,13 @@ type PipelineEvent = {
 }
 
 type GitHubWorkflowRun = {
+  id?: number
   status?: string | null
   conclusion?: string | null
   head_branch?: string | null
   head_sha?: string | null
   run_number?: number
+  created_at?: string | null
   updated_at?: string | null
   html_url?: string | null
 }
@@ -82,6 +84,13 @@ function workStage(work: WorkStatus): PipelineStage {
   if (work.state === 'awaiting_publish') return { state: 'ready', label: work.label || 'Poprawki zakończone' }
   if (work.state === 'idle') return { state: 'ready', label: work.label || 'Gotowe' }
   return { state: 'waiting', label: work.label || 'Brak aktywnych prac' }
+}
+
+function isAtOrAfter(value?: string | null, reference?: string | null) {
+  if (!value || !reference) return false
+  const a = Date.parse(value)
+  const b = Date.parse(reference)
+  return Number.isFinite(a) && Number.isFinite(b) && a >= b
 }
 
 function blankSnapshot(branch: string): PipelineSnapshot {
@@ -139,7 +148,8 @@ async function fetchWorkStatus(): Promise<WorkStatus> {
 
 async function fetchLatestRun(branch: string): Promise<GitHubWorkflowRun | null> {
   try {
-    const endpoint = new URL('https://api.github.com/repos/022IE/poleczka-pwa/actions/runs')
+    // Pytamy wyłącznie o workflow build.yml. Inne workflow nie mogą nadpisać stanu buildu PWA.
+    const endpoint = new URL('https://api.github.com/repos/022IE/poleczka-pwa/actions/workflows/build.yml/runs')
     endpoint.searchParams.set('branch', branch)
     endpoint.searchParams.set('event', 'push')
     endpoint.searchParams.set('per_page', '1')
@@ -169,13 +179,14 @@ async function bootstrapSnapshot(branch: string): Promise<PipelineSnapshot> {
   snapshot.stages.work = workStage(work)
   snapshot.updatedAt = work.updatedAt || snapshot.updatedAt
 
-  if (work.state === 'editing') {
-    snapshot.stages.github = { state: 'waiting', label: 'Czeka na zapis zmian' }
-    snapshot.stages.build = { state: 'waiting', label: 'Oczekuje na zmiany' }
-    snapshot.stages.cloudflare = { state: 'waiting', label: 'Oczekuje' }
+  if (!run) {
+    if (work.state === 'editing') {
+      snapshot.stages.github = { state: 'waiting', label: 'Czeka na zapis zmian' }
+      snapshot.stages.build = { state: 'waiting', label: 'Oczekuje na zmiany' }
+      snapshot.stages.cloudflare = { state: 'waiting', label: 'Oczekuje' }
+    }
+    return snapshot
   }
-
-  if (!run) return snapshot
 
   snapshot.branch = run.head_branch || branch
   snapshot.runNumber = run.run_number ?? null
@@ -186,25 +197,45 @@ async function bootstrapSnapshot(branch: string): Promise<PipelineSnapshot> {
   snapshot.conclusion = run.conclusion ?? null
   snapshot.updatedAt = run.updated_at || snapshot.updatedAt
 
+  // Jeżeli build został utworzony już po rozpoczęciu prac, commit istnieje i etap "Prace"
+  // musi być zakończony nawet wtedy, gdy osobny event work-status nie dotarł.
+  if (snapshot.work.state === 'editing' && isAtOrAfter(run.created_at, snapshot.work.updatedAt)) {
+    snapshot.work = {
+      ...snapshot.work,
+      state: 'awaiting_publish',
+      label: 'Poprawki przekazane',
+    }
+    snapshot.stages.work = workStage(snapshot.work)
+  }
+
+  if (snapshot.work.state === 'editing') {
+    snapshot.stages.github = { state: 'waiting', label: 'Czeka na zapis zmian' }
+    snapshot.stages.build = { state: 'waiting', label: 'Oczekuje na zmiany' }
+    snapshot.stages.cloudflare = { state: 'waiting', label: 'Oczekuje' }
+    snapshot.stages.online = snapshot.deployedSha
+      ? { state: 'ready', label: 'Poprzednia wersja online' }
+      : { state: 'unknown', label: 'Niepotwierdzone' }
+    return snapshot
+  }
+
+  snapshot.stages.github = { state: 'ready', label: 'Zmiana wysłana' }
+
   const deployedSha = snapshot.deployedSha
   const isLatestOnline = Boolean(snapshot.headSha && deployedSha && snapshot.headSha === deployedSha)
   snapshot.latestOnline = isLatestOnline
 
   if (run.status && run.status !== 'completed') {
     snapshot.state = 'building'
-    snapshot.stages.github = { state: 'ready', label: 'Zmiana wysłana' }
     snapshot.stages.build = { state: 'running', label: 'Build trwa' }
-    snapshot.stages.cloudflare = { state: 'waiting', label: 'Oczekuje' }
+    snapshot.stages.cloudflare = { state: 'waiting', label: 'Oczekuje na build' }
   } else if (run.status === 'completed' && run.conclusion === 'success') {
-    snapshot.state = isLatestOnline ? 'ready' : 'ready'
-    snapshot.stages.github = { state: 'ready', label: 'Zmiana wysłana' }
+    snapshot.state = 'ready'
     snapshot.stages.build = { state: 'ready', label: 'Build gotowy' }
     snapshot.stages.cloudflare = isLatestOnline
       ? { state: 'ready', label: 'Wdrożono' }
       : { state: 'running', label: 'Wdrażanie' }
   } else if (run.status === 'completed' && run.conclusion) {
     snapshot.state = 'failed'
-    snapshot.stages.github = { state: 'ready', label: 'Zmiana wysłana' }
     snapshot.stages.build = { state: 'failed', label: 'Build nieudany' }
     snapshot.stages.cloudflare = { state: 'blocked', label: 'Zablokowane' }
   }
@@ -212,7 +243,7 @@ async function bootstrapSnapshot(branch: string): Promise<PipelineSnapshot> {
   snapshot.stages.online = isLatestOnline
     ? { state: 'ready', label: 'Najnowsza wersja online' }
     : deployedSha
-      ? { state: 'ready', label: 'Poprzednia wersja online' }
+      ? { state: 'waiting', label: 'Czeka na nową wersję' }
       : { state: 'unknown', label: 'Niepotwierdzone' }
 
   return snapshot
@@ -244,6 +275,31 @@ function snapshotNeedsRepair(snapshot: PipelineSnapshot | null) {
   const stages = Object.values(snapshot.stages || {})
   if (!stages.length) return true
   return stages.every((stage) => stage.state === 'unknown')
+}
+
+function mergeStoredTerminalState(fresh: PipelineSnapshot, stored: PipelineSnapshot | null): PipelineSnapshot {
+  if (!stored || !fresh.headSha || stored.headSha !== fresh.headSha) return fresh
+
+  // Timeout wdrożenia jest stanem terminalnym po stronie monitora. Zachowujemy go,
+  // dopóki aktualny Worker nie potwierdzi swoim BUILD_COMMIT_SHA, że nowa wersja jest online.
+  if (!fresh.latestOnline && stored.stages?.cloudflare?.state === 'failed') {
+    fresh.state = 'failed'
+    fresh.stages.cloudflare = stored.stages.cloudflare
+    fresh.stages.online = stored.stages.online
+  }
+
+  return fresh
+}
+
+async function reconcileSnapshot(env: Env, branch: string): Promise<PipelineSnapshot> {
+  const stored = await getStoredSnapshot(env)
+  const fresh = await bootstrapSnapshot(branch)
+
+  if (!fresh.headSha && stored && !snapshotNeedsRepair(stored)) return stored
+
+  const reconciled = mergeStoredTerminalState(fresh, stored)
+  await publishSnapshot(env, reconciled)
+  return reconciled
 }
 
 function applyEvent(current: PipelineSnapshot, event: PipelineEvent): PipelineSnapshot {
@@ -292,7 +348,7 @@ function applyEvent(current: PipelineSnapshot, event: PipelineEvent): PipelineSn
     snapshot.stages.build = { state: 'running', label: 'Build trwa' }
     snapshot.stages.cloudflare = { state: 'waiting', label: 'Oczekuje na build' }
     snapshot.stages.online = snapshot.deployedSha
-      ? { state: 'ready', label: 'Poprzednia wersja online' }
+      ? { state: 'waiting', label: 'Czeka na nową wersję' }
       : { state: 'unknown', label: 'Niepotwierdzone' }
   }
 
@@ -303,9 +359,7 @@ function applyEvent(current: PipelineSnapshot, event: PipelineEvent): PipelineSn
     snapshot.latestOnline = false
     snapshot.stages.build = { state: 'ready', label: 'Build gotowy' }
     snapshot.stages.cloudflare = { state: 'running', label: 'Wdrażanie' }
-    snapshot.stages.online = snapshot.deployedSha
-      ? { state: 'ready', label: 'Poprzednia wersja online' }
-      : { state: 'waiting', label: 'Czeka na wdrożenie' }
+    snapshot.stages.online = { state: 'waiting', label: 'Czeka na nową wersję' }
   }
 
   if (event.type === 'build_failed') {
@@ -359,6 +413,8 @@ export class PipelineHub {
       const server = pair[1]
       this.ctx.acceptWebSocket(server)
 
+      // Snapshot jest odświeżany w głównym Workerze przed zestawieniem połączenia.
+      // Dzięki temu nowy klient nigdy nie dostaje starego stanu jako pierwszej wiadomości.
       const snapshot = await this.ctx.storage.get<PipelineSnapshot>('snapshot')
       if (snapshot) server.send(JSON.stringify(snapshot))
 
@@ -414,6 +470,15 @@ export default {
       if (request.headers.get('Upgrade') !== 'websocket') {
         return Response.json({ ok: false, error: 'WebSocket required' }, { status: 426 })
       }
+
+      // Przed podłączeniem klienta naprawiamy ewentualnie utracone eventy na podstawie
+      // rzeczywistego stanu workflow GitHub + BUILD_COMMIT_SHA aktualnego wdrożenia.
+      try {
+        await reconcileSnapshot(env, 'dev')
+      } catch {
+        // WebSocket nadal może działać na ostatnim zapisanym snapshotcie.
+      }
+
       const stub = await pipelineStub(env)
       return stub.fetch(request)
     }
@@ -458,15 +523,11 @@ export default {
     if (url.pathname === '/api/build-status') {
       const branch = url.searchParams.get('branch')?.trim() || 'dev'
       try {
-        let snapshot = await getStoredSnapshot(env)
-        if (snapshotNeedsRepair(snapshot)) {
-          snapshot = await bootstrapSnapshot(branch)
-          await publishSnapshot(env, snapshot)
-        }
-        return Response.json(snapshot || blankSnapshot(branch), { headers: { 'Cache-Control': 'no-store' } })
+        const snapshot = await reconcileSnapshot(env, branch)
+        return Response.json(snapshot, { headers: { 'Cache-Control': 'no-store' } })
       } catch {
-        // Nawet przy awarii zewnętrznych źródeł frontend dostaje użyteczny, opisany stan.
-        return Response.json(blankSnapshot(branch), { headers: { 'Cache-Control': 'no-store' } })
+        const stored = await getStoredSnapshot(env)
+        return Response.json(stored || blankSnapshot(branch), { headers: { 'Cache-Control': 'no-store' } })
       }
     }
 
