@@ -1,6 +1,6 @@
 {
-  "state": "awaiting_publish",
-  "label": "Oczekiwanie na publikację",
-  "task": "Usunięto konfigurację rabatów z PWA; MASTER i MODUL_USTAWIENIA zaktualizowane — rabaty pozostają obsługiwane z poziomu POS / Loyverse",
-  "updatedAt": "2026-09-16T13:44:30Z"
+  "state": "editing",
+  "label": "Wprowadzanie poprawek",
+  "task": "Dopracowanie panelu „Sprzedaż wg kategorii”: zbliżenie legendy do kwot i dodanie delikatnej zebry",
+  "updatedAt": "2026-09-16T15:53:00Z"
 }
