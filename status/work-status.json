@@ -1,6 +1,6 @@
 {
-  "state": "awaiting_publish",
-  "label": "Oczekiwanie na publikację",
-  "task": "W panelu „Sprzedaż wg kategorii” zbliżono legendę do kwot i dodano delikatną zebrę wierszy",
-  "updatedAt": "2026-09-16T15:54:30Z"
+  "state": "editing",
+  "label": "Wprowadzanie poprawek",
+  "task": "Wycentrowanie legendy, kwot i procentów w wolnym miejscu obok wykresu kategorii oraz wyrównanie kwot do prawej",
+  "updatedAt": "2026-09-16T15:57:00Z"
 }
