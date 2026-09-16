@@ -142,9 +142,20 @@ Limit:
 
 ### Wykresy
 - sprzedaż w czasie,
-- porównanie tygodni,
+- porównanie okresów,
 - sprzedaż wg kategorii,
 - heatmapa dzień tygodnia × godzina.
+
+### Porównanie okresów na dashboardzie
+
+Obowiązują trzy parametry sterujące:
+- **data końcowa** — dzień, na którym kończy się najnowszy porównywany okres,
+- **liczba okresów** — od `1` do `5`,
+- **typ okresu** — `Tydzień`, `Miesiąc` albo `Rok`.
+
+Od wskazanej daty aplikacja cofa się o kolejne okresy zgodnie z wybranym typem.
+
+Jedna linia wykresu odpowiada jednemu okresowi, a legenda pokazuje rzeczywisty zakres dat danej linii.
 
 ---
 
@@ -298,6 +309,8 @@ Nie wdrażamy w v1:
 
 ## 12. Moduł ANALIZY
 
+Szczegóły modułu są również zapisane w `docs/MODUL_ANALIZY.md`.
+
 ### Filtry wspólne
 - zakres dat,
 - kategoria,
@@ -315,14 +328,29 @@ Nie wdrażamy w v1:
 
 Rabaty w analizach pochodzą z danych sprzedażowych POS/Loyverse.
 
-### Porównanie wielu okresów
-Przykład: `7 | dni | 10 okresów`.
+### Porównanie okresów — obowiązujące założenie
 
-Efekt:
-- jeden wykres,
-- wiele linii,
-- każda linia = osobny okres,
-- najnowszy okres wyróżniony.
+Wcześniejsze założenie o stałym „porównaniu tygodni” oraz przykład `7 dni × 10 okresów` przestają obowiązywać.
+
+Użytkownik wybiera:
+- **datę końcową** najnowszego okresu,
+- **liczbę okresów od 1 do 5**,
+- **typ okresu:** `Tydzień`, `Miesiąc` albo `Rok`.
+
+Zasada działania:
+- wybrana data jest końcem najnowszego okresu,
+- aplikacja wyznacza kolejne okresy wstecz,
+- okresy nie powinny się nakładać ani pozostawiać luk,
+- jedna linia = jeden okres,
+- legenda pokazuje rzeczywisty zakres dat każdej linii,
+- maksymalnie wyświetlamy 5 linii.
+
+Oś X zależy od wybranego typu:
+- tydzień — dni tygodnia,
+- miesiąc — dni / punkty miesiąca,
+- rok — miesiące.
+
+Po podłączeniu analizy do D1 te trzy parametry mają sterować rzeczywistymi zapytaniami i agregacjami po stronie Workera / D1.
 
 ### Heatmapa
 Dzień tygodnia × godzina.
@@ -522,6 +550,10 @@ Docelowo:
 - `07 — STRONA GŁÓWNA`
 - `08 — INTEGRACJE / D1 / LOYVERSE`
 
+Plik specyfikacji modułu ANALIZY:
+
+`docs/MODUL_ANALIZY.md`
+
 `05 — RABATY` nie jest aktywnym modułem v1; temat wraca dopiero, gdy zdecydujemy o własnej obsłudze rabatów poza POS.
 
 ---
@@ -565,6 +597,7 @@ Pierwszym głównym modułem funkcjonalnym pozostaje **SPRZEDAŻ**.
 - wygląd głównych ekranów,
 - model tabel sprzedaży, kosztów i dostaw,
 - główne analizy,
+- porównanie okresów sterowane datą końcową, liczbą `1–5` i typem `Tydzień / Miesiąc / Rok`,
 - brak konfiguracji rabatów w PWA v1 — rabaty obsługuje POS/Loyverse.
 
 ---
