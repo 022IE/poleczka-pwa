@@ -109,6 +109,20 @@ body {
   padding-top: 5px;
 }
 
+/* Górny pasek dashboardu pozostaje widoczny podczas przewijania zawartości. */
+.dashboard-header {
+  position: sticky;
+  top: 0;
+  z-index: 40;
+  margin: -13px -18px 12px;
+  padding: 13px 25px 12px;
+  background: rgba(247, 246, 243, 0.96);
+  border-bottom: 1px solid rgba(229, 225, 218, 0.9);
+  box-shadow: 0 5px 16px rgba(71, 60, 45, 0.05);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
 @media (max-width: 820px) {
   html {
     overflow-y: auto;
@@ -118,5 +132,10 @@ body {
     height: auto;
     max-height: none;
     overflow: visible;
+  }
+
+  .dashboard-header {
+    margin: -13px -12px 12px;
+    padding: 12px 16px;
   }
 }
