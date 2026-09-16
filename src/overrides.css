@@ -190,8 +190,15 @@ body {
 .quick-card small { font-size: 10px; }
 .dashboard-footer { font-size: 10px; }
 
+/* Górny rząd wykresów: środkowa szczelina dokładnie w osi przerwy między 3. i 4. KPI. */
+.charts-row.primary {
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 10px;
+}
+
 /* Dolny rząd zgodny proporcjami z referencją. */
 .charts-row.secondary {
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) minmax(0, .72fr);
   align-items: stretch;
 }
 
