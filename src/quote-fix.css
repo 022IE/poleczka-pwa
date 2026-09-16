@@ -1,0 +1,15 @@
+/* Grafika referencyjna prawego panelu strony głównej. */
+.quote-card {
+  background-image: url('/assets/home-right-quote.jpg') !important;
+  background-size: cover !important;
+  background-position: center center !important;
+  background-repeat: no-repeat !important;
+}
+
+/* Napis i dekoracje są już częścią grafiki referencyjnej. */
+.quote-card > span,
+.quote-card > b,
+.quote-card > em,
+.quote-card::after {
+  visibility: hidden !important;
+}
