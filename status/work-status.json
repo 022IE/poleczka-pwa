@@ -1,6 +1,6 @@
 {
-  "state": "awaiting_publish",
-  "label": "Oczekiwanie na publikację",
-  "task": "MASTER zaktualizowany o workflow GitHub i zasady assetów binarnych",
-  "updatedAt": "2026-09-16T13:05:30Z"
+  "state": "editing",
+  "label": "Wprowadzanie poprawek",
+  "task": "Wyrównanie odstępów i szerokości kafelków wykresów na dashboardzie",
+  "updatedAt": "2026-09-16T13:29:27Z"
 }
