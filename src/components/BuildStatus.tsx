@@ -24,7 +24,7 @@ const labels = {
 export default function BuildStatus() {
   const [data, setData] = useState<BuildStatusResponse | null>(null)
   const [loading, setLoading] = useState(true)
-  const branch = import.meta.env.VITE_BUILD_BRANCH || 'dev'
+  const branch = 'dev'
 
   const load = useCallback(async () => {
     try {
@@ -39,7 +39,7 @@ export default function BuildStatus() {
     } finally {
       setLoading(false)
     }
-  }, [branch])
+  }, [])
 
   useEffect(() => {
     void load()
