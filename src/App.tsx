@@ -1,4 +1,8 @@
 import { NavLink, Route, Routes } from 'react-router-dom'
+import BuildStatus from './components/BuildStatus'
+
+// Widget publikacji jest narzędziem developerskim. W wersji finalnej ustawiamy false.
+const SHOW_DEV_PIPELINE = true
 
 const nav = [
   ['/', 'Strona główna', '⌂'],
@@ -70,6 +74,7 @@ function Dashboard() {
           <h1>Dzień dobry, Iwonko! <span>👋</span></h1>
           <p>Cieszę się, że tu jesteś. Dobry dzień na piękne rzeczy!</p>
         </div>
+        {SHOW_DEV_PIPELINE && <div className="header-build-slot"><BuildStatus /></div>}
         <div className="header-actions">
           <div className="date-block"><span className="header-icon">▣</span><div><b>{weekday}</b><span>{date}</span></div></div>
           <div className="header-divider" />

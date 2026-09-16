@@ -1,0 +1,22 @@
+name: Push PWA work status
+
+on:
+  push:
+    branches:
+      - pipeline-status
+    paths:
+      - 'status/work-status.json'
+
+permissions:
+  contents: read
+
+jobs:
+  notify:
+    name: Notify open PWA clients
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    steps:
+      - name: Push current work status through Worker WebSocket hub
+        run: |
+          curl --retry 3 --retry-delay 2 -fsS -X POST \
+            "https://poleczkaiwonki.dpdns.org/api/pipeline-refresh?branch=dev" >/dev/null

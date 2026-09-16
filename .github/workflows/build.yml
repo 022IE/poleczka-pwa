@@ -20,6 +20,9 @@ concurrency:
   group: build-${{ github.ref }}
   cancel-in-progress: true
 
+env:
+  PWA_URL: https://poleczkaiwonki.dpdns.org
+
 jobs:
   build:
     name: Build
@@ -30,6 +33,11 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Push status — build started
+        if: github.event_name == 'push' && github.ref_name == 'dev'
+        continue-on-error: true
+        run: curl -fsS -X POST "$PWA_URL/api/pipeline-refresh?branch=dev&phase=build_start&sha=$GITHUB_SHA" >/dev/null
+
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
@@ -39,4 +47,31 @@ jobs:
         run: npm install --no-audit --no-fund
 
       - name: Build application
+        id: app_build
         run: npm run build
+
+      - name: Push status — build ready
+        if: success() && github.event_name == 'push' && github.ref_name == 'dev'
+        continue-on-error: true
+        run: curl -fsS -X POST "$PWA_URL/api/pipeline-refresh?branch=dev&phase=build_ready&sha=$GITHUB_SHA" >/dev/null
+
+      - name: Push status — build failed
+        if: failure() && github.event_name == 'push' && github.ref_name == 'dev'
+        continue-on-error: true
+        run: curl -fsS -X POST "$PWA_URL/api/pipeline-refresh?branch=dev&phase=build_failed&sha=$GITHUB_SHA" >/dev/null
+
+      - name: Wait for Cloudflare and push online status
+        if: success() && github.event_name == 'push' && github.ref_name == 'dev'
+        shell: bash
+        run: |
+          for attempt in $(seq 1 60); do
+            health="$(curl -fsS "$PWA_URL/api/health" || true)"
+            deployed_sha="$(printf '%s' "$health" | jq -r '.deployedSha // empty' 2>/dev/null || true)"
+            if [ "$deployed_sha" = "$GITHUB_SHA" ]; then
+              curl -fsS -X POST "$PWA_URL/api/pipeline-refresh?branch=dev&phase=online&sha=$GITHUB_SHA" >/dev/null || true
+              echo "Cloudflare online: $GITHUB_SHA"
+              exit 0
+            fi
+            sleep 5
+          done
+          echo "Cloudflare nie potwierdził wdrożenia w 5 minut — widget pozostanie w stanie wdrażania."
