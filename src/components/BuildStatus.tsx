@@ -1,10 +1,18 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 
 type StageState = 'waiting' | 'running' | 'ready' | 'failed' | 'blocked' | 'unknown'
+type WorkState = 'idle' | 'editing' | 'awaiting_publish'
 
 type PipelineStage = {
   state: StageState
   label?: string
+}
+
+type WorkStatus = {
+  state?: WorkState
+  label?: string
+  task?: string
+  updatedAt?: string | null
 }
 
 type BuildStatusResponse = {
@@ -22,8 +30,10 @@ type BuildStatusResponse = {
   deployedAt?: string | null
   updatedAt?: string | null
   latestOnline?: boolean
+  workStatus?: WorkStatus
   url?: string | null
   stages?: {
+    work?: PipelineStage
     github?: PipelineStage
     build?: PipelineStage
     cloudflare?: PipelineStage
@@ -35,13 +45,14 @@ type BuildStatusResponse = {
 const fallbackStage: PipelineStage = { state: 'unknown', label: 'Status nieznany' }
 
 const stageNames = {
+  work: 'Prace',
   github: 'GitHub',
   build: 'Build',
   cloudflare: 'Cloudflare',
   online: 'Online',
 } as const
 
-const stageOrder = ['github', 'build', 'cloudflare', 'online'] as const
+const stageOrder = ['work', 'github', 'build', 'cloudflare', 'online'] as const
 
 function iconFor(state: StageState) {
   if (state === 'ready') return '✓'
@@ -74,13 +85,14 @@ export default function BuildStatus() {
 
   useEffect(() => {
     void load()
-    const timer = window.setInterval(() => void load(), 10000)
+    const timer = window.setInterval(() => void load(), 5000)
     return () => window.clearInterval(timer)
   }, [load])
 
   const stages = useMemo(() => {
     if (!data?.ok) {
       return {
+        work: fallbackStage,
         github: fallbackStage,
         build: fallbackStage,
         cloudflare: fallbackStage,
@@ -89,6 +101,12 @@ export default function BuildStatus() {
     }
 
     return {
+      work:
+        data.stages?.work ||
+        ({
+          state: data.workStatus?.state === 'editing' ? 'running' : 'ready',
+          label: data.workStatus?.label || (data.workStatus?.state === 'editing' ? 'Wprowadzanie poprawek' : 'Brak aktywnych zmian'),
+        } as PipelineStage),
       github: data.stages?.github || { state: 'ready', label: 'Zmiana wysłana' },
       build:
         data.stages?.build ||
@@ -101,30 +119,40 @@ export default function BuildStatus() {
     }
   }, [data])
 
+  const isEditing = data?.workStatus?.state === 'editing'
+  const isAwaitingPublish = data?.workStatus?.state === 'awaiting_publish'
+
   const pipelineState = loading
     ? 'running'
     : !data?.ok
       ? 'unknown'
-      : stages.build.state === 'failed' || stages.cloudflare.state === 'failed' || stages.cloudflare.state === 'blocked'
-        ? 'failed'
-        : data.latestOnline
-          ? 'ready'
-          : stages.build.state === 'running' || stages.cloudflare.state === 'running'
-            ? 'running'
-            : 'waiting'
+      : isEditing
+        ? 'running'
+        : stages.build.state === 'failed' || stages.cloudflare.state === 'failed' || stages.cloudflare.state === 'blocked'
+          ? 'failed'
+          : data.latestOnline
+            ? 'ready'
+            : stages.build.state === 'running' || stages.cloudflare.state === 'running'
+              ? 'running'
+              : 'waiting'
 
   const headline = loading
     ? 'Sprawdzam publikację…'
-    : pipelineState === 'ready'
-      ? 'Najnowsza wersja jest online'
-      : pipelineState === 'failed'
-        ? 'Publikacja wymaga uwagi'
-        : pipelineState === 'running'
-          ? 'Publikacja trwa…'
-          : 'Oczekiwanie na publikację'
+    : isEditing
+      ? 'Wprowadzanie poprawek…'
+      : pipelineState === 'ready'
+        ? 'Najnowsza wersja jest online'
+        : pipelineState === 'failed'
+          ? 'Publikacja wymaga uwagi'
+          : pipelineState === 'running'
+            ? 'Publikacja trwa…'
+            : isAwaitingPublish
+              ? 'Oczekiwanie na publikację'
+              : 'Oczekiwanie na publikację'
 
-  const updated = data?.updatedAt
-    ? new Intl.DateTimeFormat('pl-PL', { hour: '2-digit', minute: '2-digit', second: '2-digit' }).format(new Date(data.updatedAt))
+  const updatedSource = data?.workStatus?.updatedAt || data?.updatedAt
+  const updated = updatedSource
+    ? new Intl.DateTimeFormat('pl-PL', { hour: '2-digit', minute: '2-digit', second: '2-digit' }).format(new Date(updatedSource))
     : null
 
   return (
@@ -141,6 +169,7 @@ export default function BuildStatus() {
           <span className="build-pipeline-title">
             <strong>{headline}</strong>
             <small>
+              {data?.workStatus?.task ? `${data.workStatus.task} • ` : ''}
               {data?.branch || branch}
               {data?.runNumber ? ` • build #${data.runNumber}` : ''}
               {updated ? ` • ${updated}` : ''}
