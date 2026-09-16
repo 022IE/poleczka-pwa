@@ -1,6 +1,6 @@
 {
-  "state": "awaiting_publish",
-  "label": "Oczekiwanie na publikację",
-  "task": "Przycięto przesłaną grafikę „Mały biznes / Wielkie marzenia”, zapisano poprawny PNG w src/assets i przełączono panel dashboardu na nowe źródło",
-  "updatedAt": "2026-09-16T12:29:30Z"
+  "state": "editing",
+  "label": "Wprowadzanie poprawek",
+  "task": "Nadpisanie grafiki „Mały biznes / Wielkie marzenia” dokładnymi bajtami poprawnego PNG i weryfikacja źródła w DEV",
+  "updatedAt": "2026-09-16T12:52:00Z"
 }
