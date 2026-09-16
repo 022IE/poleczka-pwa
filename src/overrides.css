@@ -239,15 +239,21 @@ body {
   font-size: 16px;
 }
 
-/* Lista kategorii: legenda i kwoty bliżej siebie + subtelna zebra. */
+/* Lista kategorii: wycentrowany blok w wolnej przestrzeni obok wykresu. */
 .category-list {
+  flex: 1;
   gap: 4px;
+  width: min(100%, 280px);
+  max-width: 280px;
+  margin: 0 auto;
+  align-self: center;
 }
 
 .category-list p {
-  grid-template-columns: 12px 72px 82px 30px;
-  justify-content: start;
-  column-gap: 4px;
+  width: 100%;
+  grid-template-columns: 12px minmax(76px, 1fr) 92px 34px;
+  justify-content: stretch;
+  column-gap: 6px;
   min-height: 28px;
   padding: 5px 7px;
   border-radius: 7px;
@@ -261,8 +267,16 @@ body {
   background: rgba(255, 255, 255, 0.45);
 }
 
-.category-list p span {
+.category-list p b {
+  justify-self: end;
   text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.category-list p span {
+  justify-self: end;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
 }
 
 /* Heatmapa w referencji ma prostokątne, niższe pola. */
