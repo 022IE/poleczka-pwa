@@ -1,6 +1,6 @@
 {
-  "state": "awaiting_publish",
-  "label": "Oczekiwanie na publikację",
-  "task": "Wyrównano podział górnych wykresów do osi między KPI oraz zrównano szerokości paneli kategorii i heatmapy",
-  "updatedAt": "2026-09-16T13:31:10Z"
+  "state": "editing",
+  "label": "Wprowadzanie poprawek",
+  "task": "Usunięcie konfiguracji rabatów z PWA i aktualizacja założeń: rabaty pozostają obsługiwane z poziomu POS",
+  "updatedAt": "2026-09-16T13:39:45Z"
 }
