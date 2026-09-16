@@ -1,6 +1,6 @@
 {
-  "state": "editing",
-  "label": "Wprowadzanie poprawek",
-  "task": "Dokończenie naprawy pipeline: rozdzielenie jobu Build i Cloudflare oraz odczyt statusu z jobów GitHub Actions",
-  "updatedAt": "2026-09-16T10:17:10Z"
+  "state": "awaiting_publish",
+  "label": "Oczekiwanie na publikację",
+  "task": "Naprawa pipeline zakończona: Build kończy się po kompilacji, wdrożenie Cloudflare jest monitorowane osobno, a snapshot statusu synchronizuje się z GitHub",
+  "updatedAt": "2026-09-16T10:18:30Z"
 }
