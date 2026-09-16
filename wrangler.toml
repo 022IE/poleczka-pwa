@@ -1,0 +1,19 @@
+name = "poleczka-pwa-dev"
+main = "worker/index.ts"
+compatibility_date = "2026-09-16"
+
+[assets]
+directory = "./dist"
+not_found_handling = "single-page-application"
+run_worker_first = ["/api/*"]
+
+[[d1_databases]]
+binding = "DB"
+database_name = "poleczka-dev"
+database_id = "099b4d9e-ad73-441b-a2be-a00f347a5905"
+migrations_dir = "migrations"
+
+[vars]
+APP_NAME = "Półeczka Iwonki"
+APP_VERSION = "0.1.0"
+APP_ENV = "development"
