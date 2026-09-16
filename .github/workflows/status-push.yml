@@ -17,6 +17,7 @@ jobs:
     timeout-minutes: 2
     steps:
       - name: Push current work status through Worker WebSocket hub
+        continue-on-error: true
         run: |
-          curl --retry 3 --retry-delay 2 -fsS -X POST \
+          curl --connect-timeout 3 --max-time 8 --retry 2 --retry-delay 1 -fsS -X POST \
             "https://poleczkaiwonki.dpdns.org/api/pipeline-refresh?branch=dev" >/dev/null
