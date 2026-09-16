@@ -1,6 +1,6 @@
 {
-  "state": "awaiting_publish",
-  "label": "Oczekiwanie na publikację",
-  "task": "Naprawa pipeline zakończona: Build kończy się po kompilacji, wdrożenie Cloudflare jest monitorowane osobno, a snapshot statusu synchronizuje się z GitHub",
-  "updatedAt": "2026-09-16T10:18:30Z"
+  "state": "editing",
+  "label": "Wprowadzanie poprawek",
+  "task": "Naprawa automatycznej sygnalizacji pracy między czatami — status ma reagować także na zmiany wykonywane z innych rozmów",
+  "updatedAt": "2026-09-16T10:38:30Z"
 }
