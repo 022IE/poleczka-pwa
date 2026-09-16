@@ -894,3 +894,53 @@ Użytkownik nie powinien pobierać i rozpakowywać plików, jeżeli zmiana może
 Dokumenty `POLECZKA_PWA_MASTER.md` i pliki `MODUL_*.md` mają być aktualizowane razem z decyzjami projektowymi, żeby nowe czaty nie musiały odtwarzać ustaleń z historii rozmów.
 
 Sekcje 26–29 są nowsze i w razie konfliktu zastępują starsze informacje organizacyjne w tym dokumencie.
+
+---
+
+## 30. Obsługa plików graficznych i innych assetów binarnych
+
+Od 16.09.2026 obowiązuje jedna metoda pracy z obrazami i innymi plikami binarnymi w repozytorium.
+
+Dotyczy w szczególności:
+- `PNG`,
+- `JPG` / `JPEG`,
+- `WEBP`,
+- innych assetów binarnych używanych przez PWA.
+
+### Zasada techniczna
+
+Pliki binarne muszą być zapisywane do GitHuba jako **rzeczywiste binarne Git bloby**.
+
+Nie wolno używać do nich mechanizmu przeznaczonego dla zwykłych plików UTF-8 w sposób, który może zmienić lub uszkodzić ich zawartość. Dla binarnego assetu właściwy przebieg to:
+
+`bajty pliku → base64 dla API → create_blob → create_tree → create_commit → update_ref(dev)`
+
+Base64 jest wyłącznie transportowym kodowaniem dla API. Plik zapisany w repozytorium ma pozostać normalnym plikiem binarnym.
+
+### Weryfikacja po zapisie
+
+Zmiany assetu nie uznajemy za zakończoną wyłącznie na podstawie udanego commita.
+
+Po zapisie należy sprawdzić co najmniej:
+- ścieżkę pliku w `dev`,
+- rozmiar pliku,
+- Git blob SHA,
+- zgodność SHA pliku lokalnego z SHA pliku w repo, jeżeli lokalny plik jest źródłem zmiany,
+- źródło używane przez kod / CSS / import Vite,
+- wynik po buildzie i wdrożeniu, jeżeli asset wpływa na UI.
+
+### Źródła grafik
+
+Jeżeli użytkownik przekazuje konkretną grafikę jako obowiązującą referencję, należy używać **tego konkretnego pliku** jako źródła. Nie należy samodzielnie zastępować go inną grafiką, rekonstrukcją ani przybliżeniem, chyba że użytkownik wyraźnie o to poprosi.
+
+Jeżeli użytkownik poleca przyciąć obraz, należy wykonać wyłącznie wymagane kadrowanie / usunięcie zbędnych ramek i zachować właściwą treść grafiki bez nieuzgodnionych zmian stylistycznych.
+
+### Praca z repozytorium
+
+Jeżeli zmiana może zostać wykonana bezpośrednio w `022IE/poleczka-pwa`, wykonujemy ją w repozytorium zamiast przekazywać użytkownikowi ręczne instrukcje kopiowania plików.
+
+Dla bieżących prac obowiązuje `dev`. `main` pozostaje wersją stabilną.
+
+Przed każdą taką zmianą nadal obowiązuje workflow z `AGENTS.md` i sekcji 27: najpierw status **Wprowadzanie poprawek** na `pipeline-status`, potem zmiana na `dev`, a po zakończeniu status **Oczekiwanie na publikację**.
+
+Sekcja 30 jest obowiązującym standardem dla wszystkich przyszłych zmian assetów binarnych w projekcie.
