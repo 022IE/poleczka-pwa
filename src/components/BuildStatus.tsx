@@ -137,6 +137,12 @@ export default function BuildStatus() {
         setLastError(null)
         stopFallback()
         clearHeartbeat()
+
+        // WebSocket jest kanałem push, ale po każdym zestawieniu połączenia pobieramy
+        // jeden autorytatywny snapshot. Naprawia to sytuację, gdy wcześniejszy event
+        // został utracony albo Durable Object pamiętał starszy build.
+        void loadSnapshot()
+
         heartbeatTimer = window.setInterval(() => {
           if (socket?.readyState === WebSocket.OPEN) socket.send('ping')
         }, 25000)
