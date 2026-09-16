@@ -6,12 +6,48 @@ export interface Env {
 }
 
 type StageState = 'waiting' | 'running' | 'ready' | 'failed' | 'blocked' | 'unknown'
-type PipelinePhase = 'build_start' | 'build_ready' | 'build_failed' | 'online' | null
+type StageKey = 'work' | 'github' | 'build' | 'cloudflare' | 'online'
+type PipelinePhase = 'build_start' | 'build_ready' | 'build_failed' | 'deploy_timeout' | 'online'
 
 type WorkStatus = {
   state?: 'editing' | 'awaiting_publish' | 'idle' | 'unknown'
   label?: string
   task?: string
+  updatedAt?: string | null
+}
+
+type PipelineStage = {
+  state: StageState
+  label: string
+}
+
+type PipelineSnapshot = {
+  ok: true
+  state: 'building' | 'ready' | 'failed' | 'unknown'
+  branch: string
+  status: string | null
+  conclusion: string | null
+  runNumber: number | null
+  headSha: string | null
+  headShaShort: string | null
+  deployedSha: string | null
+  deployedShaShort: string | null
+  deployedBranch: string | null
+  deployedAt: string | null
+  updatedAt: string | null
+  latestOnline: boolean
+  url: string | null
+  work: WorkStatus
+  stages: Record<StageKey, PipelineStage>
+}
+
+type PipelineEvent = {
+  type: 'work' | PipelinePhase
+  branch?: string
+  sha?: string | null
+  runNumber?: number | null
+  url?: string | null
+  work?: WorkStatus
   updatedAt?: string | null
 }
 
@@ -21,7 +57,6 @@ type GitHubWorkflowRun = {
   head_branch?: string | null
   head_sha?: string | null
   run_number?: number
-  created_at?: string | null
   updated_at?: string | null
   html_url?: string | null
 }
@@ -30,199 +65,157 @@ type GitHubRunsResponse = {
   workflow_runs?: GitHubWorkflowRun[]
 }
 
+function nowIso() {
+  return new Date().toISOString()
+}
+
 function shortSha(value?: string | null) {
   return value && value !== 'unknown' ? value.slice(0, 8) : null
 }
 
-async function fetchWorkStatus(): Promise<WorkStatus> {
-  const branches = ['pipeline-status', 'dev']
+function deployedShaFromBuild() {
+  return BUILD_COMMIT_SHA !== 'unknown' ? BUILD_COMMIT_SHA : null
+}
 
-  for (const branch of branches) {
+function workStage(work: WorkStatus): PipelineStage {
+  if (work.state === 'editing') return { state: 'running', label: work.label || 'Wprowadzanie poprawek' }
+  if (work.state === 'awaiting_publish') return { state: 'ready', label: work.label || 'Poprawki zakończone' }
+  if (work.state === 'idle') return { state: 'ready', label: work.label || 'Gotowe' }
+  return { state: 'waiting', label: work.label || 'Brak aktywnych prac' }
+}
+
+function blankSnapshot(branch: string): PipelineSnapshot {
+  const deployedSha = deployedShaFromBuild()
+  return {
+    ok: true,
+    state: 'unknown',
+    branch,
+    status: null,
+    conclusion: null,
+    runNumber: null,
+    headSha: null,
+    headShaShort: null,
+    deployedSha,
+    deployedShaShort: shortSha(deployedSha),
+    deployedBranch: BUILD_BRANCH !== 'unknown' ? BUILD_BRANCH : branch,
+    deployedAt: BUILD_TIME !== 'unknown' ? BUILD_TIME : null,
+    updatedAt: null,
+    latestOnline: false,
+    url: null,
+    work: { state: 'idle', label: 'Brak aktywnych prac', task: '', updatedAt: null },
+    stages: {
+      work: { state: 'waiting', label: 'Brak aktywnych prac' },
+      github: { state: 'waiting', label: 'Czeka na zmianę' },
+      build: { state: 'waiting', label: 'Oczekuje' },
+      cloudflare: { state: 'waiting', label: 'Oczekuje' },
+      online: deployedSha
+        ? { state: 'ready', label: 'Wersja online' }
+        : { state: 'unknown', label: 'Niepotwierdzone' },
+    },
+  }
+}
+
+async function fetchWorkStatus(): Promise<WorkStatus> {
+  for (const branch of ['pipeline-status', 'dev']) {
     try {
-      const response = await fetch(`https://raw.githubusercontent.com/022IE/poleczka-pwa/${branch}/status/work-status.json`, {
-        headers: { 'User-Agent': 'poleczka-pwa-pipeline' },
-        cf: { cacheTtl: 0, cacheEverything: false },
-      })
+      const response = await fetch(
+        `https://raw.githubusercontent.com/022IE/poleczka-pwa/${branch}/status/work-status.json?_=${Date.now()}`,
+        {
+          headers: {
+            'User-Agent': 'poleczka-pwa-pipeline',
+            'Cache-Control': 'no-cache',
+          },
+          cf: { cacheTtl: 0, cacheEverything: false },
+        },
+      )
       if (response.ok) return (await response.json()) as WorkStatus
     } catch {
-      // Próbujemy gałęzi zapasowej.
+      // Próbujemy kolejnego źródła; status prac nie może wywrócić całego pipeline.
     }
   }
 
-  return { state: 'unknown', label: 'Status prac nieznany', task: '', updatedAt: null }
+  return { state: 'unknown', label: 'Status prac chwilowo niedostępny', task: '', updatedAt: null }
 }
 
 async function fetchLatestRun(branch: string): Promise<GitHubWorkflowRun | null> {
-  const endpoint = new URL('https://api.github.com/repos/022IE/poleczka-pwa/actions/runs')
-  endpoint.searchParams.set('branch', branch)
-  endpoint.searchParams.set('event', 'push')
-  endpoint.searchParams.set('per_page', '1')
+  try {
+    const endpoint = new URL('https://api.github.com/repos/022IE/poleczka-pwa/actions/runs')
+    endpoint.searchParams.set('branch', branch)
+    endpoint.searchParams.set('event', 'push')
+    endpoint.searchParams.set('per_page', '1')
 
-  const response = await fetch(endpoint, {
-    headers: {
-      Accept: 'application/vnd.github+json',
-      'User-Agent': 'poleczka-pwa-pipeline',
-      'X-GitHub-Api-Version': '2022-11-28',
-    },
-  })
-
-  if (!response.ok) throw new Error(`GitHub API: ${response.status}`)
-  const payload = (await response.json()) as GitHubRunsResponse
-  return payload.workflow_runs?.[0] || null
-}
-
-function workStage(work: WorkStatus) {
-  if (work.state === 'editing') return { state: 'running' as StageState, label: work.label || 'Wprowadzanie poprawek' }
-  if (work.state === 'awaiting_publish') return { state: 'ready' as StageState, label: work.label || 'Zmiany gotowe' }
-  if (work.state === 'idle') return { state: 'ready' as StageState, label: work.label || 'Gotowe' }
-  return { state: 'unknown' as StageState, label: work.label || 'Status nieznany' }
-}
-
-async function buildSnapshot(branch: string, phase: PipelinePhase = null, hintedSha?: string | null) {
-  const [run, work] = await Promise.all([fetchLatestRun(branch), fetchWorkStatus()])
-
-  if (!run) {
-    return {
-      ok: true,
-      state: 'unknown' as const,
-      branch,
-      status: null,
-      conclusion: null,
-      runNumber: null,
-      headSha: null,
-      headShaShort: null,
-      deployedSha: BUILD_COMMIT_SHA !== 'unknown' ? BUILD_COMMIT_SHA : null,
-      deployedShaShort: shortSha(BUILD_COMMIT_SHA),
-      deployedBranch: BUILD_BRANCH,
-      deployedAt: BUILD_TIME,
-      updatedAt: work.updatedAt || null,
-      url: null,
-      latestOnline: false,
-      work,
-      stages: {
-        work: workStage(work),
-        github: { state: work.state === 'editing' ? 'waiting' as StageState : 'unknown' as StageState, label: work.state === 'editing' ? 'Czeka na commit' : 'Status nieznany' },
-        build: { state: 'waiting' as StageState, label: 'Oczekuje' },
-        cloudflare: { state: 'waiting' as StageState, label: 'Oczekuje' },
-        online: { state: BUILD_COMMIT_SHA !== 'unknown' ? 'ready' as StageState : 'unknown' as StageState, label: BUILD_COMMIT_SHA !== 'unknown' ? 'Poprzednia wersja online' : 'Status nieznany' },
+    const response = await fetch(endpoint, {
+      headers: {
+        Accept: 'application/vnd.github+json',
+        'User-Agent': 'poleczka-pwa-pipeline',
+        'X-GitHub-Api-Version': '2022-11-28',
       },
-    }
+      cf: { cacheTtl: 0, cacheEverything: false },
+    })
+
+    if (!response.ok) return null
+    const payload = (await response.json()) as GitHubRunsResponse
+    return payload.workflow_runs?.[0] || null
+  } catch {
+    return null
+  }
+}
+
+async function bootstrapSnapshot(branch: string): Promise<PipelineSnapshot> {
+  const snapshot = blankSnapshot(branch)
+  const [work, run] = await Promise.all([fetchWorkStatus(), fetchLatestRun(branch)])
+
+  snapshot.work = work
+  snapshot.stages.work = workStage(work)
+  snapshot.updatedAt = work.updatedAt || snapshot.updatedAt
+
+  if (work.state === 'editing') {
+    snapshot.stages.github = { state: 'waiting', label: 'Czeka na zapis zmian' }
+    snapshot.stages.build = { state: 'waiting', label: 'Oczekuje na zmiany' }
+    snapshot.stages.cloudflare = { state: 'waiting', label: 'Oczekuje' }
   }
 
-  let state: 'building' | 'ready' | 'failed' | 'unknown' = 'unknown'
-  let buildStage: StageState = 'unknown'
+  if (!run) return snapshot
+
+  snapshot.branch = run.head_branch || branch
+  snapshot.runNumber = run.run_number ?? null
+  snapshot.headSha = run.head_sha || null
+  snapshot.headShaShort = shortSha(snapshot.headSha)
+  snapshot.url = run.html_url || null
+  snapshot.status = run.status ?? null
+  snapshot.conclusion = run.conclusion ?? null
+  snapshot.updatedAt = run.updated_at || snapshot.updatedAt
+
+  const deployedSha = snapshot.deployedSha
+  const isLatestOnline = Boolean(snapshot.headSha && deployedSha && snapshot.headSha === deployedSha)
+  snapshot.latestOnline = isLatestOnline
 
   if (run.status && run.status !== 'completed') {
-    state = 'building'
-    buildStage = 'running'
+    snapshot.state = 'building'
+    snapshot.stages.github = { state: 'ready', label: 'Zmiana wysłana' }
+    snapshot.stages.build = { state: 'running', label: 'Build trwa' }
+    snapshot.stages.cloudflare = { state: 'waiting', label: 'Oczekuje' }
   } else if (run.status === 'completed' && run.conclusion === 'success') {
-    state = 'ready'
-    buildStage = 'ready'
+    snapshot.state = isLatestOnline ? 'ready' : 'ready'
+    snapshot.stages.github = { state: 'ready', label: 'Zmiana wysłana' }
+    snapshot.stages.build = { state: 'ready', label: 'Build gotowy' }
+    snapshot.stages.cloudflare = isLatestOnline
+      ? { state: 'ready', label: 'Wdrożono' }
+      : { state: 'running', label: 'Wdrażanie' }
   } else if (run.status === 'completed' && run.conclusion) {
-    state = 'failed'
-    buildStage = 'failed'
+    snapshot.state = 'failed'
+    snapshot.stages.github = { state: 'ready', label: 'Zmiana wysłana' }
+    snapshot.stages.build = { state: 'failed', label: 'Build nieudany' }
+    snapshot.stages.cloudflare = { state: 'blocked', label: 'Zablokowane' }
   }
 
-  const latestSha = run.head_sha || null
-  const deployedSha = BUILD_COMMIT_SHA !== 'unknown' ? BUILD_COMMIT_SHA : null
-  const isLatestOnline = Boolean(latestSha && deployedSha && latestSha === deployedSha)
-  const phaseMatches = Boolean(phase && hintedSha && latestSha && hintedSha === latestSha)
+  snapshot.stages.online = isLatestOnline
+    ? { state: 'ready', label: 'Najnowsza wersja online' }
+    : deployedSha
+      ? { state: 'ready', label: 'Poprzednia wersja online' }
+      : { state: 'unknown', label: 'Niepotwierdzone' }
 
-  let githubStage: StageState = work.state === 'editing' ? 'waiting' : 'ready'
-  let cloudflareStage: StageState = 'waiting'
-  let onlineStage: StageState = deployedSha ? 'ready' : 'unknown'
-
-  if (work.state === 'editing' && !phaseMatches) {
-    buildStage = 'waiting'
-    state = 'unknown'
-  }
-
-  if (buildStage === 'failed') {
-    cloudflareStage = 'blocked'
-  } else if (buildStage === 'running' || buildStage === 'unknown' || buildStage === 'waiting') {
-    cloudflareStage = 'waiting'
-  } else if (isLatestOnline) {
-    cloudflareStage = 'ready'
-    onlineStage = 'ready'
-  } else {
-    cloudflareStage = 'running'
-  }
-
-  if (phaseMatches) {
-    githubStage = 'ready'
-    if (phase === 'build_start') {
-      state = 'building'
-      buildStage = 'running'
-      cloudflareStage = 'waiting'
-    } else if (phase === 'build_ready') {
-      state = 'ready'
-      buildStage = 'ready'
-      cloudflareStage = isLatestOnline ? 'ready' : 'running'
-    } else if (phase === 'build_failed') {
-      state = 'failed'
-      buildStage = 'failed'
-      cloudflareStage = 'blocked'
-    } else if (phase === 'online') {
-      state = 'ready'
-      buildStage = 'ready'
-      cloudflareStage = 'ready'
-      onlineStage = 'ready'
-    }
-  }
-
-  return {
-    ok: true,
-    state,
-    status: run.status ?? null,
-    conclusion: run.conclusion ?? null,
-    branch: run.head_branch || branch,
-    runNumber: run.run_number ?? null,
-    headSha: latestSha,
-    headShaShort: shortSha(latestSha),
-    deployedSha,
-    deployedShaShort: shortSha(deployedSha),
-    deployedBranch: BUILD_BRANCH,
-    deployedAt: BUILD_TIME,
-    updatedAt: run.updated_at ?? work.updatedAt ?? null,
-    url: run.html_url ?? null,
-    latestOnline: phase === 'online' && phaseMatches ? true : isLatestOnline,
-    work,
-    stages: {
-      work: workStage(work),
-      github: {
-        state: githubStage,
-        label: githubStage === 'ready' ? 'Zmiana wysłana' : 'Czeka na commit',
-      },
-      build: {
-        state: buildStage,
-        label:
-          buildStage === 'running'
-            ? 'Build trwa'
-            : buildStage === 'ready'
-              ? 'Build gotowy'
-              : buildStage === 'failed'
-                ? 'Build nieudany'
-                : buildStage === 'waiting'
-                  ? 'Oczekuje'
-                  : 'Status nieznany',
-      },
-      cloudflare: {
-        state: cloudflareStage,
-        label:
-          cloudflareStage === 'ready'
-            ? 'Wdrożono'
-            : cloudflareStage === 'running'
-              ? 'Wdrażanie'
-              : cloudflareStage === 'blocked'
-                ? 'Zablokowane'
-                : 'Oczekuje',
-      },
-      online: {
-        state: onlineStage,
-        label: (phase === 'online' && phaseMatches) || isLatestOnline ? 'Najnowsza wersja online' : deployedSha ? 'Poprzednia wersja online' : 'Status online nieznany',
-      },
-    },
-  }
+  return snapshot
 }
 
 async function pipelineStub(env: Env) {
@@ -230,13 +223,128 @@ async function pipelineStub(env: Env) {
   return env.PIPELINE_HUB.get(id)
 }
 
-async function publishSnapshot(env: Env, snapshot: unknown) {
+async function getStoredSnapshot(env: Env): Promise<PipelineSnapshot | null> {
+  const stub = await pipelineStub(env)
+  const response = await stub.fetch('https://pipeline.internal/snapshot')
+  if (!response.ok) return null
+  return (await response.json()) as PipelineSnapshot
+}
+
+async function publishSnapshot(env: Env, snapshot: PipelineSnapshot) {
   const stub = await pipelineStub(env)
   await stub.fetch('https://pipeline.internal/publish', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(snapshot),
   })
+}
+
+function snapshotNeedsRepair(snapshot: PipelineSnapshot | null) {
+  if (!snapshot) return true
+  const stages = Object.values(snapshot.stages || {})
+  if (!stages.length) return true
+  return stages.every((stage) => stage.state === 'unknown')
+}
+
+function applyEvent(current: PipelineSnapshot, event: PipelineEvent): PipelineSnapshot {
+  const snapshot: PipelineSnapshot = JSON.parse(JSON.stringify(current)) as PipelineSnapshot
+  const updatedAt = event.updatedAt || nowIso()
+  const sha = event.sha || snapshot.headSha
+
+  snapshot.ok = true
+  snapshot.branch = event.branch || snapshot.branch || 'dev'
+  snapshot.updatedAt = updatedAt
+  if (event.runNumber !== undefined) snapshot.runNumber = event.runNumber
+  if (event.url !== undefined) snapshot.url = event.url
+  if (sha) {
+    snapshot.headSha = sha
+    snapshot.headShaShort = shortSha(sha)
+  }
+
+  if (event.type === 'work') {
+    const work = event.work || { state: 'unknown', label: 'Status prac nieznany', task: '', updatedAt }
+    snapshot.work = { ...work, updatedAt: work.updatedAt || updatedAt }
+    snapshot.stages.work = workStage(snapshot.work)
+
+    if (work.state === 'editing') {
+      snapshot.latestOnline = false
+      snapshot.state = 'unknown'
+      snapshot.stages.github = { state: 'waiting', label: 'Czeka na zapis zmian' }
+      snapshot.stages.build = { state: 'waiting', label: 'Oczekuje na zmiany' }
+      snapshot.stages.cloudflare = { state: 'waiting', label: 'Oczekuje' }
+      snapshot.stages.online = snapshot.deployedSha
+        ? { state: 'ready', label: 'Poprzednia wersja online' }
+        : { state: 'unknown', label: 'Niepotwierdzone' }
+    }
+    return snapshot
+  }
+
+  snapshot.stages.work = snapshot.work.state === 'editing'
+    ? { state: 'ready', label: 'Poprawki przekazane' }
+    : workStage(snapshot.work)
+  snapshot.stages.github = { state: 'ready', label: 'Zmiana wysłana' }
+
+  if (event.type === 'build_start') {
+    snapshot.state = 'building'
+    snapshot.status = 'in_progress'
+    snapshot.conclusion = null
+    snapshot.latestOnline = false
+    snapshot.stages.build = { state: 'running', label: 'Build trwa' }
+    snapshot.stages.cloudflare = { state: 'waiting', label: 'Oczekuje na build' }
+    snapshot.stages.online = snapshot.deployedSha
+      ? { state: 'ready', label: 'Poprzednia wersja online' }
+      : { state: 'unknown', label: 'Niepotwierdzone' }
+  }
+
+  if (event.type === 'build_ready') {
+    snapshot.state = 'ready'
+    snapshot.status = 'completed'
+    snapshot.conclusion = 'success'
+    snapshot.latestOnline = false
+    snapshot.stages.build = { state: 'ready', label: 'Build gotowy' }
+    snapshot.stages.cloudflare = { state: 'running', label: 'Wdrażanie' }
+    snapshot.stages.online = snapshot.deployedSha
+      ? { state: 'ready', label: 'Poprzednia wersja online' }
+      : { state: 'waiting', label: 'Czeka na wdrożenie' }
+  }
+
+  if (event.type === 'build_failed') {
+    snapshot.state = 'failed'
+    snapshot.status = 'completed'
+    snapshot.conclusion = 'failure'
+    snapshot.latestOnline = false
+    snapshot.stages.build = { state: 'failed', label: 'Build nieudany' }
+    snapshot.stages.cloudflare = { state: 'blocked', label: 'Zablokowane' }
+    snapshot.stages.online = snapshot.deployedSha
+      ? { state: 'ready', label: 'Poprzednia wersja online' }
+      : { state: 'unknown', label: 'Niepotwierdzone' }
+  }
+
+  if (event.type === 'deploy_timeout') {
+    snapshot.state = 'failed'
+    snapshot.latestOnline = false
+    snapshot.stages.build = { state: 'ready', label: 'Build gotowy' }
+    snapshot.stages.cloudflare = { state: 'failed', label: 'Brak potwierdzenia wdrożenia' }
+    snapshot.stages.online = snapshot.deployedSha
+      ? { state: 'ready', label: 'Poprzednia wersja online' }
+      : { state: 'unknown', label: 'Niepotwierdzone' }
+  }
+
+  if (event.type === 'online') {
+    snapshot.state = 'ready'
+    snapshot.status = 'completed'
+    snapshot.conclusion = 'success'
+    snapshot.latestOnline = true
+    snapshot.deployedSha = sha || deployedShaFromBuild()
+    snapshot.deployedShaShort = shortSha(snapshot.deployedSha)
+    snapshot.deployedBranch = snapshot.branch
+    snapshot.deployedAt = updatedAt
+    snapshot.stages.build = { state: 'ready', label: 'Build gotowy' }
+    snapshot.stages.cloudflare = { state: 'ready', label: 'Wdrożono' }
+    snapshot.stages.online = { state: 'ready', label: 'Najnowsza wersja online' }
+  }
+
+  return snapshot
 }
 
 export class PipelineHub {
@@ -251,18 +359,29 @@ export class PipelineHub {
       const server = pair[1]
       this.ctx.acceptWebSocket(server)
 
-      const snapshot = await this.ctx.storage.get('snapshot')
+      const snapshot = await this.ctx.storage.get<PipelineSnapshot>('snapshot')
       if (snapshot) server.send(JSON.stringify(snapshot))
 
       return new Response(null, { status: 101, webSocket: client })
     }
 
+    if (url.pathname === '/snapshot' && request.method === 'GET') {
+      const snapshot = await this.ctx.storage.get<PipelineSnapshot>('snapshot')
+      return snapshot
+        ? Response.json(snapshot, { headers: { 'Cache-Control': 'no-store' } })
+        : new Response('No snapshot', { status: 404 })
+    }
+
     if (url.pathname === '/publish' && request.method === 'POST') {
-      const snapshot = await request.json()
+      const snapshot = (await request.json()) as PipelineSnapshot
       await this.ctx.storage.put('snapshot', snapshot)
       const message = JSON.stringify(snapshot)
       for (const socket of this.ctx.getWebSockets()) {
-        try { socket.send(message) } catch { /* klient już się rozłączył */ }
+        try {
+          socket.send(message)
+        } catch {
+          try { socket.close(1011, 'stale socket') } catch { /* już zamknięty */ }
+        }
       }
       return Response.json({ ok: true })
     }
@@ -284,6 +403,7 @@ export default {
         ok: true,
         service: 'poleczka-pwa',
         database: Boolean(env.DB),
+        pipeline: Boolean(env.PIPELINE_HUB),
         deployedSha: BUILD_COMMIT_SHA,
         deployedBranch: BUILD_BRANCH,
         deployedAt: BUILD_TIME,
@@ -298,26 +418,55 @@ export default {
       return stub.fetch(request)
     }
 
-    if (url.pathname === '/api/pipeline-refresh') {
-      const branch = url.searchParams.get('branch')?.trim() || 'dev'
-      const phase = (url.searchParams.get('phase') || null) as PipelinePhase
-      const hintedSha = url.searchParams.get('sha')
+    if (url.pathname === '/api/pipeline-event' && request.method === 'POST') {
       try {
-        const snapshot = await buildSnapshot(branch, phase, hintedSha)
+        const event = (await request.json()) as PipelineEvent
+        if (!event?.type) return Response.json({ ok: false, error: 'Missing event type' }, { status: 400 })
+        const branch = event.branch || 'dev'
+        let current = await getStoredSnapshot(env)
+        if (snapshotNeedsRepair(current)) current = await bootstrapSnapshot(branch)
+        const snapshot = applyEvent(current || blankSnapshot(branch), event)
         await publishSnapshot(env, snapshot)
         return Response.json(snapshot, { headers: { 'Cache-Control': 'no-store' } })
       } catch (error) {
-        return Response.json({ ok: false, error: error instanceof Error ? error.message : 'Pipeline refresh failed' }, { status: 502 })
+        return Response.json({ ok: false, error: error instanceof Error ? error.message : 'Pipeline event failed' }, { status: 500 })
+      }
+    }
+
+    // Zgodność ze starszym workflow. Nowe automaty używają /api/pipeline-event.
+    if (url.pathname === '/api/pipeline-refresh') {
+      try {
+        const branch = url.searchParams.get('branch')?.trim() || 'dev'
+        const phase = url.searchParams.get('phase') as PipelinePhase | null
+        const sha = url.searchParams.get('sha')
+        const runNumberRaw = url.searchParams.get('runNumber')
+        const runNumber = runNumberRaw ? Number(runNumberRaw) : null
+        const current = (await getStoredSnapshot(env)) || await bootstrapSnapshot(branch)
+
+        const event: PipelineEvent = phase
+          ? { type: phase, branch, sha, runNumber, updatedAt: nowIso() }
+          : { type: 'work', branch, work: await fetchWorkStatus(), updatedAt: nowIso() }
+
+        const snapshot = applyEvent(current, event)
+        await publishSnapshot(env, snapshot)
+        return Response.json(snapshot, { headers: { 'Cache-Control': 'no-store' } })
+      } catch (error) {
+        return Response.json({ ok: false, error: error instanceof Error ? error.message : 'Pipeline refresh failed' }, { status: 500 })
       }
     }
 
     if (url.pathname === '/api/build-status') {
       const branch = url.searchParams.get('branch')?.trim() || 'dev'
       try {
-        const snapshot = await buildSnapshot(branch)
-        return Response.json(snapshot, { headers: { 'Cache-Control': 'no-store' } })
-      } catch (error) {
-        return Response.json({ ok: false, error: error instanceof Error ? error.message : 'Pipeline status failed' }, { status: 502 })
+        let snapshot = await getStoredSnapshot(env)
+        if (snapshotNeedsRepair(snapshot)) {
+          snapshot = await bootstrapSnapshot(branch)
+          await publishSnapshot(env, snapshot)
+        }
+        return Response.json(snapshot || blankSnapshot(branch), { headers: { 'Cache-Control': 'no-store' } })
+      } catch {
+        // Nawet przy awarii zewnętrznych źródeł frontend dostaje użyteczny, opisany stan.
+        return Response.json(blankSnapshot(branch), { headers: { 'Cache-Control': 'no-store' } })
       }
     }
 
