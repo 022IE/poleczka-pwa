@@ -183,13 +183,37 @@ export default function BuildStatus() {
     }
   }, [loadSnapshot])
 
-  const stages = useMemo<Record<StageKey, PipelineStage>>(() => ({
-    work: data?.stages?.work || defaults.work,
-    github: data?.stages?.github || defaults.github,
-    build: data?.stages?.build || defaults.build,
-    cloudflare: data?.stages?.cloudflare || defaults.cloudflare,
-    online: data?.stages?.online || (data?.deployedSha ? { state: 'ready', label: 'Poprzednia wersja online' } : defaults.online),
-  }), [data])
+  const stages = useMemo<Record<StageKey, PipelineStage>>(() => {
+    const normalized: Record<StageKey, PipelineStage> = {
+      work: data?.stages?.work || defaults.work,
+      github: data?.stages?.github || defaults.github,
+      build: data?.stages?.build || defaults.build,
+      cloudflare: data?.stages?.cloudflare || defaults.cloudflare,
+      online: data?.stages?.online || (data?.deployedSha ? { state: 'ready', label: 'Poprzednia wersja online' } : defaults.online),
+    }
+
+    // Commit jest granicą etapu „Prace”. Jeśli GitHub już przyjął zmianę lub build
+    // wystartował, stary event „editing” nie może dalej kręcić pierwszego kafelka.
+    const commitAlreadySent = normalized.github.state === 'ready'
+      || normalized.build.state === 'running'
+      || normalized.build.state === 'ready'
+      || normalized.build.state === 'failed'
+      || normalized.cloudflare.state === 'running'
+      || normalized.cloudflare.state === 'ready'
+      || normalized.cloudflare.state === 'failed'
+      || normalized.cloudflare.state === 'blocked'
+
+    if (commitAlreadySent && normalized.work.state === 'running') {
+      normalized.work = { state: 'ready', label: 'Poprawki przekazane' }
+    }
+
+    // „Online” ma oznaczać najnowszą wersję, nie fakt że poprzednia wersja nadal działa.
+    if (!data?.latestOnline && commitAlreadySent) {
+      normalized.online = { state: 'waiting', label: 'Czeka na nową wersję' }
+    }
+
+    return normalized
+  }, [data])
 
   const pipelineState: StageState = loading && !data
     ? 'running'
