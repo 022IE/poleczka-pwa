@@ -1,6 +1,6 @@
 {
-  "state": "awaiting_publish",
-  "label": "Oczekiwanie na publikację",
-  "task": "Zasada zgłaszania każdej zmiany do widżetu przed rozpoczęciem prac",
-  "updatedAt": "2026-09-16T08:37:30Z"
+  "state": "editing",
+  "label": "Wprowadzanie poprawek",
+  "task": "Push WebSocket dla widżetu publikacji + przeniesienie widżetu do górnego panelu między powitanie a kalendarz",
+  "updatedAt": "2026-09-16T08:41:55Z"
 }
