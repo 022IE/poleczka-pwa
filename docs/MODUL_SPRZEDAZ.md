@@ -728,3 +728,74 @@ Przed napisaniem kodu należy:
 5. zbudować endpoint `/api/sales/receipts`.
 
 Po tym zaczynamy frontend.
+
+---
+
+# 31. Obowiązujący workflow pracy nad modułem SPRZEDAŻ
+
+Dla modułu SPRZEDAŻ obowiązują wszystkie zasady zapisane w `POLECZKA_PWA_MASTER.md` oraz `AGENTS.md`.
+
+Repozytorium `022IE/poleczka-pwa` jest źródłem prawdy. Nie przekazujemy użytkownikowi ZIP-ów jako podstawowego sposobu wdrażania zmian.
+
+Gałęzie:
+- `main` — stabilna,
+- `dev` — wszystkie bieżące zmiany modułu SPRZEDAŻ,
+- `pipeline-status` — tylko status bieżącej pracy.
+
+### Przed zmianą w module
+
+Pierwszą operacją zapisu musi być ustawienie w `pipeline-status/status/work-status.json`:
+
+- `state = editing`,
+- **Wprowadzanie poprawek**,
+- opis konkretnego zadania sprzedażowego.
+
+Przykład opisu:
+
+`SPRZEDAŻ — dodanie filtra kategorii i poprawa tabeli paragonów`
+
+Dopiero po tym wolno edytować kod na `dev`.
+
+### Po zakończeniu zmian
+
+Status przechodzi na **Oczekiwanie na publikację**, a dalsza ścieżka jest automatyczna:
+
+`GitHub → Build → Cloudflare → Online`
+
+Jeżeli równolegle pracuje inny czat, nie wolno usuwać jego aktywnego statusu; opis powinien uwzględnić równoległą pracę albo stan `editing` pozostaje aktywny do zakończenia wszystkich trwających zadań.
+
+---
+
+# 32. Widżet publikacji a ekran SPRZEDAŻ
+
+Widżet pipeline jest elementem globalnego layoutu aplikacji, a nie komponentem biznesowym modułu SPRZEDAŻ.
+
+Położenie w wersji developerskiej:
+- w górnym panelu,
+- pomiędzy **„Dzień dobry, Iwonko!”** a kalendarzem / ikonami.
+
+Moduł SPRZEDAŻ musi respektować wysokość globalnego nagłówka i nie może nachodzić na widżet. Główna zawartość ekranu zaczyna się poniżej całego górnego panelu.
+
+Widżet pokazuje:
+
+`Prace → GitHub → Build → Cloudflare → Online`
+
+Build oznacza wyłącznie rzeczywistą kompilację. Oczekiwanie na wdrożenie nie może utrzymywać kafelka Build w stanie „trwa”. Cloudflare jest osobnym etapem.
+
+`Online` oznacza, że dokładnie bieżący commit / SHA jest potwierdzony jako wdrożony.
+
+Aktualizacje są push przez WebSocket / Durable Object. Odpytanie HTTP jest tylko mechanizmem awaryjnym po utracie kanału LIVE.
+
+Widżet jest tymczasowym narzędziem developerskim i ma zostać wyłączony w finalnej wersji produkcyjnej bez usuwania mechanizmu diagnostycznego.
+
+---
+
+# 33. Zasada aktualizacji specyfikacji modułu
+
+Każda decyzja, która zmienia zachowanie modułu SPRZEDAŻ, jego dane, API, filtry, layout lub reguły biznesowe, powinna zostać dopisana do `docs/MODUL_SPRZEDAZ.md`.
+
+Decyzje globalne, dotyczące więcej niż jednego modułu, trafiają także do `docs/POLECZKA_PWA_MASTER.md`.
+
+Czat `01 — SPRZEDAŻ` służy do pracy nad modułem, ale nie jest jedynym źródłem prawdy. Obowiązujące ustalenia mają kończyć w repozytorium.
+
+Sekcje 31–33 są nowsze i w razie konfliktu zastępują wcześniejsze informacje organizacyjne w tym dokumencie.
