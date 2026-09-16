@@ -1,9 +1,12 @@
-/* Grafika referencyjna prawego panelu strony głównej. */
+/* Grafika referencyjna prawego panelu strony głównej.
+ * Plik znajduje się w src/assets, więc Vite bundluje go i nadaje poprawny URL przy deployu.
+ */
 .quote-card {
-  background-image: url('/assets/home-right-quote.jpg') !important;
+  background-image: url('./assets/home-right-quote.jpg') !important;
   background-size: cover !important;
   background-position: center center !important;
   background-repeat: no-repeat !important;
+  background-color: #eee6dc !important;
 }
 
 /* Napis i dekoracje są już częścią grafiki referencyjnej. */
