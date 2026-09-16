@@ -1,13 +1,52 @@
 import { NavLink, Route, Routes } from 'react-router-dom'
 
 const nav = [
-  ['/', 'Start'],
-  ['/sprzedaz', 'Sprzedaż'],
-  ['/dostawy', 'Dostawy'],
-  ['/koszty', 'Koszty'],
-  ['/analizy', 'Analizy'],
-  ['/ustawienia', 'Ustawienia'],
+  ['/', 'Strona główna', '⌂'],
+  ['/sprzedaz', 'Sprzedaż', '▢'],
+  ['/dostawy', 'Dostawy', '▣'],
+  ['/artykuly', 'Artykuły', '♧'],
+  ['/kategorie', 'Kategorie', '◇'],
+  ['/koszty', 'Koszty', '◉'],
+  ['/rabaty', 'Rabaty', '%'],
+  ['/analizy', 'Analizy', '▥'],
+  ['/synchronizacja', 'Synchronizacja', '↻'],
+  ['/ustawienia', 'Ustawienia', '⚙'],
+] as const
+
+const kpis = [
+  ['Sprzedaż dziś', '287,00 zł', '+12%', 'vs. wczoraj', '🛒', 'green'],
+  ['Sprzedaż w kwartale', '6 842,30 zł', '+18%', 'vs. poprzedni kwartał', '▥', 'green'],
+  ['Szacowany zysk', '2 314,80 zł', '+14%', 'marża 33,8%', '◉', 'gold'],
+  ['Sprzedane sztuki', '28', '+27%', 'vs. wczoraj', '◇', 'rose'],
+  ['Średni paragon', '47,83 zł', '+6%', 'vs. poprzedni tydzień', '◇', 'gold'],
+  ['% zbytu', '68%', '+5 p.p.', 'vs. poprzedni tydzień', '↗', 'green'],
+] as const
+
+const bars = [14, 21, 36, 28, 34, 18, 23, 17, 29, 22, 36, 19, 25, 32, 24, 19, 35, 37, 36, 15, 28, 34, 22, 38, 37, 36, 25, 18, 28, 34, 39, 51]
+const weeks = [
+  { c: '#9eb89a', p: '15,48 90,34 165,56 240,42 315,50 390,32 465,58' },
+  { c: '#d1a84f', p: '15,54 90,28 165,40 240,16 315,52 390,58 465,44' },
+  { c: '#c98378', p: '15,58 90,43 165,52 240,41 315,46 390,30 465,47' },
+  { c: '#46705a', p: '15,49 90,25 165,35 240,28 315,36 390,15 465,30' },
 ]
+
+const heat = [
+  1,1,1,1,2,3,2,1, 1,1,2,3,2,3,2,1, 1,2,2,1,3,2,1,1,
+  1,2,3,4,2,4,2,1, 1,2,3,4,3,3,2,1, 1,3,2,4,4,3,2,1,
+  1,1,3,3,3,2,1,1,
+]
+
+const quickLinks = [
+  ['/sprzedaz','Sprzedaż','Dodaj i przeglądaj','🛒','mint'],
+  ['/dostawy','Dostawy','Nowa dostawa','▣','blue'],
+  ['/artykuly','Artykuły','Zarządzaj asortymentem','♧','mint'],
+  ['/kategorie','Kategorie','Porządkuj produkty','◇','gold'],
+  ['/koszty','Koszty','Dodaj wydatek','◉','blue'],
+  ['/rabaty','Rabaty','Zarządzaj promocjami','%','rose'],
+  ['/analizy','Analizy','Poznaj swoje wyniki','▥','lavender'],
+  ['/synchronizacja','Synchronizacja','Zsynchronizuj dane','↻','aqua'],
+  ['/ustawienia','Ustawienia','Dostosuj aplikację','⚙','gray'],
+] as const
 
 function Placeholder({ title, text }: { title: string; text: string }) {
   return (
@@ -19,44 +58,116 @@ function Placeholder({ title, text }: { title: string; text: string }) {
   )
 }
 
+function Dashboard() {
+  const now = new Date()
+  const weekday = new Intl.DateTimeFormat('pl-PL', { weekday: 'long' }).format(now)
+  const date = new Intl.DateTimeFormat('pl-PL', { day: 'numeric', month: 'long', year: 'numeric' }).format(now)
+
+  return (
+    <div className="dashboard-wrap">
+      <header className="dashboard-header">
+        <div>
+          <h1>Dzień dobry, Iwonko! <span>👋</span></h1>
+          <p>Cieszę się, że tu jesteś. Dobry dzień na piękne rzeczy!</p>
+        </div>
+        <div className="header-actions">
+          <div className="date-block"><span className="header-icon">▣</span><div><b>{weekday}</b><span>{date}</span></div></div>
+          <div className="header-divider" />
+          <button className="bell" aria-label="Powiadomienia">♟<span>3</span></button>
+          <div className="sync-pill"><b>↻</b><div><strong>Zsynchronizowano</strong><small>Dzisiaj, 10:24</small></div><i /></div>
+          <div className="avatar">I</div>
+        </div>
+      </header>
+
+      <section className="limit-card">
+        <div className="limit-intro">
+          <div className="limit-icon">▥</div>
+          <div><h2>Limit działalności nierejestrowanej</h2><p>Limit przychodów dotyczy <b>KWARTAŁU</b>, nie miesiąca.</p></div>
+        </div>
+        <div className="limit-separator" />
+        <div className="limit-main">
+          <strong>III kwartał 2026</strong>
+          <div className="limit-value">Wykorzystano <b>6 842,30 zł</b> z 10 813,50 zł</div>
+          <div className="progress-row"><div className="progress"><span /></div><b>63%</b></div>
+        </div>
+        <div className="limit-left"><span>Pozostało</span><b>3 971,20 zł</b><div>♧</div></div>
+      </section>
+
+      <section className="kpi-grid">
+        {kpis.map(([label,value,change,caption,icon,tone]) => (
+          <article className="kpi-card" key={label}>
+            <div className={`kpi-icon ${tone}`}>{icon}</div>
+            <div className="kpi-copy"><span>{label}</span><strong>{value}</strong><b>↑ {change}</b><small>{caption}</small></div>
+          </article>
+        ))}
+      </section>
+
+      <section className="charts-row primary">
+        <article className="panel sales-panel">
+          <div className="panel-head"><h2><span>▥</span> Sprzedaż w czasie</h2><select defaultValue="30"><option value="30">Ostatnie 30 dni</option></select></div>
+          <div className="bar-chart">
+            <div className="y-labels"><span>800</span><span>600</span><span>400</span><span>200</span><span>0</span></div>
+            <div className="bars">{bars.map((h,i)=><i key={i} style={{height:`${h}%`}} className={i===24?'active':''} />)}</div>
+          </div>
+          <div className="x-labels"><span>22 cze</span><span>29 cze</span><span>6 lip</span><span>13 lip</span><span>20 lip</span></div>
+          <div className="chart-summary"><div><span>Łączna sprzedaż</span><b>7 284,50 zł</b></div><div><span>Średnio dziennie</span><b>242,82 zł</b></div><div><span>Najlepszy dzień</span><b>18 lipca (642,00 zł)</b></div></div>
+        </article>
+
+        <article className="panel weeks-panel">
+          <div className="panel-head"><h2><span>↗</span> Porównanie tygodni</h2><select defaultValue="4"><option value="4">Ostatnie 4 tygodnie</option></select></div>
+          <div className="legend"><span><i className="l1"/>29 cze – 5 lip</span><span><i className="l2"/>6 lip – 12 lip</span><span><i className="l3"/>13 lip – 19 lip</span><span><i className="l4"/>20 lip – 26 lip</span></div>
+          <div className="line-chart"><svg viewBox="0 0 480 80" preserveAspectRatio="none"><g className="gridlines"><line x1="0" y1="20" x2="480" y2="20"/><line x1="0" y1="40" x2="480" y2="40"/><line x1="0" y1="60" x2="480" y2="60"/></g>{weeks.map((w,i)=><polyline key={i} points={w.p} fill="none" stroke={w.c} strokeWidth="2.4" strokeLinejoin="round" strokeLinecap="round" />)}</svg></div>
+          <div className="week-days"><span>Pn</span><span>Wt</span><span>Śr</span><span>Cz</span><span>Pt</span><span>Sob</span><span>Nd</span></div>
+        </article>
+      </section>
+
+      <section className="charts-row secondary">
+        <article className="panel category-panel">
+          <div className="panel-head"><h2><span>◔</span> Sprzedaż wg kategorii</h2><select defaultValue="q3"><option value="q3">III kwartał 2026</option></select></div>
+          <div className="category-body"><div className="donut"><div><b>6 842,30 zł</b><span>łącznie</span></div></div><div className="category-list"><p><i className="c1"/>GÓRA <b>2 462,90 zł</b><span>36%</span></p><p><i className="c2"/>DÓŁ <b>1 641,20 zł</b><span>24%</span></p><p><i className="c3"/>OBUWIE <b>1 053,60 zł</b><span>15%</span></p><p><i className="c4"/>AKCESORIA <b>873,40 zł</b><span>13%</span></p><p><i className="c5"/>HANDMADE <b>811,20 zł</b><span>12%</span></p></div></div>
+        </article>
+
+        <article className="panel heat-panel">
+          <div className="panel-head"><h2><span>◷</span> Dzień tygodnia × godzina</h2></div>
+          <div className="heat-layout"><div className="heat-y"><span>Pn</span><span>Wt</span><span>Śr</span><span>Cz</span><span>Pt</span><span>Sob</span><span>Nd</span></div><div className="heat-main"><div className="heat-x"><span>8</span><span>10</span><span>12</span><span>14</span><span>16</span><span>18</span><span>20</span><span>22</span></div><div className="heat-grid">{heat.map((v,i)=><i key={i} className={`h${v}`} />)}</div></div></div>
+          <div className="heat-legend"><span>Mniejsza sprzedaż</span><i className="h1"/><i className="h2"/><i className="h3"/><i className="h4"/><span>Większa sprzedaż</span></div>
+        </article>
+
+        <aside className="right-stack">
+          <div className="quote-card"><span>Mały biznes</span><b>Wielkie marzenia</b><em>♡</em></div>
+          <div className="company-mode"><div className="mode-icon">♧</div><div><span>Tryb firmy</span><b>działalność nierejestrowana</b><small>Działasz zgodnie z obowiązującymi limitami przychodów (kwartalnie).</small></div></div>
+        </aside>
+      </section>
+
+      <section className="quick-grid">
+        {quickLinks.map(([to,title,desc,icon,tone]) => <NavLink to={to} key={to} className={`quick-card ${tone}`}><span className="quick-icon">{icon}</span><div><b>{title}</b><small>{desc}</small></div></NavLink>)}
+      </section>
+      <footer className="dashboard-footer"><span>PWA • wersja robocza</span><b>♡</b><strong>Półeczka Iwonki</strong><small>MAŁE RZECZY, WIELKIE HISTORIE</small></footer>
+    </div>
+  )
+}
+
 function App() {
   return (
     <div className="app-shell">
       <aside className="sidebar">
-        <div className="brand">
-          <div className="brand-mark">PI</div>
-          <div>
-            <strong>Półeczka Iwonki</strong>
-            <span>PWA v0.1.0</span>
-          </div>
-        </div>
-        <nav>
-          {nav.map(([to, label]) => (
-            <NavLink key={to} to={to} end={to === '/'}>
-              {label}
-            </NavLink>
-          ))}
-        </nav>
+        <div className="brand-block"><div className="brand-symbol">♡</div><strong>Półeczka<br/>Iwonki</strong><span>MAŁE RZECZY<br/>WIELKIE HISTORIE</span></div>
+        <nav>{nav.map(([to,label,icon]) => <NavLink key={to} to={to} end={to==='/' }><span>{icon}</span>{label}</NavLink>)}</nav>
+        <div className="sidebar-quote"><span>♧</span><p>Piękne rzeczy<br/>zawsze znajdują<br/>swoich ludzi</p><b>♡</b></div>
+        <div className="sidebar-thanks">Dziękuję, że tworzysz<br/>to miejsce razem ze mną. ♡</div>
       </aside>
-
-      <main className="main-area">
-        <header className="topbar">
-          <div>
-            <span className="status-dot" />
-            Fundament projektu gotowy
-          </div>
-          <span className="muted">dev</span>
-        </header>
-
-        <Routes>
-          <Route path="/" element={<Placeholder title="Dzień dobry" text="Tu powstanie ekran startowy z najważniejszymi wskaźnikami i wykresami." />} />
-          <Route path="/sprzedaz" element={<Placeholder title="Sprzedaż" text="Pierwszy wdrażany moduł: KPI, filtry, paragony i rozwijane pozycje." />} />
-          <Route path="/dostawy" element={<Placeholder title="Dostawy" text="Moduł dostaw zostanie dołączony po ukończeniu sprzedaży." />} />
-          <Route path="/koszty" element={<Placeholder title="Koszty" text="Koszty wraz z dokumentami przechowywanymi w Google Drive." />} />
-          <Route path="/analizy" element={<Placeholder title="Analizy" text="Porównania okresów, heatmapy, histogramy i analizy dostaw." />} />
-          <Route path="/ustawienia" element={<Placeholder title="Ustawienia" text="Firma, limit działalności nierejestrowanej, rabaty i integracje." />} />
-        </Routes>
-      </main>
+      <main className="main-area"><Routes>
+        <Route path="/" element={<Dashboard/>}/>
+        <Route path="/sprzedaz" element={<Placeholder title="Sprzedaż" text="KPI, filtry, paragony i rozwijane pozycje."/>}/>
+        <Route path="/dostawy" element={<Placeholder title="Dostawy" text="Dostawy, zbyt, zwroty, sprzedaż i zysk."/>}/>
+        <Route path="/artykuly" element={<Placeholder title="Artykuły" text="Zarządzanie asortymentem i danymi artykułów."/>}/>
+        <Route path="/kategorie" element={<Placeholder title="Kategorie" text="Kategorie wykorzystywane w sprzedaży, filtrach i analizach."/>}/>
+        <Route path="/koszty" element={<Placeholder title="Koszty" text="Koszty oraz dokumenty powiązane z Google Drive."/>}/>
+        <Route path="/rabaty" element={<Placeholder title="Rabaty" text="Definicje rabatów i historia ich zastosowania."/>}/>
+        <Route path="/analizy" element={<Placeholder title="Analizy" text="Porównania okresów, heatmapy, histogramy i analizy dostaw."/>}/>
+        <Route path="/synchronizacja" element={<Placeholder title="Synchronizacja" text="Status Loyverse → D1 oraz historia synchronizacji."/>}/>
+        <Route path="/ustawienia" element={<Placeholder title="Ustawienia" text="Firma, limit działalności, integracje, słowniki i wygląd."/>}/>
+      </Routes></main>
     </div>
   )
 }
