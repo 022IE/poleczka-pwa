@@ -1,6 +1,6 @@
 {
-  "state": "editing",
-  "label": "Wprowadzanie poprawek",
-  "task": "Aktualizacja MASTER o obowiązujący workflow GitHub, pracę na dev i zasady obsługi binarnych assetów graficznych",
-  "updatedAt": "2026-09-16T13:02:45Z"
+  "state": "awaiting_publish",
+  "label": "Oczekiwanie na publikację",
+  "task": "MASTER zaktualizowany o workflow GitHub i zasady assetów binarnych",
+  "updatedAt": "2026-09-16T13:05:30Z"
 }
