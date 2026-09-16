@@ -1,6 +1,6 @@
 {
-  "state": "awaiting_publish",
-  "label": "Oczekiwanie na publikację",
-  "task": "Powiększenie widżetu i naprawa logiki statusów / WebSocket / fallback",
-  "updatedAt": "2026-09-16T09:37:30Z"
+  "state": "editing",
+  "label": "Wprowadzanie poprawek",
+  "task": "Obniżenie głównej zawartości dashboardu, aby górny panel nie nachodził na treść; kontrola statusów widżetu",
+  "updatedAt": "2026-09-16T09:54:55Z"
 }
