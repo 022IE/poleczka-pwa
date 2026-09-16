@@ -1,0 +1,11 @@
+name = "poleczka-pwa"
+main = "worker/index.ts"
+compatibility_date = "2026-09-16"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "poleczka-dev"
+database_id = "SET_YOUR_DATABASE_ID"
+
+# Skopiuj ten plik lokalnie jako wrangler.toml i uzupełnij własny database_id.
+# Sekrety dodawaj przez `wrangler secret put`, nie wpisuj ich do repozytorium.
