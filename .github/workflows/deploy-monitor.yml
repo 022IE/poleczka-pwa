@@ -1,0 +1,74 @@
+name: Monitor Cloudflare deployment
+
+on:
+  workflow_run:
+    workflows:
+      - Build PWA
+    types:
+      - completed
+
+permissions:
+  contents: read
+
+env:
+  PWA_URL: https://poleczkaiwonki.dpdns.org
+
+jobs:
+  monitor:
+    name: Cloudflare deployment
+    if: >-
+      github.event.workflow_run.event == 'push' &&
+      github.event.workflow_run.head_branch == 'dev' &&
+      github.event.workflow_run.conclusion == 'success'
+    runs-on: ubuntu-latest
+    timeout-minutes: 7
+
+    steps:
+      - name: Wait for deployed commit
+        shell: bash
+        env:
+          DEPLOY_SHA: ${{ github.event.workflow_run.head_sha }}
+          BUILD_RUN_NUMBER: ${{ github.event.workflow_run.run_number }}
+          BUILD_URL: ${{ github.event.workflow_run.html_url }}
+        run: |
+          echo "Czekam na Cloudflare dla $DEPLOY_SHA"
+
+          for attempt in $(seq 1 60); do
+            health="$(curl --connect-timeout 3 --max-time 8 -fsS "$PWA_URL/api/health" || true)"
+            deployed_sha="$(printf '%s' "$health" | jq -r '.deployedSha // empty' 2>/dev/null || true)"
+
+            if [ "$deployed_sha" = "$DEPLOY_SHA" ]; then
+              payload="$(jq -nc \
+                --arg type 'online' \
+                --arg branch 'dev' \
+                --arg sha "$DEPLOY_SHA" \
+                --arg url "$BUILD_URL" \
+                --argjson runNumber "$BUILD_RUN_NUMBER" \
+                '{type:$type,branch:$branch,sha:$sha,url:$url,runNumber:$runNumber}')"
+
+              curl --connect-timeout 3 --max-time 8 -fsS \
+                -H 'Content-Type: application/json' \
+                -X POST "$PWA_URL/api/pipeline-event" \
+                --data "$payload" >/dev/null || true
+
+              echo "Cloudflare online: $DEPLOY_SHA"
+              exit 0
+            fi
+
+            sleep 5
+          done
+
+          payload="$(jq -nc \
+            --arg type 'deploy_timeout' \
+            --arg branch 'dev' \
+            --arg sha "$DEPLOY_SHA" \
+            --arg url "$BUILD_URL" \
+            --argjson runNumber "$BUILD_RUN_NUMBER" \
+            '{type:$type,branch:$branch,sha:$sha,url:$url,runNumber:$runNumber}')"
+
+          curl --connect-timeout 3 --max-time 8 -fsS \
+            -H 'Content-Type: application/json' \
+            -X POST "$PWA_URL/api/pipeline-event" \
+            --data "$payload" >/dev/null || true
+
+          echo "Cloudflare nie potwierdził wdrożenia w 5 minut."
