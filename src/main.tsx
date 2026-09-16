@@ -5,6 +5,7 @@ import App from './App'
 import './styles.css'
 import './overrides.css'
 import './quote-fix.css'
+import './comparison-controls.css'
 import './build-status.css'
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
