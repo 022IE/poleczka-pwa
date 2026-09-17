@@ -1,12 +1,6 @@
 name: D1 Cleanup Receipts 2026-09-17
 
 on:
-  push:
-    branches:
-      - dev
-    paths:
-      - '.github/workflows/d1-cleanup-receipts-2026-09-17.yml'
-      - 'scripts/cleanup-receipts-2026-09-17.mjs'
   workflow_dispatch:
 
 permissions:
