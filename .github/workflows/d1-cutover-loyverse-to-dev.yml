@@ -6,10 +6,15 @@ on:
       - dev
     paths:
       - '.github/workflows/d1-cutover-loyverse-to-dev.yml'
+      - 'scripts/cutover-loyverse-to-dev.mjs'
   workflow_dispatch:
 
 permissions:
   contents: read
+
+concurrency:
+  group: d1-final-cutover
+  cancel-in-progress: true
 
 jobs:
   cutover:
