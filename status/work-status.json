@@ -1,6 +1,6 @@
 {
-  "state": "awaiting_publish",
-  "label": "Oczekiwanie na publikację",
-  "task": "D1 — dane sklonowane i zweryfikowane w poleczka-dev; do przełączenia pozostał live webhook Loyverse",
-  "updatedAt": "2026-09-17T11:21:00Z"
+  "state": "editing",
+  "label": "Wprowadzanie poprawek",
+  "task": "D1 — finalny cutover webhooka Loyverse na poleczka-dev z dosynchronizowaniem różnic",
+  "updatedAt": "2026-09-17T11:33:00Z"
 }
