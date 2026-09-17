@@ -397,3 +397,87 @@ Na obecnym etapie:
 - nie tworzymy jeszcze parsera maili.
 
 Dokument zapisuje ustalenia do późniejszej realizacji.
+
+---
+
+## 17. Powiadomienia Telegram dla Vinted
+
+Powiadomienia Vinted mają korzystać z **tego samego wspólnego mechanizmu powiadomień**, który jest przygotowywany dla Półeczki Iwonki. Nie tworzymy osobnego bota ani osobnej infrastruktury tylko dla Vinted.
+
+Na etapie przejściowym kanałem powiadomień jest Telegram. Docelowo, po powstaniu własnej aplikacji POS, kanał Telegram będzie można zastąpić lub uzupełnić powiadomieniami push bez zmiany logiki biznesowej.
+
+### 17.1. Bot
+
+Używany jest istniejący bot:
+
+`@PoleczkaIwonkiBot`
+
+Test wysyłki wiadomości został wykonany poprawnie. Identyfikator czatu testowego:
+
+`8976399237`
+
+Token bota **nie może być zapisany w tym pliku ani na stałe w kodzie repozytorium**. W wersji wdrożeniowej ma być przechowywany jako sekret / zmienna środowiskowa Cloudflare Workera.
+
+### 17.2. Typy powiadomień Vinted
+
+Przewidujemy co najmniej cztery podstawowe zdarzenia:
+
+1. `VINTED_SALE_DETECTED` — wykryto sprzedaż Vinted.
+2. `VINTED_RECEIPT_CREATED` — sprzedaż została poprawnie utworzona w Loyverse.
+3. `VINTED_REVIEW` — sprzedaż wymaga ręcznego sprawdzenia, np. nie udało się jednoznacznie dopasować aukcji do SKU.
+4. `VINTED_ERROR` — wystąpił błąd przetwarzania lub tworzenia sprzedaży.
+
+Przykładowe komunikaty użytkowe:
+
+- `🛍️ SPRZEDAŻ VINTED`
+- `✅ VINTED → LOYVERSE`
+- `⚠️ VINTED — WYMAGA SPRAWDZENIA`
+- `❌ BŁĄD VINTED`
+
+### 17.3. Dane w powiadomieniu
+
+Jeżeli są dostępne, wiadomość Telegram powinna zawierać:
+
+- nazwę produktu,
+- SKU,
+- cenę sprzedaży,
+- `vinted_item_id`,
+- status procesu,
+- numer receipt / paragonu Loyverse po jego utworzeniu,
+- krótki opis błędu lub powodu `REVIEW`, jeśli wystąpił.
+
+Przykład po pełnym sukcesie:
+
+`🛍️ SPRZEDAŻ VINTED`  
+`Sukienka Zara`  
+`SKU: 00451`  
+`Cena: 49,00 zł`  
+`Vinted ID: 123456789`  
+`✅ Sprzedaż została utworzona w Loyverse`  
+`Paragon: 2-0123`
+
+### 17.4. Zasada wysyłania
+
+Powiadomienie nie może sterować logiką sprzedaży. Najpierw zmiana stanu procesu jest zapisywana w D1, a dopiero potem wysyłana jest informacja przez wybrany kanał.
+
+Brak działania Telegrama nie może powodować ponownego utworzenia sprzedaży ani duplikatu receipt.
+
+Mechanizm powiadomień powinien mieć własne zabezpieczenie przed wielokrotnym wysłaniem tego samego zdarzenia.
+
+### 17.5. Wspólna architektura powiadomień
+
+Telegram ma obsługiwać zarówno alerty z istniejącego systemu Loyverse, jak i nowe alerty Vinted.
+
+Przykładowe źródła zdarzeń:
+
+- `LOYVERSE` — np. brak numeru dostawy w `receipt_lines.line_note`,
+- `VINTED` — sprzedaż, `REVIEW`, `ERROR`, utworzenie receipt.
+
+Docelowa logika powiadomień powinna być niezależna od kanału:
+
+zdarzenie systemowe  
+→ zapis stanu w D1  
+→ moduł powiadomień  
+→ Telegram teraz / push w aplikacji POS później
+
+Dzięki temu przejście z Telegrama na własne powiadomienia push nie będzie wymagało przebudowy integracji Vinted ani integracji Loyverse.
