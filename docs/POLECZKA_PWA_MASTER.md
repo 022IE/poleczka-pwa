@@ -708,3 +708,15 @@ Dodatkowe zasady:
 - nie pozostawiamy nowych ani zaktualizowanych plików `.md` wyłącznie lokalnie lub wyłącznie w pojedynczym czacie.
 
 To jest obowiązujący standard projektu dla wszystkich kolejnych plików Markdown.
+
+---
+
+## 33. Terminologia projektowa — DNR
+
+Od 17.09.2026 obowiązuje skrót:
+
+**DNR = działalność nierejestrowana**.
+
+Skrót `DNR` może być stosowany zamiennie z pełnym określeniem „działalność nierejestrowana” we wszystkich czatach, dokumentacji, specyfikacjach i elementach interfejsu projektu, jeśli użycie skrótu poprawia czytelność.
+
+Pełne określenie pozostaje poprawne i może być używane wszędzie tam, gdzie jest bardziej naturalne lub czytelne.
