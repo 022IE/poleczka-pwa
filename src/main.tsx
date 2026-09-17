@@ -6,6 +6,7 @@ import './styles.css'
 import './overrides.css'
 import './quote-fix.css'
 import './comparison-controls.css'
+import './vinted-dashboard.css'
 import './build-status.css'
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
