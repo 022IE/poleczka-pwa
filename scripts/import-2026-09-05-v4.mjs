@@ -224,17 +224,23 @@ async function verify() {
   }))
 }
 
+let importStarted = false
 try {
   await preflight()
+  importStarted = true
   await doImport()
   await verify()
 } catch (error) {
   console.error('IMPORT_FAILED', error?.message || error)
-  try {
-    await rollback()
-    console.error('ROLLBACK_OK')
-  } catch (rollbackError) {
-    console.error('ROLLBACK_FAILED', rollbackError?.message || rollbackError)
+  if (importStarted) {
+    try {
+      await rollback()
+      console.error('ROLLBACK_OK')
+    } catch (rollbackError) {
+      console.error('ROLLBACK_FAILED', rollbackError?.message || rollbackError)
+    }
+  } else {
+    console.error('ROLLBACK_SKIPPED_PRECHECK_FAILED')
   }
   process.exit(1)
 }
