@@ -248,6 +248,15 @@ Frontend nie może mieć trwałego, jawnego tokenu API.
 
 # 13. Cloudflare D1
 
+Aktualne środowisko developerskie korzysta z bazy:
+
+`poleczka-dev`
+
+Obowiązujące zasady:
+- `poleczka-dev` jest bazą dla bieżących prac, testów, migracji i zapytań developerskich,
+- nie kierujemy zmian developerskich do innej bazy bez wyraźnego ustalenia,
+- interfejs ustawień powinien docelowo pokazywać rzeczywistą nazwę aktywnej bazy z konfiguracji środowiska.
+
 Sekcja informacyjna:
 - nazwa bazy,
 - status połączenia,
