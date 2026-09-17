@@ -1,6 +1,6 @@
 {
-  "state": "editing",
-  "label": "Wprowadzanie poprawek",
-  "task": "Dashboard — dopasowanie typografii panelu Sprzedaż wg godziny do pozostałych kafelków",
-  "updatedAt": "2026-09-17T11:59:30Z"
+  "state": "awaiting_publish",
+  "label": "Oczekiwanie na publikację",
+  "task": "Dopasowano typografię panelu Sprzedaż wg godziny do pozostałych kafelków dashboardu",
+  "updatedAt": "2026-09-17T12:00:30Z"
 }
