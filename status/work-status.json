@@ -1,6 +1,6 @@
 {
-  "state": "awaiting_publish",
-  "label": "Oczekiwanie na publikację",
-  "task": "GitHub jest jedynym źródłem prawdy dla Markdown; Vinted i DNR rozdzielone na dwa panele 50/50, Vinted po lewej, typografia dopasowana do KPI",
-  "updatedAt": "2026-09-17T10:09:00Z"
+  "state": "editing",
+  "label": "Wprowadzanie poprawek",
+  "task": "D1 — konfiguracja bezpiecznego mostu GitHub Actions do poleczka-dev i odczyt rzeczywistego schematu bazy",
+  "updatedAt": "2026-09-17T10:43:21Z"
 }
