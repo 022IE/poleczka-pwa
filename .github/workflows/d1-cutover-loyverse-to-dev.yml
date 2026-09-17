@@ -1,12 +1,6 @@
 name: D1 Final Cutover to Dev
 
 on:
-  push:
-    branches:
-      - dev
-    paths:
-      - '.github/workflows/d1-cutover-loyverse-to-dev.yml'
-      - 'scripts/cutover-loyverse-to-dev-v3.mjs'
   workflow_dispatch:
 
 permissions:
