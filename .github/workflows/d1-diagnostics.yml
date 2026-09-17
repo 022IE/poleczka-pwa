@@ -33,16 +33,23 @@ jobs:
         run: |
           npx --yes wrangler@latest d1 list
 
-      - name: Inspect configured PWA database schema
+      - name: Inspect poleczka-dev schema
         env:
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
         run: |
           npx --yes wrangler@latest d1 execute poleczka-dev --remote --command "SELECT type, name, tbl_name, sql FROM sqlite_master WHERE type IN ('table','index','trigger','view') AND name NOT LIKE 'sqlite_%' ORDER BY type,name;"
 
-      - name: Check configured PWA database foreign keys
+      - name: Inspect poleczka-loyverse schema
         env:
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
         run: |
-          npx --yes wrangler@latest d1 execute poleczka-dev --remote --command "PRAGMA foreign_key_check;"
+          npx --yes wrangler@latest d1 execute poleczka-loyverse --remote --command "SELECT type, name, tbl_name, sql FROM sqlite_master WHERE type IN ('table','index','trigger','view') AND name NOT LIKE 'sqlite_%' ORDER BY type,name;"
+
+      - name: Check poleczka-loyverse foreign keys
+        env:
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+        run: |
+          npx --yes wrangler@latest d1 execute poleczka-loyverse --remote --command "PRAGMA foreign_key_check;"
