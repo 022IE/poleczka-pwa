@@ -151,6 +151,16 @@ Limit:
 
 Na dashboardzie znajduje się kafelek `Vinted`, prowadzący do modułu `/vinted`.
 
+### Górne panele Vinted i DNR
+
+Nad kafelkami KPI są dwa **osobne** panele o równej szerokości:
+- **Vinted po lewej**,
+- **DNR po prawej**.
+
+Podział między panelami ma wypadać dokładnie w osi przerwy pomiędzy 3. i 4. kafelkiem KPI poniżej. Odstęp pomiędzy panelami ma być spójny z odstępem w siatce KPI.
+
+Typografia w panelach Vinted i DNR ma odpowiadać typografii kafelków KPI poniżej. Wartości statystyk Vinted są wycentrowane. Nie pokazujemy dodatkowego napisu „Podsumowanie Vinted” / „Podsumowanie aukcji”.
+
 ### Porównanie okresów na dashboardzie
 
 Obowiązują trzy parametry sterujące:
@@ -692,22 +702,18 @@ Docelowym celem jest powiązanie sprzedaży z Vinted z ewidencją sprzedaży Pó
 
 ---
 
-## 32. Standard zapisu plików Markdown
+## 32. Standard przechowywania i odczytu plików Markdown
 
 Ta zasada obowiązuje **wszystkie czaty i agentów pracujących w projekcie Półeczka Iwonki**.
 
-Każdy tworzony lub aktualizowany plik Markdown (`.md`) należy zapisać równolegle w dwóch miejscach:
+Wszystkie pliki Markdown (`.md`) projektu:
+- przechowujemy w repozytorium GitHub `022IE/poleczka-pwa`,
+- odczytujemy z aktualnej wersji w GitHubie,
+- traktujemy wersję z GitHuba jako jedyną obowiązującą wersję dokumentacji.
 
-1. w repozytorium GitHub `022IE/poleczka-pwa`, w odpowiedniej ścieżce i na właściwej gałęzi roboczej,
-2. w Bibliotece plików ChatGPT, tak aby dokument był dostępny także z innych czatów projektu.
+Repozytorium GitHub jest jedynym źródłem prawdy dla dokumentacji Markdown. Nie ma obowiązku tworzenia ani utrzymywania kopii `.md` w Bibliotece plików ChatGPT. Biblioteka nie jest elementem wymagań ani workflow dokumentacji projektu.
 
-Dodatkowe zasady:
-- repozytorium GitHub pozostaje głównym źródłem prawdy dla aktualnej wersji pliku,
-- kopia w Bibliotece służy dostępności dokumentu między czatami projektu,
-- po zapisie do GitHuba należy zweryfikować, że zapis się powiódł,
-- nie pozostawiamy nowych ani zaktualizowanych plików `.md` wyłącznie lokalnie lub wyłącznie w pojedynczym czacie.
-
-To jest obowiązujący standard projektu dla wszystkich kolejnych plików Markdown.
+Po zapisie lub aktualizacji pliku `.md` należy zweryfikować, że zmiana znajduje się na właściwej gałęzi GitHuba.
 
 ---
 
