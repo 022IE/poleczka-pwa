@@ -1,11 +1,6 @@
 name: D1 Migrate Loyverse to Dev
 
 on:
-  push:
-    branches:
-      - dev
-    paths:
-      - '.github/workflows/d1-migrate-loyverse-to-dev.yml'
   workflow_dispatch:
 
 permissions:
