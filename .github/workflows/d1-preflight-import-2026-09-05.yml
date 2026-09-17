@@ -1,6 +1,11 @@
 name: D1 Preflight Import 2026-09-05
 
 on:
+  push:
+    branches:
+      - dev
+    paths:
+      - '.github/workflows/d1-preflight-import-2026-09-05.yml'
   workflow_dispatch:
 
 permissions:
@@ -21,7 +26,7 @@ jobs:
         with:
           node-version: 22
 
-      - name: Verify target schema and collisions
+      - name: Verify target schema and mappings
         env:
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
@@ -29,5 +34,5 @@ jobs:
           npx --yes wrangler@latest d1 execute poleczka-dev --remote --command "PRAGMA foreign_key_check;"
           npx --yes wrangler@latest d1 execute poleczka-dev --remote --command "SELECT COUNT(*) AS receipt_collisions FROM receipts WHERE receipt_number BETWEEN '0-0001' AND '0-0019'; SELECT COUNT(*) AS date_collisions FROM receipts WHERE substr(receipt_date,1,10)='2026-09-05'; SELECT COUNT(*) AS line_id_collisions FROM receipt_lines WHERE line_id BETWEEN 'manual-20260905-0001' AND 'manual-20260905-0048'; SELECT COUNT(*) AS payment_key_collisions FROM receipt_payments WHERE payment_key BETWEEN 'manual-20260905-payment-0-0001' AND 'manual-20260905-payment-0-0019';"
           npx --yes wrangler@latest d1 execute poleczka-dev --remote --command "SELECT lower(trim(name)) AS payment_name, COUNT(DISTINCT payment_type_id) AS payment_type_id_variants, MIN(payment_type_id) AS payment_type_id, COUNT(DISTINCT type) AS type_variants, MIN(type) AS payment_type FROM receipt_payments WHERE lower(trim(name)) IN ('gotówka','karta') GROUP BY lower(trim(name)) ORDER BY payment_name;"
-          npx --yes wrangler@latest d1 execute poleczka-dev --remote --command "WITH source(name) AS (VALUES ('Biżuteria'),('Bluza'),('Bluzka'),('Bluzki'),('Body'),('Buty'),('Dres'),('Getry'),('Kombinezon'),('Koszula'),('Koszulka'),('Parasol'),('Pasek'),('Spodenki'),('Spodnie'),('Spódnica'),('Stanik'),('Sukienka'),('Sweter'),('Sweterek'),('Torba'),('Torebka')), matches AS (SELECT s.name, COUNT(i.item_id) AS match_count FROM source s LEFT JOIN items i ON lower(trim(i.item_name))=lower(s.name) AND i.deleted_at IS NULL GROUP BY s.name) SELECT COUNT(*) AS source_names, SUM(CASE WHEN match_count=1 THEN 1 ELSE 0 END) AS unique_active_matches, SUM(CASE WHEN match_count=0 THEN 1 ELSE 0 END) AS no_active_matches, SUM(CASE WHEN match_count>1 THEN 1 ELSE 0 END) AS ambiguous_active_matches, GROUP_CONCAT(CASE WHEN match_count<>1 THEN name END, ', ') AS not_unique_active_names FROM matches;"
-          npx --yes wrangler@latest d1 execute poleczka-dev --remote --command "WITH source(name) AS (VALUES ('Biżuteria'),('Bluza'),('Bluzka'),('Bluzki'),('Body'),('Buty'),('Dres'),('Getry'),('Kombinezon'),('Koszula'),('Koszulka'),('Parasol'),('Pasek'),('Spodenki'),('Spodnie'),('Spódnica'),('Stanik'),('Sukienka'),('Sweter'),('Sweterek'),('Torba'),('Torebka')), matches AS (SELECT s.name, COUNT(i.item_id) AS match_count FROM source s LEFT JOIN items i ON lower(trim(i.item_name))=lower(s.name) GROUP BY s.name) SELECT COUNT(*) AS source_names, SUM(CASE WHEN match_count=1 THEN 1 ELSE 0 END) AS unique_all_matches, SUM(CASE WHEN match_count=0 THEN 1 ELSE 0 END) AS no_matches_at_all, SUM(CASE WHEN match_count>1 THEN 1 ELSE 0 END) AS ambiguous_all_matches, GROUP_CONCAT(CASE WHEN match_count<>1 THEN name END, ', ') AS not_unique_all_names FROM matches;"
+          npx --yes wrangler@latest d1 execute poleczka-dev --remote --command "WITH source(name) AS (VALUES ('Biżuteria'),('Bluza'),('Bluzka'),('Body'),('Dres'),('Getry'),('Kombinezon'),('Koszula'),('Koszulka'),('Parasol'),('Pasek'),('Shorty'),('Sneakersy'),('Spodnie'),('Spódnica'),('Stanik'),('Sukienka'),('Sweter'),('Torebka')), matches AS (SELECT s.name, COUNT(i.item_id) AS match_count FROM source s LEFT JOIN items i ON lower(trim(i.item_name))=lower(s.name) AND i.deleted_at IS NULL GROUP BY s.name) SELECT COUNT(*) AS canonical_names, SUM(CASE WHEN match_count=1 THEN 1 ELSE 0 END) AS unique_active_matches, SUM(CASE WHEN match_count=0 THEN 1 ELSE 0 END) AS no_active_matches, SUM(CASE WHEN match_count>1 THEN 1 ELSE 0 END) AS ambiguous_active_matches, GROUP_CONCAT(CASE WHEN match_count<>1 THEN name END, ', ') AS not_unique_active_names FROM matches;"
+          npx --yes wrangler@latest d1 execute poleczka-dev --remote --command "SELECT COUNT(*) AS receipt_rows, SUM(CASE WHEN receipt_date LIKE '%T%' THEN 1 ELSE 0 END) AS with_time, SUM(CASE WHEN receipt_date LIKE '%Z' THEN 1 ELSE 0 END) AS utc_z, SUM(CASE WHEN receipt_date LIKE '%+__:__' THEN 1 ELSE 0 END) AS positive_offset, MIN(LENGTH(receipt_date)) AS min_len, MAX(LENGTH(receipt_date)) AS max_len FROM receipts WHERE receipt_date IS NOT NULL;"
