@@ -6,7 +6,7 @@ on:
       - dev
     paths:
       - '.github/workflows/d1-cutover-loyverse-to-dev.yml'
-      - 'scripts/cutover-loyverse-to-dev.mjs'
+      - 'scripts/cutover-loyverse-to-dev-v3.mjs'
   workflow_dispatch:
 
 permissions:
@@ -31,9 +31,6 @@ jobs:
         with:
           node-version: 22
 
-      - name: Install Cloudflare SDK
-        run: npm install --no-save --no-audit --no-fund cloudflare@latest
-
       - name: Synchronize and cut over
         env:
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
@@ -41,4 +38,4 @@ jobs:
           SOURCE_D1_DATABASE_ID: 4ababa0a-8912-49b0-9ee9-16ce771c27f3
           TARGET_D1_DATABASE_ID: 099b4d9e-ad73-441b-a2be-a00f347a5905
           LOYVERSE_WORKER_NAME: poleczka-loyverse-webhook
-        run: node scripts/cutover-loyverse-to-dev.mjs
+        run: node scripts/cutover-loyverse-to-dev-v3.mjs
