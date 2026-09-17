@@ -138,18 +138,32 @@ function Dashboard() {
         </div>
       </header>
 
-      <section className="limit-card">
-        <div className="limit-intro">
-          <div className="limit-icon">▥</div>
-          <div><h2>Limit działalności nierejestrowanej</h2><p>Limit przychodów dotyczy <b>KWARTAŁU</b>, nie miesiąca.</p></div>
-        </div>
-        <div className="limit-separator" />
-        <div className="limit-main">
-          <strong>III kwartał 2026</strong>
+      <section className="limit-card dashboard-summary-card">
+        <div className="limit-dashboard-block">
+          <div className="summary-title-row">
+            <div>
+              <span className="summary-eyebrow">Limit działalności nierejestrowanej</span>
+              <strong>III kwartał 2026</strong>
+            </div>
+            <div className="limit-remaining"><span>Pozostało</span><b>3 971,20 zł</b></div>
+          </div>
           <div className="limit-value">Wykorzystano <b>6 842,30 zł</b> z 10 813,50 zł</div>
           <div className="progress-row"><div className="progress"><span /></div><b>63%</b></div>
         </div>
-        <div className="limit-left"><span>Pozostało</span><b>3 971,20 zł</b><div>♧</div></div>
+        <div className="dashboard-summary-divider" />
+        <div className="vinted-summary">
+          <NavLink to="/vinted" className="vinted-summary-brand" aria-label="Przejdź do modułu Vinted">
+            <img src="/assets/vinted-logo.png" alt="Vinted" />
+            <div><strong>Vinted</strong><span>Podsumowanie aukcji</span></div>
+          </NavLink>
+          <div className="vinted-summary-stats">
+            <div><span>Trwające aukcje</span><b>0</b></div>
+            <div><span>Sprzedane — do wysyłki</span><b>0</b></div>
+            <div><span>Sprzedane — zakończone</span><b>0</b></div>
+            <div className="money"><span>Suma aktywnych aukcji</span><b>0,00 zł</b></div>
+            <div className="money"><span>Suma sprzedanych</span><b>0,00 zł</b></div>
+          </div>
+        </div>
       </section>
 
       <section className="kpi-grid">
