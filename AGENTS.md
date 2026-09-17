@@ -38,6 +38,15 @@ Po zakończeniu własnej serii zmian należy ustawić na `pipeline-status`:
 
 Dalsze etapy (`GitHub`, `Build`, `Cloudflare`, `Online`) aktualizują się automatycznie przez workflow / Worker / WebSocket.
 
+## Pliki Markdown — GitHub jest jedynym źródłem prawdy
+
+Wszystkie pliki Markdown (`.md`) projektu:
+- przechowujemy w repozytorium GitHub `022IE/poleczka-pwa`,
+- odczytujemy z aktualnej wersji w GitHubie,
+- traktujemy wersję z GitHuba jako jedyną obowiązującą wersję dokumentacji.
+
+Nie ma obowiązku tworzenia ani utrzymywania kopii plików `.md` w Bibliotece plików ChatGPT. Biblioteka nie jest elementem workflow dokumentacji projektu i nie stanowi źródła prawdy.
+
 ## Ważne
 
 - Nie pomijaj zgłoszenia statusu nawet przy zmianie jednego pliku lub jednej linijki.
