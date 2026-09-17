@@ -1,11 +1,6 @@
 name: D1 Import 2026-09-05 v4
 
 on:
-  push:
-    branches:
-      - dev
-    paths:
-      - '.github/workflows/d1-import-2026-09-05-v4.yml'
   workflow_dispatch:
 
 permissions:
