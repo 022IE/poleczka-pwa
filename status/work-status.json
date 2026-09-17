@@ -1,6 +1,6 @@
 {
-  "state": "editing",
-  "label": "Wprowadzanie poprawek",
-  "task": "Przebudowa górnego panelu dashboardu: limit po lewej, panel Vinted po prawej z logo i statystykami aukcji",
-  "updatedAt": "2026-09-17T08:19:00Z"
+  "state": "awaiting_publish",
+  "label": "Oczekiwanie na publikację",
+  "task": "Przebudowano panel limitu i dodano po prawej podsumowanie Vinted z logo oraz statystykami aukcji",
+  "updatedAt": "2026-09-17T09:43:00Z"
 }
