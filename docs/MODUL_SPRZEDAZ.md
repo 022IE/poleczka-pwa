@@ -1,9 +1,9 @@
 # PÓŁECZKA IWONKI — MODUŁ SPRZEDAŻ
 
 **Moduł:** 01 — SPRZEDAŻ  
-**Status:** specyfikacja wdrożeniowa v0.1  
+**Status:** specyfikacja wdrożeniowa v0.2  
 **Dokument nadrzędny:** `POLECZKA_PWA_MASTER.md`  
-**Aktualizacja:** 16.09.2026
+**Aktualizacja:** 17.09.2026
 
 ---
 
@@ -36,6 +36,23 @@ PWA nie powinna pobierać sprzedaży bezpośrednio z Loyverse przy każdym wejś
 
 D1 jest źródłem danych dla interfejsu.
 
+## 2.1 Aktualne środowisko developerskie
+
+Bieżąca baza developerska D1:
+
+`poleczka-dev`
+
+Aktualny zestaw tabel przeniesionych i obsługiwanych w tym środowisku obejmuje:
+
+- `categories`,
+- `items`,
+- `receipts`,
+- `receipt_lines`,
+- `receipt_payments`,
+- `webhook_events`.
+
+Dla modułu SPRZEDAŻ listy wyboru, KPI, tabela paragonów i rozwijane pozycje mają być budowane na danych z `poleczka-dev`, bez tworzenia równoległych lokalnych słowników we frontendzie.
+
 ---
 
 # 3. Obowiązujące dane
@@ -55,17 +72,37 @@ Minimalny zestaw informacji wymagany w widoku paragonu:
 
 ## 3.2 Pozycja paragonu
 
-Minimalny zestaw informacji:
+Minimalny zestaw informacji prezentowany w module:
 
 - artykuł,
 - kategoria,
-- SKU,
 - ilość,
 - cena przed rabatem,
 - rabat,
 - wartość netto po rabacie,
-- Lp. dostawy,
-- ID pozycji / rekord techniczny.
+- Lp. dostawy.
+
+Identyfikatory techniczne:
+
+- `item_id` — identyfikator artykułu,
+- `line_id` — identyfikator pozycji sprzedaży,
+- `variant_id` — pozostaje dostępny technicznie tam, gdzie jest potrzebny przez dane źródłowe.
+
+## 3.3 SKU — obowiązująca zasada
+
+SKU nie jest już elementem interfejsu modułu SPRZEDAŻ.
+
+Obowiązuje:
+
+- SKU nie jest wyświetlane w tabeli ani w szczegółach pozycji,
+- SKU nie jest używane przez wyszukiwarkę,
+- SKU nie jest podstawowym identyfikatorem artykułu w PWA,
+- identyfikację artykułu opieramy na `item_id`,
+- identyfikację pozycji sprzedaży opieramy na `line_id`,
+- w `poleczka-dev` SKU pozostaje na razie jako kolumna techniczna w danych sprzedażowych,
+- nie projektujemy nowych mechanizmów aplikacji opartych na SKU.
+
+W przyszłości kolumna SKU może zostać usunięta z bazy ze względu na oszczędność miejsca i limity D1, ale dopiero po technicznym potwierdzeniu, że żaden aktywny import, webhook, Worker ani proces historyczny jej nie wykorzystuje.
 
 ---
 
@@ -103,6 +140,14 @@ Po prawej stronie globalny pasek aplikacji:
 - powiadomienia,
 - status synchronizacji,
 - profil / ustawienia użytkownika.
+
+## 5.2 Zasada zgodności z layoutem głównym
+
+Zaakceptowany wzorzec graficzny modułu SPRZEDAŻ dotyczy głównej zawartości modułu: KPI, filtrów, tabeli paragonów, rozwijanych pozycji i paginacji.
+
+Lewy panel menu oraz górny panel z materiału referencyjnego są nieaktualne i **nie są kopiowane**.
+
+Moduł SPRZEDAŻ używa aktualnego globalnego menu bocznego i aktualnego górnego nagłówka dokładnie w tym samym standardzie, co bieżący moduł główny / dashboard.
 
 ---
 
@@ -178,36 +223,45 @@ Szybkie opcje w przyszłości:
 Lista:
 
 - Wszystkie,
-- wartości dostępne w bazie.
+- wartości dostępne w `receipt_payments` w D1.
+
+Lista wyboru ma być zasilana z `poleczka-dev`, a nie z danych zaszytych we frontendzie.
 
 ## 7.3 Kategoria
 
 Lista:
 
 - Wszystkie,
-- kategorie dostępne w D1.
+- kategorie dostępne w tabeli `categories` w D1.
+
+Lista wyboru ma być zasilana z `poleczka-dev`.
 
 ## 7.4 Artykuł
 
 Lista:
 
 - Wszystkie,
-- artykuły dostępne w D1.
+- artykuły dostępne w tabeli `items` w D1.
 
-Po wyborze kategorii lista artykułów może zostać ograniczona do artykułów tej kategorii.
+Po wyborze kategorii lista artykułów może zostać ograniczona do artykułów należących do tej kategorii.
+
+Lista wyboru ma być zasilana z `poleczka-dev`.
 
 ## 7.5 Wyszukiwarka
 
-Powinna wyszukiwać minimum po:
+Wyszukiwarka ma przeszukiwać:
 
-- numerze paragonu,
-- nazwie artykułu,
-- SKU.
+- numer paragonu,
+- nazwę artykułu,
+- numer dostawy.
 
-Docelowo możliwe rozszerzenie:
+Mapowanie numeru dostawy:
 
-- numer dostawy,
-- forma płatności.
+`receipt_lines.line_note`
+
+SKU **nie jest** elementem wyszukiwania.
+
+Forma płatności pozostaje osobnym filtrem i nie musi być dublowana w wyszukiwarce.
 
 ---
 
@@ -254,18 +308,19 @@ Kolumny:
 
 1. Artykuł
 2. Kategoria
-3. SKU
-4. Ilość
-5. Cena
-6. Rabat
-7. Netto
-8. Lp. dostawy
+3. Ilość
+4. Cena
+5. Rabat
+6. Netto
+7. Lp. dostawy
 
-Opcjonalnie w menu szczegółowym:
+SKU nie jest wyświetlane.
 
-- item_id,
-- variant_id,
-- line_id,
+Opcjonalnie w menu szczegółowym / technicznym:
+
+- `item_id`,
+- `variant_id`,
+- `line_id`,
 - pełne znaczniki czasu,
 - dane techniczne synchronizacji.
 
@@ -357,6 +412,8 @@ Parametry:
 - `page`
 - `pageSize`
 
+Parametr `search` obejmuje numer paragonu, nazwę artykułu i numer dostawy (`line_note`). Nie obejmuje SKU.
+
 Przykład:
 
 `GET /api/sales/receipts?from=2026-09-01&to=2026-09-30&page=1&pageSize=25`
@@ -414,6 +471,12 @@ Możemy użyć wspólnych endpointów:
 
 `GET /api/dictionaries/payment-types`
 
+Źródła danych w `poleczka-dev`:
+
+- kategorie -> `categories`,
+- artykuły -> `items`,
+- formy płatności -> `receipt_payments`.
+
 ---
 
 # 15. Zapytania D1 — zasada
@@ -454,9 +517,9 @@ Docelowy obiekt frontendowy:
 ```json
 {
   "lineId": "abc123",
+  "itemId": "item-123",
   "itemName": "Bluzka",
   "category": "GÓRA",
-  "sku": "BLU-019",
   "quantity": 1,
   "price": 49.00,
   "discount": 4.00,
@@ -464,6 +527,8 @@ Docelowy obiekt frontendowy:
   "deliveryNo": 1
 }
 ```
+
+SKU nie jest częścią modelu prezentacyjnego odpowiedzi pozycji.
 
 ---
 
@@ -649,11 +714,14 @@ Przy typowej bazie:
 - rozwinięcie paragonu powinno być płynne,
 - filtrowanie nie może wymagać pobierania całej historii.
 
-Docelowo zapytania D1 wymagają indeksów m.in. na:
+Docelowo zapytania D1 mogą wymagać indeksów m.in. na:
 - dacie paragonu,
 - numerze paragonu,
-- SKU,
-- item_id / variant_id tam, gdzie potrzebne.
+- `item_id`,
+- `line_note` dla wyszukiwania po numerze dostawy,
+- polach powiązań potrzebnych do kategorii i płatności.
+
+SKU nie jest planowane jako klucz wyszukiwania ani jako wymagany indeks dla modułu SPRZEDAŻ.
 
 Indeksy dobieramy po sprawdzeniu realnych zapytań.
 
@@ -664,15 +732,17 @@ Indeksy dobieramy po sprawdzeniu realnych zapytań.
 Moduł SPRZEDAŻ uznajemy za gotowy w v1, gdy:
 
 - [ ] ekran wizualnie odpowiada zaakceptowanemu projektowi,
+- [ ] globalne menu boczne i górny nagłówek są zgodne z modułem głównym,
 - [ ] KPI pobierają realne dane z D1,
 - [ ] tabela pokazuje paragony, nie pojedyncze linie,
 - [ ] `+` rozwija pozycje,
 - [ ] pozycje mają osobną zebrę,
 - [ ] działają filtry dat,
-- [ ] działa filtr płatności,
-- [ ] działa filtr kategorii,
-- [ ] działa filtr artykułu,
-- [ ] działa wyszukiwarka,
+- [ ] działa filtr płatności z danych D1,
+- [ ] działa filtr kategorii z `categories`,
+- [ ] działa filtr artykułu z `items`,
+- [ ] wyszukiwarka obsługuje numer paragonu, nazwę artykułu i numer dostawy,
+- [ ] SKU nie jest wyświetlane ani wyszukiwane,
 - [ ] działa sortowanie,
 - [ ] działa paginacja,
 - [ ] kwoty zgadzają się z D1,
@@ -719,15 +789,17 @@ Moduł SPRZEDAŻ uznajemy za gotowy w v1, gdy:
 
 # 30. Następny krok techniczny
 
-Przed napisaniem kodu należy:
+Aktualny schemat roboczy `poleczka-dev` obejmuje tabele wymagane przez ten moduł, w tym `categories`, `items`, `receipts`, `receipt_lines` i `receipt_payments`.
 
-1. potwierdzić aktualny schemat tabel D1,
-2. ustalić, gdzie dokładnie przechowywana jest forma płatności,
-3. przygotować pierwsze zapytanie SQL grupujące `receipt_lines` do poziomu paragonu,
-4. zbudować endpoint `/api/sales/summary`,
-5. zbudować endpoint `/api/sales/receipts`.
+Następne kroki:
 
-Po tym zaczynamy frontend.
+1. podpiąć endpointy sprzedaży do `poleczka-dev`,
+2. zbudować / uzupełnić `/api/sales/summary`,
+3. zbudować / uzupełnić `/api/sales/receipts`,
+4. zasilić filtry rzeczywistymi danymi z `receipt_payments`, `categories` i `items`,
+5. wdrożyć wyszukiwanie po numerze paragonu, nazwie artykułu i `line_note`,
+6. podłączyć frontend do rzeczywistych odpowiedzi API,
+7. wykonać test porównawczy wartości z D1.
 
 ---
 
@@ -799,3 +871,21 @@ Decyzje globalne, dotyczące więcej niż jednego modułu, trafiają także do `
 Czat `01 — SPRZEDAŻ` służy do pracy nad modułem, ale nie jest jedynym źródłem prawdy. Obowiązujące ustalenia mają kończyć w repozytorium.
 
 Sekcje 31–33 są nowsze i w razie konfliktu zastępują wcześniejsze informacje organizacyjne w tym dokumencie.
+
+---
+
+# 34. Ustalenia z 17.09.2026 — filtry, wyszukiwanie i SKU
+
+Obowiązuje dla dalszego wdrażania modułu SPRZEDAŻ:
+
+- środowisko developerskie korzysta z bazy `poleczka-dev`,
+- lista form płatności korzysta z danych `receipt_payments`,
+- lista kategorii korzysta z tabeli `categories`,
+- lista artykułów korzysta z tabeli `items`,
+- wyszukiwarka obejmuje numer paragonu, nazwę artykułu oraz numer dostawy z `receipt_lines.line_note`,
+- SKU zostało wycofane z wyszukiwania,
+- SKU zostało wycofane z wyświetlania,
+- SKU pozostaje tymczasowo kolumną techniczną w D1,
+- artykuł identyfikujemy przez `item_id`, a pozycję sprzedaży przez `line_id`,
+- nowych funkcji nie budujemy w oparciu o SKU,
+- ewentualne fizyczne usunięcie kolumny SKU z D1 jest decyzją przyszłą i wymaga osobnego audytu zależności przed migracją.
