@@ -17,6 +17,7 @@ const nav = [
   ['/koszty', 'Koszty', '◉'],
   ['/analizy', 'Analizy', '▥'],
   ['/synchronizacja', 'Synchronizacja', '↻'],
+  ['/narzedzia', 'Narzędzia', '⌘'],
   ['/ustawienia', 'Ustawienia', '⚙'],
 ] as const
 
@@ -59,6 +60,7 @@ const quickLinks = [
   ['/koszty','Koszty','Dodaj wydatek','◉','blue'],
   ['/analizy','Analizy','Poznaj swoje wyniki','▥','lavender'],
   ['/synchronizacja','Synchronizacja','Zsynchronizuj dane','↻','aqua'],
+  ['/narzedzia','Narzędzia','Przydatne funkcje','⌘','gold'],
   ['/ustawienia','Ustawienia','Dostosuj aplikację','⚙','gray'],
 ] as const
 
@@ -258,6 +260,7 @@ function App() {
         <Route path="/koszty" element={<Placeholder title="Koszty" text="Koszty oraz dokumenty powiązane z Google Drive."/>}/>
         <Route path="/analizy" element={<Placeholder title="Analizy" text="Porównania okresów, heatmapy, histogramy i analizy dostaw."/>}/>
         <Route path="/synchronizacja" element={<Placeholder title="Synchronizacja" text="Status Loyverse → D1 oraz historia synchronizacji."/>}/>
+        <Route path="/narzedzia" element={<Placeholder title="Narzędzia" text="Przydatne funkcje i narzędzia pomocnicze."/>}/>
         <Route path="/ustawienia" element={<Placeholder title="Ustawienia" text="Firma, limit działalności, integracje, słowniki i wygląd."/>}/>
       </Routes></main>
     </div>
