@@ -1,6 +1,6 @@
 {
-  "state": "editing",
-  "label": "Wprowadzanie poprawek",
-  "task": "Dodanie modułu Vinted do menu głównego, kafelków dashboardu i routingu oraz aktualizacja dokumentacji modułów",
-  "updatedAt": "2026-09-17T07:26:30Z"
+  "state": "awaiting_publish",
+  "label": "Oczekiwanie na publikację",
+  "task": "Dodano moduł Vinted do menu głównego, kafelków dashboardu i routingu; utworzono MODUL_VINTED i zaktualizowano MASTER",
+  "updatedAt": "2026-09-17T07:31:00Z"
 }
