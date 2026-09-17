@@ -38,10 +38,16 @@ const weeks = [
   { c: '#46705a', p: '15,49 90,25 165,35 240,28 315,36 390,15 465,30' },
 ]
 
+const heatDays = ['Pon', 'Wt', 'Śr', 'Czw', 'Pt', 'Sob', 'Niedz'] as const
+const heatHours = Array.from({ length: 14 }, (_, index) => index + 8)
 const heat = [
-  1,1,1,1,2,3,2,1, 1,1,2,3,2,3,2,1, 1,2,2,1,3,2,1,1,
-  1,2,3,4,2,4,2,1, 1,2,3,4,3,3,2,1, 1,3,2,4,4,3,2,1,
-  1,1,3,3,3,2,1,1,
+  1,1,1,1,1,2,2,2,3,3,2,2,1,1,
+  1,1,1,1,2,2,3,3,4,4,3,2,2,1,
+  1,1,1,2,2,3,3,4,4,4,3,3,2,1,
+  1,1,2,2,3,3,4,4,4,3,3,2,2,1,
+  1,2,2,3,3,4,4,4,3,3,2,2,1,1,
+  1,1,2,2,3,3,3,3,2,2,2,1,1,1,
+  1,1,1,1,1,2,2,2,2,2,1,1,1,1,
 ]
 
 const quickLinks = [
@@ -208,9 +214,15 @@ function Dashboard() {
         </article>
 
         <article className="panel heat-panel">
-          <div className="panel-head"><h2><span>◷</span> Dzień tygodnia × godzina</h2></div>
-          <div className="heat-layout"><div className="heat-y"><span>Pn</span><span>Wt</span><span>Śr</span><span>Cz</span><span>Pt</span><span>Sob</span><span>Nd</span></div><div className="heat-main"><div className="heat-x"><span>8</span><span>10</span><span>12</span><span>14</span><span>16</span><span>18</span><span>20</span><span>22</span></div><div className="heat-grid">{heat.map((v,i)=><i key={i} className={`h${v}`} />)}</div></div></div>
-          <div className="heat-legend"><span>Mniejsza sprzedaż</span><i className="h1"/><i className="h2"/><i className="h3"/><i className="h4"/><span>Większa sprzedaż</span></div>
+          <div className="panel-head heat-panel-head"><h2>Sprzedaż wg godziny (średnio)</h2></div>
+          <div className="hourly-heat-layout">
+            <div className="hourly-heat-y">{heatDays.map((day) => <span key={day}>{day}</span>)}</div>
+            <div className="hourly-heat-main">
+              <div className="hourly-heat-grid">{heat.map((value,index)=><i key={index} className={`h${value}`} />)}</div>
+              <div className="hourly-heat-x">{heatHours.map((hour) => <span key={hour}>{hour}</span>)}</div>
+            </div>
+          </div>
+          <div className="hourly-heat-legend"><span>Mniejsza sprzedaż</span><i aria-hidden="true"/><span>Większa sprzedaż</span></div>
         </article>
 
         <aside className="right-stack">
