@@ -1,6 +1,6 @@
 {
-  "state": "awaiting_publish",
-  "label": "Oczekiwanie na publikację",
-  "task": "Dopisano do MASTER globalną zasadę: każdy tworzony lub aktualizowany plik Markdown trafia równolegle do GitHuba i Biblioteki plików ChatGPT; zasada obowiązuje wszystkie czaty i agentów projektu",
-  "updatedAt": "2026-09-17T07:56:00Z"
+  "state": "editing",
+  "label": "Wprowadzanie poprawek",
+  "task": "Przebudowa górnego panelu dashboardu: limit po lewej, panel Vinted po prawej z logo i statystykami aukcji",
+  "updatedAt": "2026-09-17T08:19:00Z"
 }
