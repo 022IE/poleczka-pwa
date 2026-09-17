@@ -296,13 +296,26 @@ Usuwanie lub importowanie danych sprzedażowych musi zachowywać te relacje.
 
 ---
 
-## 13. Ważna korekta dotycząca importu 05.09.2026
+## 13. Import historyczny 05.09.2026 — wykonany
 
-Wcześniej przygotowany roboczy skrypt `01_receipt_payments_migration.sql`, który tworzył nową tabelę `receipt_payments` o kolumnach m.in. `payment_id`, `payment_type`, `amount`, `currency`, **nie odpowiada rzeczywistemu schematowi aktywnej D1**.
+Import sprzedaży z pliku `paragony 050926.ods` został wykonany do `poleczka-dev` 17.09.2026 i stanowi wzorzec dla kolejnych paczek historycznych.
 
-Tego skryptu **nie należy wykonywać** na `poleczka-dev`.
+Wynik końcowy:
 
-Aktywna tabela `receipt_payments` już istnieje i używa kolumn:
+- 19 paragonów,
+- 48 pozycji,
+- 19 płatności,
+- suma paragonów = suma pozycji = suma płatności = `2441,00 PLN`,
+- 48/48 pozycji z poprawnym `item_id`,
+- 48/48 pozycji z SKU,
+- `Parasol` ma ręcznie potwierdzony SKU `10001`,
+- brak różnic sum pozycji względem paragonów,
+- brak różnic sum płatności względem paragonów,
+- brak błędów `PRAGMA foreign_key_check`.
+
+Wcześniej przygotowany roboczy skrypt `01_receipt_payments_migration.sql`, który tworzył drugi model tabeli płatności (`payment_id`, `payment_type`, `amount`, `currency`), jest nieaktualny i **nie wolno go wykonywać** na `poleczka-dev`.
+
+Obowiązuje istniejąca tabela `receipt_payments` z polami:
 
 - `payment_key`,
 - `receipt_number`,
@@ -311,10 +324,6 @@ Aktywna tabela `receipt_payments` już istnieje i używa kolumn:
 - `type`,
 - `money_amount`,
 - `paid_at`.
-
-Przed importem paragonów z 05.09.2026 skrypty importowe muszą zostać dostosowane do tego rzeczywistego schematu.
-
-Nie wolno tworzyć drugiego modelu płatności równolegle do istniejącego.
 
 ---
 
@@ -337,3 +346,170 @@ Wszelkie dokumenty projektowe opisujące „aktualny model D1” powinny być zg
 `poleczka-loyverse` pozostaje czasowo jako archiwum po cutoverze.
 
 Nie należy jej usuwać bez osobnej decyzji użytkownika i wcześniejszej kontroli, że nie jest potrzebna do rollbacku, audytu lub odzyskania danych.
+
+---
+
+## 16. Wzorzec kolejnych importów historycznych sprzedaży
+
+Kolejne paczki historycznych paragonów importujemy według procedury sprawdzonej na paczce 05.09.2026.
+
+### 16.1 Źródło i audyt przed zapisem
+
+Najpierw czytamy oryginalny plik źródłowy i wykonujemy audyt bez zapisu do D1:
+
+- liczba wierszy sprzedaży,
+- liczba unikalnych paragonów,
+- zakres numerów paragonów,
+- data / daty sprzedaży,
+- suma wartości,
+- kompletność nazw artykułów,
+- kompletność numerów dostaw,
+- kompletność form płatności,
+- kontrola cen i ilości,
+- kontrola, czy jeden paragon nie ma sprzecznych form płatności.
+
+Nie korzystamy automatycznie ze starych roboczych SQL, jeśli nie zostały ponownie sprawdzone względem bieżącego schematu `poleczka-dev`.
+
+### 16.2 Preflight na żywej `poleczka-dev`
+
+Przed importem obowiązkowo sprawdzamy:
+
+- `PRAGMA foreign_key_check`,
+- kolizje `receipt_number`,
+- kolizje planowanych `line_id`,
+- kolizje planowanych `payment_key`,
+- istniejące rekordy z importowanej daty,
+- jednoznaczność mapowania nazw artykułów do aktywnych `items`,
+- mapowanie form płatności,
+- dostępność i jednoznaczność SKU po `item_id`.
+
+Jeżeli istnieje kolizja lub niejednoznaczność, import zatrzymujemy do wyjaśnienia zamiast zgadywać.
+
+### 16.3 Artykuł i `item_id`
+
+Najpierw wykonujemy `trim()` nazwy źródłowej. Następnie stosujemy tylko jawnie uzgodnione mapowania nazw.
+
+Mapowania ustalone przy imporcie 05.09.2026, które należy ponownie stosować, jeżeli te same nazwy wystąpią w kolejnych paczkach:
+
+- `Bluzki` -> `Bluzka`,
+- `Buty` -> `Sneakersy`,
+- `Spodenki` -> `Shorty`,
+- `Sweterek` -> `Sweter`,
+- `Torba` -> `Torebka`.
+
+`item_id` przypisujemy wyłącznie przy dokładnie jednym aktywnym dopasowaniu `lower(trim(items.item_name))` do nazwy kanonicznej.
+
+Nie stosujemy fuzzy matching ani automatycznego zgadywania podobnych nazw.
+
+### 16.4 SKU
+
+SKU uzupełniamy na podstawie wcześniejszych `receipt_lines` dla tego samego `item_id`.
+
+Zasada:
+
+- jeżeli dla `item_id` istnieje dokładnie jeden różny niepusty SKU -> używamy go,
+- jeżeli nie ma SKU -> pozostawiamy `NULL` i zgłaszamy nazwę użytkownikowi,
+- jeżeli istnieje więcej niż jeden SKU -> zatrzymujemy automatyczne przypisanie i zgłaszamy konflikt,
+- ręcznie potwierdzone SKU może zostać zapisane jako jawny wyjątek.
+
+Potwierdzony wyjątek:
+
+- `Parasol` -> SKU `10001`.
+
+### 16.5 Wartości domyślne ustalone dla paczek historycznych
+
+Jeżeli dana paczka ma taki sam charakter jak import 05.09.2026 i źródło nie dostarcza innych wartości, stosujemy:
+
+- `quantity = 1.0` dla każdego wiersza źródłowego,
+- `total_discount = 0` na paragonie,
+- `total_discount = 0` na pozycji,
+- `cost = 0`,
+- `cost_total = 0`,
+- `price = gross_total_money = total_money` dla pozycji,
+- `receipt_type = SALE`,
+- brakujące techniczne dane, których źródło nie zawiera, pozostają `NULL` zamiast być wymyślane.
+
+`total_tax`, `tip`, `surcharge`, `created_at`, `updated_at` i `paid_at` pozostają `NULL`, o ile konkretne źródło lub użytkownik nie poda wiarygodnych wartości.
+
+### 16.6 Godzina paragonu
+
+Jeżeli źródło zawiera tylko datę bez godziny:
+
+- dla każdego paragonu losujemy jedną stałą godzinę w przedziale `13:00–18:00` czasu polskiego,
+- wszystkie pozycje i płatność odnoszą się do tego samego paragonu,
+- losowanie jest utrwalane w przygotowanym imporcie — ponowne wykonanie nie może wylosować innej godziny,
+- do `receipt_date` zapisujemy czas UTC w formacie zakończonym `Z`, z poprawnym przeliczeniem czasu lokalnego dla danej daty,
+- nie kopiujemy syntetycznej godziny do `created_at`, `updated_at` ani `paid_at`.
+
+### 16.7 Dostawa
+
+Numer dostawy z pliku źródłowego trafia do `receipt_lines.line_note`.
+
+Obowiązują nadal reguły projektu:
+
+- `0` = dostawa wewnętrzna,
+- puste pole = niezidentyfikowana / `-1` w warstwie interpretacji,
+- surowej wartości źródłowej nie wolno bezpowrotnie utracić.
+
+### 16.8 Płatności
+
+Płatność zapisujemy do istniejącej tabeli `receipt_payments`.
+
+Potwierdzone mapowania:
+
+- `Gotówka` -> `CASH` -> `c0495d7c-d00c-4297-867a-f46dff06226d`,
+- `Karta` -> `NONINTEGRATEDCARD` -> `42d173f3-2817-4e91-9a77-2aeac5f9a710`.
+
+Przed każdym kolejnym importem mapowanie należy kontrolnie sprawdzić w żywej bazie, ale nie tworzymy nowego typu płatności, jeżeli obecne ID pozostają aktualne.
+
+### 16.9 Rekordy techniczne i idempotencja
+
+Import powinien używać deterministycznych, unikalnych identyfikatorów technicznych dla:
+
+- `receipt_lines.line_id`,
+- `receipt_payments.payment_key`.
+
+Import musi być zaprojektowany tak, aby przypadkowe ponowne uruchomienie nie tworzyło duplikatów.
+
+Historyczny import ręczny nie tworzy `webhook_events`.
+
+### 16.10 Kolejność zapisu i rollbacku
+
+Kolejność zapisu:
+
+1. `receipts`,
+2. `receipt_lines`,
+3. `receipt_payments`.
+
+Kolejność rollbacku:
+
+1. `receipt_payments`,
+2. `receipt_lines`,
+3. `receipts`.
+
+Rollback ma usuwać wyłącznie rekordy należące do konkretnej paczki importowej.
+
+### 16.11 Weryfikacja po imporcie
+
+Po każdym imporcie obowiązkowo potwierdzamy:
+
+- oczekiwaną liczbę paragonów,
+- oczekiwaną liczbę pozycji,
+- oczekiwaną liczbę płatności,
+- `SUM(receipts.total_money) = SUM(receipt_lines.total_money) = SUM(receipt_payments.money_amount)`,
+- zgodność sum osobno dla każdego paragonu,
+- brak `item_id` tam, gdzie oczekiwano pełnego mapowania,
+- kompletność SKU lub listę świadomych wyjątków,
+- zgodność `item_name` z powiązanym `items.item_name`,
+- poprawność numerów dostaw,
+- poprawność form płatności,
+- zakres syntetycznych godzin, jeżeli były używane,
+- brak osieroconych `receipt_lines`,
+- brak osieroconych `receipt_payments`,
+- `PRAGMA foreign_key_check` = 0 błędów.
+
+Dopiero po przejściu pełnej weryfikacji paczkę uznajemy za zaimportowaną poprawnie.
+
+### 16.12 Workflow jednorazowy
+
+Jeżeli import wykonujemy przez GitHub Actions, workflow może mieć automatyczny trigger tylko na czas kontrolowanego pierwszego uruchomienia. Po sukcesie należy pozostawić go jako `workflow_dispatch` / ręczny, żeby paczka nie została przypadkowo wykonana ponownie.
