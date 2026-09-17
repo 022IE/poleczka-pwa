@@ -3,7 +3,17 @@
 **Moduł:** 06 — USTAWIENIA  
 **Status:** specyfikacja wdrożeniowa v0.2  
 **Dokument nadrzędny:** `POLECZKA_PWA_MASTER.md`  
-**Aktualizacja:** 16.09.2026
+**Aktualizacja:** 17.09.2026
+
+---
+
+## Terminologia — DNR
+
+Od 17.09.2026 obowiązuje skrót:
+
+**DNR = działalność nierejestrowana**.
+
+Skrót `DNR` może być stosowany zamiennie z pełnym określeniem „działalność nierejestrowana” w dokumentacji, komunikacji projektowej i interfejsie tam, gdzie skrót poprawia czytelność.
 
 ---
 
