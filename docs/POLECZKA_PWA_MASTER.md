@@ -59,6 +59,11 @@ Osobny moduł zarządzania rabatami może wrócić w przyszłym etapie.
 - Cloudflare Worker,
 - Cloudflare D1 jako główna baza danych.
 
+### Środowisko developerskie D1
+- aktualna baza developerska: `poleczka-dev`,
+- bieżące prace, testy, migracje i zapytania developerskie wykonujemy na `poleczka-dev`,
+- nie kierujemy zmian developerskich do innej bazy bez wyraźnego ustalenia.
+
 ### Źródła danych
 - Loyverse API,
 - webhook Loyverse,
@@ -432,7 +437,7 @@ Należy zachować:
 
 ## 15. Dane historyczne i obecny model D1
 
-Aktualnie działający model obejmuje m.in.:
+Aktualnie działający model w środowisku developerskim dotyczy bazy **`poleczka-dev`** i obejmuje m.in.:
 
 ### `webhook_events`
 - event_id,
@@ -607,6 +612,7 @@ Pierwszym głównym modułem funkcjonalnym pozostaje **SPRZEDAŻ**.
 
 ### Już ustalone
 - architektura PWA + Worker + D1,
+- aktywna baza developerska D1: `poleczka-dev`,
 - Loyverse jako źródło danych,
 - Google Drive dla dokumentów kosztowych,
 - działalność nierejestrowana jako zakres v1,
@@ -697,32 +703,3 @@ Na obecnym etapie:
 - moduł ma trasę `/vinted`,
 - widok jest jeszcze placeholderem,
 - automatyczny monitoring sprzedaży i tworzenie wpisów sprzedaży nie są jeszcze uruchomione.
-
-Docelowym celem jest powiązanie sprzedaży z Vinted z ewidencją sprzedaży Półeczki Iwonki.
-
----
-
-## 32. Standard przechowywania i odczytu plików Markdown
-
-Ta zasada obowiązuje **wszystkie czaty i agentów pracujących w projekcie Półeczka Iwonki**.
-
-Wszystkie pliki Markdown (`.md`) projektu:
-- przechowujemy w repozytorium GitHub `022IE/poleczka-pwa`,
-- odczytujemy z aktualnej wersji w GitHubie,
-- traktujemy wersję z GitHuba jako jedyną obowiązującą wersję dokumentacji.
-
-Repozytorium GitHub jest jedynym źródłem prawdy dla dokumentacji Markdown. Nie ma obowiązku tworzenia ani utrzymywania kopii `.md` w Bibliotece plików ChatGPT. Biblioteka nie jest elementem wymagań ani workflow dokumentacji projektu.
-
-Po zapisie lub aktualizacji pliku `.md` należy zweryfikować, że zmiana znajduje się na właściwej gałęzi GitHuba.
-
----
-
-## 33. Terminologia projektowa — DNR
-
-Od 17.09.2026 obowiązuje skrót:
-
-**DNR = działalność nierejestrowana**.
-
-Skrót `DNR` może być stosowany zamiennie z pełnym określeniem „działalność nierejestrowana” we wszystkich czatach, dokumentacji, specyfikacjach i elementach interfejsu projektu, jeśli użycie skrótu poprawia czytelność.
-
-Pełne określenie pozostaje poprawne i może być używane wszędzie tam, gdzie jest bardziej naturalne lub czytelne.
