@@ -1,6 +1,6 @@
 {
-  "state": "awaiting_publish",
-  "label": "Oczekiwanie na publikację",
-  "task": "Przebudowano heatmapę na „Sprzedaż wg godziny (średnio)”: dni w pionie, godziny 8–21, układ zgodny z referencją i legenda gradientowa przy zachowaniu dotychczasowej kolorystyki",
-  "updatedAt": "2026-09-17T11:50:00Z"
+  "state": "editing",
+  "label": "Wprowadzanie poprawek",
+  "task": "Dokumentacja — aktualizacja stanu D1 po finalnym cutoverze na poleczka-dev",
+  "updatedAt": "2026-09-17T11:50:27Z"
 }
