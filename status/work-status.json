@@ -1,6 +1,6 @@
 {
-  "state": "editing",
-  "label": "Wprowadzanie poprawek",
-  "task": "Dashboard — dodanie opcji Narzędzia do menu, kafelków i routingu",
-  "updatedAt": "2026-09-17T11:53:00Z"
+  "state": "awaiting_publish",
+  "label": "Oczekiwanie na publikację",
+  "task": "Dodano Narzędzia do menu głównego, kafelków dashboardu i routingu",
+  "updatedAt": "2026-09-17T11:55:00Z"
 }
