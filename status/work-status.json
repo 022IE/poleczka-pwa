@@ -1,6 +1,6 @@
 {
-  "state": "editing",
-  "label": "Wprowadzanie poprawek",
-  "task": "D1 — usunięcie paragonów do 09.09.2026 włącznie oraz paragonu 2-0014 z zachowaniem relacji",
-  "updatedAt": "2026-09-17T12:01:30Z"
+  "state": "awaiting_publish",
+  "label": "Oczekiwanie na publikację",
+  "task": "D1 — usunięto paragony do 09.09.2026 włącznie oraz paragon 2-0014; relacje zweryfikowane",
+  "updatedAt": "2026-09-17T12:03:30Z"
 }
