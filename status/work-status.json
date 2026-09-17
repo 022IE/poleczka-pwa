@@ -1,6 +1,6 @@
 {
-  "state": "awaiting_publish",
-  "label": "Oczekiwanie na publikację",
-  "task": "D1 — dostęp przez GitHub Actions potwierdzony; zidentyfikowano poleczka-loyverse i zweryfikowano schemat oraz relacje",
-  "updatedAt": "2026-09-17T10:51:09Z"
+  "state": "editing",
+  "label": "Wprowadzanie poprawek",
+  "task": "D1 — migracja danych z poleczka-loyverse do docelowej bazy PWA poleczka-dev",
+  "updatedAt": "2026-09-17T11:14:00Z"
 }
