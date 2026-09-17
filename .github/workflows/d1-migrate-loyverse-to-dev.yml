@@ -1,0 +1,35 @@
+name: D1 Migrate Loyverse to Dev
+
+on:
+  push:
+    branches:
+      - dev
+    paths:
+      - '.github/workflows/d1-migrate-loyverse-to-dev.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  migrate:
+    name: Clone poleczka-loyverse to poleczka-dev
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Migrate D1 data
+        env:
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          SOURCE_D1_DATABASE_ID: 4ababa0a-8912-49b0-9ee9-16ce771c27f3
+          TARGET_D1_DATABASE_ID: 099b4d9e-ad73-441b-a2be-a00f347a5905
+        run: node scripts/migrate-loyverse-to-dev.mjs
