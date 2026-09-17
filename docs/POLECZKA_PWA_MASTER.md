@@ -689,3 +689,22 @@ Na obecnym etapie:
 - automatyczny monitoring sprzedaży i tworzenie wpisów sprzedaży nie są jeszcze uruchomione.
 
 Docelowym celem jest powiązanie sprzedaży z Vinted z ewidencją sprzedaży Półeczki Iwonki.
+
+---
+
+## 32. Standard zapisu plików Markdown
+
+Ta zasada obowiązuje **wszystkie czaty i agentów pracujących w projekcie Półeczka Iwonki**.
+
+Każdy tworzony lub aktualizowany plik Markdown (`.md`) należy zapisać równolegle w dwóch miejscach:
+
+1. w repozytorium GitHub `022IE/poleczka-pwa`, w odpowiedniej ścieżce i na właściwej gałęzi roboczej,
+2. w Bibliotece plików ChatGPT, tak aby dokument był dostępny także z innych czatów projektu.
+
+Dodatkowe zasady:
+- repozytorium GitHub pozostaje głównym źródłem prawdy dla aktualnej wersji pliku,
+- kopia w Bibliotece służy dostępności dokumentu między czatami projektu,
+- po zapisie do GitHuba należy zweryfikować, że zapis się powiódł,
+- nie pozostawiamy nowych ani zaktualizowanych plików `.md` wyłącznie lokalnie lub wyłącznie w pojedynczym czacie.
+
+To jest obowiązujący standard projektu dla wszystkich kolejnych plików Markdown.
