@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { NavLink, Route, Routes } from 'react-router-dom'
 import BuildStatus from './components/BuildStatus'
+import SalesPage from './SalesPage'
 
 // Widget publikacji jest narzędziem developerskim. W wersji finalnej ustawiamy false.
 const SHOW_DEV_PIPELINE = true
@@ -252,7 +253,7 @@ function App() {
       </aside>
       <main className="main-area"><Routes>
         <Route path="/" element={<Dashboard/>}/>
-        <Route path="/sprzedaz" element={<Placeholder title="Sprzedaż" text="KPI, filtry, paragony i rozwijane pozycje."/>}/>
+        <Route path="/sprzedaz" element={<SalesPage/>}/>
         <Route path="/vinted" element={<Placeholder title="Vinted" text="Monitoring sprzedaży z Vinted i integracja z ewidencją sprzedaży."/>}/>
         <Route path="/dostawy" element={<Placeholder title="Dostawy" text="Dostawy, zbyt, zwroty, sprzedaż i zysk."/>}/>
         <Route path="/artykuly" element={<Placeholder title="Artykuły" text="Zarządzanie asortymentem i danymi artykułów."/>}/>
