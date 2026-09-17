@@ -2,7 +2,7 @@
 
 **Status:** dokument główny projektu  
 **Rola:** jedno źródło prawdy dla całej aplikacji PWA  
-**Aktualizacja bazowa:** 16.09.2026
+**Aktualizacja bazowa:** 17.09.2026
 
 ---
 
@@ -22,6 +22,7 @@ W wersji 1 aplikacja obejmuje:
 
 - stronę główną / dashboard,
 - sprzedaż,
+- Vinted,
 - dostawy,
 - koszty,
 - artykuły,
@@ -145,6 +146,10 @@ Limit:
 - porównanie okresów,
 - sprzedaż wg kategorii,
 - heatmapa dzień tygodnia × godzina.
+
+### Szybki dostęp
+
+Na dashboardzie znajduje się kafelek `Vinted`, prowadzący do modułu `/vinted`.
 
 ### Porównanie okresów na dashboardzie
 
@@ -549,10 +554,12 @@ Docelowo:
 - `06 — USTAWIENIA`
 - `07 — STRONA GŁÓWNA`
 - `08 — INTEGRACJE / D1 / LOYVERSE`
+- `09 — VINTED`
 
-Plik specyfikacji modułu ANALIZY:
+Pliki specyfikacji:
 
-`docs/MODUL_ANALIZY.md`
+- `docs/MODUL_ANALIZY.md`
+- `docs/MODUL_VINTED.md`
 
 `05 — RABATY` nie jest aktywnym modułem v1; temat wraca dopiero, gdy zdecydujemy o własnej obsłudze rabatów poza POS.
 
@@ -598,6 +605,7 @@ Pierwszym głównym modułem funkcjonalnym pozostaje **SPRZEDAŻ**.
 - model tabel sprzedaży, kosztów i dostaw,
 - główne analizy,
 - porównanie okresów sterowane datą końcową, liczbą `1–5` i typem `Tydzień / Miesiąc / Rok`,
+- moduł Vinted jest dostępny z menu głównego i kafelka dashboardu; integracja funkcjonalna będzie rozwijana osobno,
 - brak konfiguracji rabatów w PWA v1 — rabaty obsługuje POS/Loyverse.
 
 ---
@@ -666,3 +674,18 @@ Dla plików `PNG`, `JPG`, `WEBP` i innych binarnych assetów:
 - jeśli użytkownik przekazuje konkretną grafikę referencyjną, używamy dokładnie tej grafiki; nie rekonstruujemy jej samodzielnie bez wyraźnej prośby.
 
 To jest obowiązujący standard projektu.
+
+---
+
+## 31. Moduł VINTED
+
+Szczegóły modułu są zapisane w `docs/MODUL_VINTED.md`.
+
+Na obecnym etapie:
+- `Vinted` jest osobną pozycją menu głównego,
+- na dashboardzie znajduje się kafelek szybkiego dostępu `Vinted`,
+- moduł ma trasę `/vinted`,
+- widok jest jeszcze placeholderem,
+- automatyczny monitoring sprzedaży i tworzenie wpisów sprzedaży nie są jeszcze uruchomione.
+
+Docelowym celem jest powiązanie sprzedaży z Vinted z ewidencją sprzedaży Półeczki Iwonki.
