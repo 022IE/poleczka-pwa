@@ -1,6 +1,6 @@
 {
-  "state": "editing",
-  "label": "Wprowadzanie poprawek",
-  "task": "Dokumentacja GitHub-only dla plików Markdown oraz rozdzielenie paneli Vinted i DNR, z Vinted po lewej i wyrównaniem do siatki KPI",
-  "updatedAt": "2026-09-17T10:04:30Z"
+  "state": "awaiting_publish",
+  "label": "Oczekiwanie na publikację",
+  "task": "GitHub jest jedynym źródłem prawdy dla Markdown; Vinted i DNR rozdzielone na dwa panele 50/50, Vinted po lewej, typografia dopasowana do KPI",
+  "updatedAt": "2026-09-17T10:09:00Z"
 }
