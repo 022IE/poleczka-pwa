@@ -10,6 +10,7 @@ type ComparisonPeriod = 'week' | 'month' | 'year'
 const nav = [
   ['/', 'Strona główna', '⌂'],
   ['/sprzedaz', 'Sprzedaż', '▢'],
+  ['/vinted', 'Vinted', 'V'],
   ['/dostawy', 'Dostawy', '▣'],
   ['/artykuly', 'Artykuły', '♧'],
   ['/kategorie', 'Kategorie', '◇'],
@@ -45,6 +46,7 @@ const heat = [
 
 const quickLinks = [
   ['/sprzedaz','Sprzedaż','Dodaj i przeglądaj','🛒','mint'],
+  ['/vinted','Vinted','Sprzedaż z Vinted','V','aqua'],
   ['/dostawy','Dostawy','Nowa dostawa','▣','blue'],
   ['/artykuly','Artykuły','Zarządzaj asortymentem','♧','mint'],
   ['/kategorie','Kategorie','Porządkuj produkty','◇','gold'],
@@ -223,6 +225,7 @@ function App() {
       <main className="main-area"><Routes>
         <Route path="/" element={<Dashboard/>}/>
         <Route path="/sprzedaz" element={<Placeholder title="Sprzedaż" text="KPI, filtry, paragony i rozwijane pozycje."/>}/>
+        <Route path="/vinted" element={<Placeholder title="Vinted" text="Monitoring sprzedaży z Vinted i integracja z ewidencją sprzedaży."/>}/>
         <Route path="/dostawy" element={<Placeholder title="Dostawy" text="Dostawy, zbyt, zwroty, sprzedaż i zysk."/>}/>
         <Route path="/artykuly" element={<Placeholder title="Artykuły" text="Zarządzanie asortymentem i danymi artykułów."/>}/>
         <Route path="/kategorie" element={<Placeholder title="Kategorie" text="Kategorie wykorzystywane w sprzedaży, filtrach i analizach."/>}/>
