@@ -731,13 +731,14 @@ Na obecnym etapie:
 
 ## 32. Czytelność interfejsu — powiększona typografia
 
-Od 18.09.2026 w wersji developerskiej obowiązuje testowo powiększona typografia całego PWA o około 25%.
+Od 18.09.2026 w wersji developerskiej obowiązuje globalna warstwa zwiększonej czytelności dla całego PWA.
 
-Założenie:
-- wszystkie jawnie zdefiniowane rozmiary tekstu w interfejsie zostały zwiększone o około 25%,
-- zachowana zostaje dotychczasowa hierarchia nagłówków, opisów, tabel i KPI,
-- nie skalujemy automatycznie całego layoutu, kart ani wykresów,
-- sztywne wartości `line-height` podnosimy razem z tekstem, aby uniknąć ściskania wierszy,
-- po ocenie wariantu +50% skala została zmniejszona do +25%, ponieważ większa wartość rozjeżdżała układ.
+Implementacja:
+- osobny plik `src/readability.css`, ładowany jako ostatnia warstwa stylów,
+- większe teksty w menu, nagłówkach, KPI, wykresach, formularzach, tabelach i paginacji,
+- najmniejsze teksty pomocnicze są powiększane mocniej niż duże nagłówki,
+- wysokości wierszy i pól formularzy są zwiększone tam, gdzie większy tekst tego wymaga,
+- nie skalujemy całego interfejsu przez `zoom`; zwiększamy przede wszystkim typografię i niezbędne odstępy,
+- warstwa jest celowo odseparowana od stylów modułów, aby można było łatwo skorygować skalę po ocenie wizualnej.
 
-Cel: poprawić czytelność PWA bez konieczności wpatrywania się w drobny tekst.
+Cel: poprawić czytelność PWA bez konieczności wpatrywania się w drobny tekst, przy zachowaniu obecnego układu aplikacji.
