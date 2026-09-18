@@ -1,6 +1,6 @@
 {
-  "state": "awaiting_publish",
-  "label": "Oczekiwanie na publikację",
-  "task": "Konfiguracja repo — Worker ujednolicony do poleczka-pwa, workflow dev wskazuje dev.poleczkaiwonki.dpdns.org",
-  "updatedAt": "2026-09-18T12:36:30Z"
+  "state": "editing",
+  "label": "Wprowadzanie poprawek",
+  "task": "Dashboard — szacowany zysk i % zbytu z danych dostaw w D1",
+  "updatedAt": "2026-09-18T12:59:30Z"
 }
