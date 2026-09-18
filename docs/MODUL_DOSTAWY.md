@@ -192,9 +192,9 @@ Ekran `/dostawy` ma następujący układ:
    - status,
    - kategoria,
    - wyszukiwarka po Lp. i dostawcy.
-4. W nagłówku tabeli są akcje:
-   - **Rozwiń wszystko / Zwiń wszystko**,
-   - **Dodaj dostawę**.
+4. Sterowanie rozwijaniem wszystkich dostaw jest identyczne jak w SPRZEDAŻY:
+   - mały przycisk `⊞ / ⊟` znajduje się w pierwszej komórce nagłówka tabeli,
+   - **Dodaj dostawę** pozostaje osobną akcją nad tabelą po prawej.
 5. Każdą dostawę można rozwinąć przyciskiem `+` analogicznie do paragonów w module SPRZEDAŻ.
 6. Rozwinięcie pokazuje zagregowane sprzedane artykuły z tej dostawy, np. `Spodnie — 25 szt.`, `Koszula — 10 szt.`.
 7. Wiersze artykułów, dla których zagregowana sprzedaż ilościowa wynosi `0`, **nie są wyświetlane**.
