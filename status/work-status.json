@@ -1,6 +1,6 @@
 {
-  "state": "awaiting_publish",
-  "label": "Oczekiwanie na publikację",
-  "task": "Status integracji — API, D1, webhook Loyverse, Telegram i stan PWA; moduł Synchronizacja doprecyzowany",
-  "updatedAt": "2026-09-18T08:02:30Z"
+  "state": "editing",
+  "label": "Wprowadzanie poprawek",
+  "task": "PWA — większa typografia globalnie + SPRZEDAŻ rozwiń/zwiń wszystkie paragony",
+  "updatedAt": "2026-09-18T08:03:00Z"
 }
