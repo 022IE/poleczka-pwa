@@ -39,7 +39,7 @@
 .summary-eyebrow,
 .vinted-summary-stats span,
 .limit-remaining span {
-  font-size: 16.25px !important;
+  font-size:12.19px !important;
   line-height: 1.2;
 }
 
@@ -47,17 +47,17 @@
 .limit-value b,
 .limit-remaining > b,
 .vinted-summary-stats b {
-  font-size: 26.25px !important;
+  font-size:19.69px !important;
   line-height: 1.15;
   font-variant-numeric: tabular-nums;
 }
 
 .limit-value {
-  font-size: 16.25px !important;
+  font-size:12.19px !important;
 }
 
 .progress-row > b {
-  font-size: 18.75px;
+  font-size:14.06px;
 }
 
 /* DNR po prawej. */
@@ -141,7 +141,7 @@
 
 .vinted-summary-brand strong {
   color: #087a7c;
-  font-size: 16.25px;
+  font-size:12.19px;
   line-height: 1.2;
 }
 
@@ -205,14 +205,14 @@
   .vinted-summary-stats span,
   .limit-remaining span,
   .limit-value {
-    font-size: 15px !important;
+    font-size:11.25px !important;
   }
 
   .summary-title-row strong,
   .limit-value b,
   .limit-remaining > b,
   .vinted-summary-stats b {
-    font-size: 23.75px !important;
+    font-size:17.81px !important;
   }
 }
 
