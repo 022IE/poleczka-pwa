@@ -1,6 +1,6 @@
 {
-  "state": "awaiting_publish",
-  "label": "Oczekiwanie na publikację",
-  "task": "DOSTAWY — tabela deliveries, migracja delivery_number i aktualizacja zależności zakończone | D1 — zakończony import historycznej sprzedaży 09.09.2026",
-  "updatedAt": "2026-09-18T10:42:00Z"
+  "state": "editing",
+  "label": "Wprowadzanie poprawek",
+  "task": "DOSTAWY — KPI, tabela z filtrami, rozwijane pozycje sprzedaży i dodawanie dostawy",
+  "updatedAt": "2026-09-18T10:43:25.294Z"
 }
