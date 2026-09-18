@@ -13,6 +13,17 @@ import './sales.css'
 import './deliveries.css'
 import './readability.css'
 
+// Gdy nowy service worker przejmie kontrolę po publikacji, odświeżamy otwartą kartę raz.
+// Zapobiega to pozostawaniu użytkownika na starym bundle UI po wdrożeniu nowej wersji PWA.
+if ('serviceWorker' in navigator) {
+  let reloadingForUpdate = false
+  navigator.serviceWorker.addEventListener('controllerchange', () => {
+    if (reloadingForUpdate) return
+    reloadingForUpdate = true
+    window.location.reload()
+  })
+}
+
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
     <BrowserRouter>
