@@ -18,3 +18,23 @@ Nie pozostawiamy tej wykonanej zmiany jako oczekującego pliku SQL Wranglera, po
 
 Zasada na przyszłość: jedna zmiana schematu ma być prowadzona od początku do końca jednym mechanizmem migracji; nie mieszamy wykonania skryptowego z nieoznaczoną jako wykonaną migracją Wranglera.
 
+
+## Migracja S.K. paragonu — 18.09.2026
+
+Migracja `0001_receipts_sk.sql` została zastosowana do aktywnej bazy `poleczka-dev` przez mechanizm `wrangler d1 migrations`.
+
+Zmiana:
+
+```sql
+ALTER TABLE receipts
+ADD COLUMN sk BOOLEAN NOT NULL DEFAULT TRUE
+CHECK (sk IN (0, 1));
+```
+
+Weryfikacja po migracji:
+- kolumna `receipts.sk` istnieje jako `BOOLEAN`,
+- wartość domyślna to `TRUE`,
+- wszystkie 121 istniejących w momencie migracji paragonów otrzymało `sk = 1`,
+- nowe rekordy, które nie podają `sk`, otrzymują `TRUE` automatycznie.
+
+`sk` jest polem lokalnym PWA i nie pochodzi z Loyverse.
