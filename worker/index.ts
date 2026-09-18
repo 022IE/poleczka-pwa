@@ -737,6 +737,7 @@ async function salesReceipts(url: URL, env: Env) {
       ROUND(COALESCE(r.total_money, 0) + COALESCE(r.total_discount, 0), 2) AS gross,
       ROUND(COALESCE(r.total_discount, 0), 2) AS discount,
       ROUND(COALESCE(r.total_money, 0), 2) AS net,
+      COALESCE(r.sk, 1) AS sk,
       COALESCE((
         SELECT GROUP_CONCAT(pp.name, ' + ')
         FROM receipt_payments pp
@@ -755,6 +756,7 @@ async function salesReceipts(url: URL, env: Env) {
     gross: number
     discount: number
     net: number
+    sk: number
     payment: string
   }>()
 
@@ -764,7 +766,44 @@ async function salesReceipts(url: URL, env: Env) {
     pageSize,
     total,
     totalPages,
-    items: result.results || [],
+    items: (result.results || []).map((receipt) => ({
+      ...receipt,
+      sk: Boolean(receipt.sk),
+    })),
+  })
+}
+
+async function updateReceiptSk(request: Request, receiptNumber: string, env: Env) {
+  let payload: { sk?: unknown }
+  try {
+    payload = await request.json() as { sk?: unknown }
+  } catch {
+    return salesJson({ ok: false, error: 'Invalid JSON body' }, 400)
+  }
+
+  if (typeof payload.sk !== 'boolean') {
+    return salesJson({ ok: false, error: 'Field sk must be boolean' }, 400)
+  }
+
+  const existing = await env.DB.prepare(`
+    SELECT receipt_number
+    FROM receipts
+    WHERE receipt_number = ?
+    LIMIT 1
+  `).bind(receiptNumber).first<{ receipt_number: string }>()
+
+  if (!existing) return salesJson({ ok: false, error: 'Receipt not found' }, 404)
+
+  await env.DB.prepare(`
+    UPDATE receipts
+    SET sk = ?
+    WHERE receipt_number = ?
+  `).bind(payload.sk ? 1 : 0, receiptNumber).run()
+
+  return salesJson({
+    ok: true,
+    receiptNumber,
+    sk: payload.sk,
   })
 }
 
@@ -1700,6 +1739,11 @@ async function dashboardData(url: URL, env: Env) {
 }
 
 async function handleSalesApi(request: Request, url: URL, env: Env): Promise<Response | null> {
+  const skMatch = url.pathname.match(/^\/api\/sales\/receipts\/([^/]+)\/sk$/)
+  if (skMatch && request.method === 'PATCH') {
+    return updateReceiptSk(request, decodeURIComponent(skMatch[1]), env)
+  }
+
   if (request.method !== 'GET') return null
 
   if (url.pathname === '/api/dictionaries/categories') return salesCategories(env)
