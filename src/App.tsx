@@ -214,7 +214,7 @@ function Dashboard() {
   const kpis = useMemo(() => {
     const data = dashboardData?.kpis
     const profitCaption = data?.estimatedProfit === null || data?.estimatedProfit === undefined
-      ? 'brak wiarygodnych kosztów w D1'
+      ? 'oczekuje na dane kosztowe dostaw'
       : `marża ${formatPercent(data.profitMargin)} • koszt ${formatPercent(data.costCoverage)} szt.`
 
     return [
