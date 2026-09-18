@@ -171,3 +171,58 @@ Kolejne elementy UI / API mogą obejmować:
 - analizy dostawców i dostaw.
 
 Te funkcje mają opierać się wyłącznie na kanonicznym `delivery_number`.
+
+---
+
+## 10. Widok modułu DOSTAWY — wdrożenie 18.09.2026
+
+Ekran `/dostawy` ma następujący układ:
+
+1. KPI u góry:
+   - aktywne dostawy,
+   - sztuk przyjęto,
+   - % zbytu,
+   - sprzedaż z dostaw,
+   - szacowany zysk,
+   - najlepszy dostawca.
+2. Poniżej jedna tabela dostaw.
+3. Filtry są umieszczone w nagłówku karty tabeli:
+   - data od / do,
+   - dostawca,
+   - status,
+   - kategoria,
+   - wyszukiwarka po Lp. i dostawcy.
+4. W nagłówku tabeli są akcje:
+   - **Rozwiń wszystko / Zwiń wszystko**,
+   - **Dodaj dostawę**.
+5. Każdą dostawę można rozwinąć przyciskiem `+` analogicznie do paragonów w module SPRZEDAŻ.
+6. Rozwinięcie pokazuje zagregowane sprzedane artykuły z tej dostawy, np. `Spodnie — 25 szt.`, `Koszula — 10 szt.`.
+7. Wiersze artykułów, dla których zagregowana sprzedaż ilościowa wynosi `0`, **nie są wyświetlane**.
+8. **Dostawa nr 0 jest normalnie wyświetlana** w tabeli i może być rozwijana. Reguła ukrywania zera dotyczy wyłącznie artykułów z zerową sprzedażą w rozwinięciu, nie numeru dostawy.
+
+Tabela główna pokazuje:
+- Lp.,
+- datę,
+- dostawcę,
+- ilość,
+- cenę/szt.,
+- sprzedane,
+- % zbytu,
+- % zwrotu,
+- sprzedaż,
+- zysk.
+
+Definicje:
+- `unit_cost = total_cost / quantity`,
+- `sell_through = sold / quantity × 100%`,
+- `return_rate = sales / total_cost × 100%`,
+- `profit = sales - sold × unit_cost`.
+
+Formularz **Dodaj dostawę** zapisuje:
+- datę,
+- dostawcę,
+- ilość,
+- koszt całkowity.
+
+`delivery_number` dla nowej zwykłej dostawy jest nadawany automatycznie jako kolejny dodatni numer.
+

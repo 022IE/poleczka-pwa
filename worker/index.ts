@@ -811,6 +811,297 @@ async function salesReceiptLines(receiptNumber: string, env: Env) {
   return salesJson({ ok: true, items: result.results || [] })
 }
 
+type DeliveryQuery = {
+  from: string | null
+  to: string | null
+  supplier: string | null
+  status: string | null
+  category: string | null
+  search: string | null
+}
+
+function parseDeliveryQuery(url: URL): DeliveryQuery {
+  const value = (name: string) => url.searchParams.get(name)?.trim() || null
+  const from = value('from')
+  const to = value('to')
+  const status = value('status')
+  return {
+    from: validYmd(from) ? from : null,
+    to: validYmd(to) ? to : null,
+    supplier: value('supplier'),
+    status: status === 'active' || status === 'unsold' || status === 'sold-out' ? status : null,
+    category: value('category'),
+    search: value('search'),
+  }
+}
+
+function buildDeliveryWhere(filters: DeliveryQuery) {
+  const clauses = ['1=1']
+  const params: Array<string | number> = []
+
+  if (filters.from) {
+    clauses.push('d.delivery_date >= ?')
+    params.push(filters.from)
+  }
+  if (filters.to) {
+    clauses.push('d.delivery_date <= ?')
+    params.push(filters.to)
+  }
+  if (filters.supplier) {
+    clauses.push('d.supplier_name = ?')
+    params.push(filters.supplier)
+  }
+  if (filters.status === 'active') {
+    clauses.push('COALESCE(s.sold, 0) < d.quantity')
+  } else if (filters.status === 'unsold') {
+    clauses.push('COALESCE(s.sold, 0) <= 0')
+  } else if (filters.status === 'sold-out') {
+    clauses.push('COALESCE(s.sold, 0) >= d.quantity')
+  }
+  if (filters.category) {
+    clauses.push(`EXISTS (
+      SELECT 1
+      FROM receipt_lines lcf
+      JOIN receipts rcf ON rcf.receipt_number = lcf.receipt_number
+      LEFT JOIN items icf ON icf.item_id = lcf.item_id
+      WHERE lcf.delivery_number = d.delivery_number
+        AND COALESCE(rcf.receipt_type, 'SALE') = 'SALE'
+        AND rcf.cancelled_at IS NULL
+        AND icf.category_id = ?
+    )`)
+    params.push(filters.category)
+  }
+  if (filters.search) {
+    const pattern = `%${escapeLike(filters.search)}%`
+    clauses.push(`(
+      CAST(d.delivery_number AS TEXT) LIKE ? ESCAPE '\\'
+      OR d.supplier_name LIKE ? ESCAPE '\\'
+    )`)
+    params.push(pattern, pattern)
+  }
+
+  return { sql: clauses.join('\n AND '), params }
+}
+
+const deliverySalesCte = `
+  WITH sales AS (
+    SELECT
+      l.delivery_number,
+      COALESCE(SUM(l.quantity), 0) AS sold,
+      COALESCE(SUM(l.total_money), 0) AS sales
+    FROM receipt_lines l
+    JOIN receipts r ON r.receipt_number = l.receipt_number
+    WHERE COALESCE(r.receipt_type, 'SALE') = 'SALE'
+      AND r.cancelled_at IS NULL
+    GROUP BY l.delivery_number
+  )
+`
+
+async function deliveryRows(url: URL, env: Env) {
+  const filters = parseDeliveryQuery(url)
+  const where = buildDeliveryWhere(filters)
+  const result = await env.DB.prepare(`
+    ${deliverySalesCte}
+    SELECT
+      d.delivery_number AS deliveryNumber,
+      d.delivery_date AS deliveryDate,
+      d.supplier_name AS supplierName,
+      d.quantity AS quantity,
+      d.total_cost AS totalCost,
+      ROUND(d.total_cost / NULLIF(d.quantity, 0), 2) AS unitCost,
+      COALESCE(s.sold, 0) AS sold,
+      ROUND(COALESCE(s.sold, 0) * 100.0 / NULLIF(d.quantity, 0), 1) AS sellThrough,
+      ROUND(COALESCE(s.sales, 0) * 100.0 / NULLIF(d.total_cost, 0), 1) AS returnRate,
+      ROUND(COALESCE(s.sales, 0), 2) AS sales,
+      ROUND(COALESCE(s.sales, 0) - (COALESCE(s.sold, 0) * d.total_cost / NULLIF(d.quantity, 0)), 2) AS profit
+    FROM deliveries d
+    LEFT JOIN sales s ON s.delivery_number = d.delivery_number
+    WHERE ${where.sql}
+    ORDER BY d.delivery_number DESC
+  `).bind(...where.params).all<{
+    deliveryNumber: number
+    deliveryDate: string
+    supplierName: string
+    quantity: number
+    totalCost: number
+    unitCost: number
+    sold: number
+    sellThrough: number
+    returnRate: number
+    sales: number
+    profit: number
+  }>()
+
+  return salesJson({ ok: true, items: result.results || [] })
+}
+
+async function deliverySummary(url: URL, env: Env) {
+  const filters = parseDeliveryQuery(url)
+  const where = buildDeliveryWhere(filters)
+
+  const row = await env.DB.prepare(`
+    ${deliverySalesCte},
+    filtered AS (
+      SELECT
+        d.delivery_number,
+        d.supplier_name,
+        d.quantity,
+        d.total_cost,
+        COALESCE(s.sold, 0) AS sold,
+        COALESCE(s.sales, 0) AS sales,
+        COALESCE(s.sales, 0) - (COALESCE(s.sold, 0) * d.total_cost / NULLIF(d.quantity, 0)) AS profit
+      FROM deliveries d
+      LEFT JOIN sales s ON s.delivery_number = d.delivery_number
+      WHERE ${where.sql}
+    )
+    SELECT
+      COALESCE(SUM(CASE WHEN delivery_number >= 0 AND sold < quantity THEN 1 ELSE 0 END), 0) AS activeDeliveries,
+      COALESCE(SUM(quantity), 0) AS receivedUnits,
+      COALESCE(SUM(sold), 0) AS soldUnits,
+      COALESCE(SUM(sales), 0) AS sales,
+      COALESCE(SUM(profit), 0) AS profit
+    FROM filtered
+  `).bind(...where.params).first<{
+    activeDeliveries: number
+    receivedUnits: number
+    soldUnits: number
+    sales: number
+    profit: number
+  }>()
+
+  const supplier = await env.DB.prepare(`
+    ${deliverySalesCte},
+    filtered AS (
+      SELECT
+        d.delivery_number,
+        d.supplier_name,
+        d.quantity,
+        d.total_cost,
+        COALESCE(s.sold, 0) AS sold,
+        COALESCE(s.sales, 0) AS sales,
+        COALESCE(s.sales, 0) - (COALESCE(s.sold, 0) * d.total_cost / NULLIF(d.quantity, 0)) AS profit
+      FROM deliveries d
+      LEFT JOIN sales s ON s.delivery_number = d.delivery_number
+      WHERE ${where.sql}
+    )
+    SELECT supplier_name AS supplierName, ROUND(SUM(profit), 2) AS profit
+    FROM filtered
+    WHERE delivery_number >= 0
+    GROUP BY supplier_name
+    ORDER BY profit DESC, supplier_name COLLATE NOCASE
+    LIMIT 1
+  `).bind(...where.params).first<{ supplierName: string; profit: number }>()
+
+  const receivedUnits = Number(row?.receivedUnits || 0)
+  const soldUnits = Number(row?.soldUnits || 0)
+
+  return salesJson({
+    ok: true,
+    activeDeliveries: Number(row?.activeDeliveries || 0),
+    receivedUnits,
+    sellThrough: receivedUnits > 0 ? Math.round((soldUnits / receivedUnits) * 1000) / 10 : 0,
+    sales: money(row?.sales),
+    profit: money(row?.profit),
+    bestSupplier: supplier?.supplierName || null,
+  })
+}
+
+async function deliverySuppliers(env: Env) {
+  const result = await env.DB.prepare(`
+    SELECT DISTINCT supplier_name AS name
+    FROM deliveries
+    WHERE TRIM(COALESCE(supplier_name, '')) <> ''
+    ORDER BY supplier_name COLLATE NOCASE
+  `).all<{ name: string }>()
+  return salesJson({ ok: true, items: (result.results || []).map((row) => row.name) })
+}
+
+async function deliveryItems(deliveryNumber: number, env: Env) {
+  const exists = await env.DB.prepare(
+    'SELECT delivery_number FROM deliveries WHERE delivery_number = ? LIMIT 1'
+  ).bind(deliveryNumber).first<{ delivery_number: number }>()
+  if (!exists) return salesJson({ ok: false, error: 'Delivery not found' }, 404)
+
+  const result = await env.DB.prepare(`
+    SELECT
+      l.item_id AS itemId,
+      COALESCE(i.item_name, l.item_name, '—') AS itemName,
+      COALESCE(c.name, '—') AS category,
+      ROUND(SUM(l.quantity), 2) AS quantity,
+      ROUND(SUM(l.total_money), 2) AS sales
+    FROM receipt_lines l
+    JOIN receipts r ON r.receipt_number = l.receipt_number
+    LEFT JOIN items i ON i.item_id = l.item_id
+    LEFT JOIN categories c ON c.category_id = i.category_id
+    WHERE l.delivery_number = ?
+      AND COALESCE(r.receipt_type, 'SALE') = 'SALE'
+      AND r.cancelled_at IS NULL
+    GROUP BY l.item_id, COALESCE(i.item_name, l.item_name, '—'), COALESCE(c.name, '—')
+    HAVING SUM(l.quantity) > 0
+    ORDER BY SUM(l.quantity) DESC, itemName COLLATE NOCASE
+  `).bind(deliveryNumber).all<{
+    itemId: string | null
+    itemName: string
+    category: string
+    quantity: number
+    sales: number
+  }>()
+
+  return salesJson({ ok: true, items: result.results || [] })
+}
+
+async function createDelivery(request: Request, env: Env) {
+  let body: { deliveryDate?: unknown; supplierName?: unknown; quantity?: unknown; totalCost?: unknown }
+  try {
+    body = await request.json() as typeof body
+  } catch {
+    return salesJson({ ok: false, error: 'Invalid JSON' }, 400)
+  }
+
+  const deliveryDate = typeof body.deliveryDate === 'string' ? body.deliveryDate.trim() : ''
+  const supplierName = typeof body.supplierName === 'string' ? body.supplierName.trim() : ''
+  const quantity = Number(body.quantity)
+  const totalCost = Number(body.totalCost)
+
+  if (!validYmd(deliveryDate) || !supplierName || !Number.isInteger(quantity) || quantity <= 0 || !Number.isFinite(totalCost) || totalCost < 0) {
+    return salesJson({ ok: false, error: 'Invalid delivery data' }, 400)
+  }
+
+  const row = await env.DB.prepare(`
+    INSERT INTO deliveries (delivery_number, delivery_date, supplier_name, quantity, total_cost)
+    SELECT
+      COALESCE(MAX(CASE WHEN delivery_number > 0 THEN delivery_number END), 0) + 1,
+      ?, ?, ?, ?
+    FROM deliveries
+    RETURNING
+      delivery_number AS deliveryNumber,
+      delivery_date AS deliveryDate,
+      supplier_name AS supplierName,
+      quantity,
+      total_cost AS totalCost
+  `).bind(deliveryDate, supplierName, quantity, money(totalCost)).first<{
+    deliveryNumber: number
+    deliveryDate: string
+    supplierName: string
+    quantity: number
+    totalCost: number
+  }>()
+
+  return salesJson({ ok: true, item: row }, 201)
+}
+
+async function handleDeliveriesApi(request: Request, url: URL, env: Env): Promise<Response | null> {
+  if (url.pathname === '/api/deliveries' && request.method === 'GET') return deliveryRows(url, env)
+  if (url.pathname === '/api/deliveries' && request.method === 'POST') return createDelivery(request, env)
+  if (url.pathname === '/api/deliveries/summary' && request.method === 'GET') return deliverySummary(url, env)
+  if (url.pathname === '/api/deliveries/suppliers' && request.method === 'GET') return deliverySuppliers(env)
+
+  const itemMatch = url.pathname.match(/^\/api\/deliveries\/(-?\d+)\/items$/)
+  if (itemMatch && request.method === 'GET') return deliveryItems(Number(itemMatch[1]), env)
+
+  return null
+}
+
 type DashboardComparisonPeriod = 'week' | 'month' | 'year'
 
 type DashboardReceiptRow = {
@@ -1459,6 +1750,18 @@ export default {
         return salesJson({
           ok: false,
           error: error instanceof Error ? error.message : 'Dashboard API failed',
+        }, 500)
+      }
+    }
+
+    if (url.pathname.startsWith('/api/deliveries')) {
+      try {
+        const response = await handleDeliveriesApi(request, url, env)
+        if (response) return response
+      } catch (error) {
+        return salesJson({
+          ok: false,
+          error: error instanceof Error ? error.message : 'Deliveries API failed',
         }, 500)
       }
     }
