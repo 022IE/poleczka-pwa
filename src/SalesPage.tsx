@@ -208,6 +208,7 @@ function SalesPage() {
   const [linesByReceipt, setLinesByReceipt] = useState<Record<string, SaleLine[]>>({})
   const [lineLoading, setLineLoading] = useState<Set<string>>(() => new Set())
   const [skSaving, setSkSaving] = useState<Set<string>>(() => new Set())
+  const [openReceiptMenu, setOpenReceiptMenu] = useState<string | null>(null)
 
   const [loading, setLoading] = useState(true)
   const [summaryLoading, setSummaryLoading] = useState(true)
@@ -669,14 +670,45 @@ function SalesPage() {
                       <input
                         type="checkbox"
                         checked={receipt.sk}
-                        disabled={skSaving.has(receipt.receiptNumber)}
+                        readOnly
+                        tabIndex={-1}
+                        aria-readonly="true"
                         aria-label={`S.K. dla paragonu ${receipt.receiptNumber}`}
-                        title={receipt.sk ? 'S.K. włączone' : 'S.K. wyłączone'}
-                        onChange={(event) => void updateReceiptSk(receipt.receiptNumber, event.target.checked)}
+                        title={receipt.sk ? 'S.K. zaksięgowane' : 'S.K. wyksięgowane'}
                       />
                     </label>
-                    <button type="button" className="sales-row-menu" aria-label={`Menu paragonu ${receipt.receiptNumber}`}>•••</button>
+                    <button
+                      type="button"
+                      className="sales-row-menu"
+                      aria-label={`Menu paragonu ${receipt.receiptNumber}`}
+                      aria-expanded={openReceiptMenu === receipt.receiptNumber}
+                      onClick={() => setOpenReceiptMenu((current) => current === receipt.receiptNumber ? null : receipt.receiptNumber)}
+                    >•••</button>
                   </div>
+
+                  {openReceiptMenu === receipt.receiptNumber && (
+                    <div className="sales-row-actions" role="menu" aria-label={`Akcje paragonu ${receipt.receiptNumber}`}>
+                      <button
+                        type="button"
+                        role="menuitem"
+                        disabled={receipt.sk || skSaving.has(receipt.receiptNumber)}
+                        onClick={() => {
+                          setOpenReceiptMenu(null)
+                          void updateReceiptSk(receipt.receiptNumber, true)
+                        }}
+                      >Zaksięguj</button>
+                      <button
+                        type="button"
+                        role="menuitem"
+                        disabled={!receipt.sk || skSaving.has(receipt.receiptNumber)}
+                        onClick={() => {
+                          setOpenReceiptMenu(null)
+                          void updateReceiptSk(receipt.receiptNumber, false)
+                        }}
+                      >Wyksięguj</button>
+                      <button type="button" role="menuitem" className="danger" disabled title="Funkcja zostanie dodana później">Usuń</button>
+                    </div>
+                  )}
 
                   {isExpanded && (
                     <div className="sales-lines-wrap">
