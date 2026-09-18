@@ -480,7 +480,16 @@ Docelowo / w miarę dostępności monitoruje:
 
 Każda usługa ma własny stan. Brak konfiguracji monitoringu konkretnej usługi ma być pokazany jako stan nieznany / wymagający konfiguracji, a nie jako fałszywe „online”.
 
-Telegram może być sprawdzany przez skonfigurowany endpoint health (`TELEGRAM_HEALTH_URL`) albo serwerowy sekret bota (`TELEGRAM_BOT_TOKEN`). Sekrety nie trafiają do frontendu.
+Telegram jest sprawdzany przez endpoint health PWA `/api/telegram-health`. Endpoint po stronie Workera wykonuje techniczne wywołanie `getMe` do Telegram Bot API z użyciem sekretu `TELEGRAM_BOT_TOKEN`.
+
+Zasady:
+- token bota jest przechowywany wyłącznie jako sekret Cloudflare Workera,
+- token nie trafia do frontendu, GitHuba ani odpowiedzi endpointu,
+- odpowiedź health zawiera tylko stan `ok`, informację czy konfiguracja istnieje, nazwę użytkownika bota (jeśli Telegram ją zwróci) oraz czas sprawdzenia,
+- brak sekretu daje stan nieznany / wymagający konfiguracji,
+- błąd Telegram Bot API daje stan `offline`,
+- poprawne `getMe` daje stan `online`,
+- opcjonalnie można nadal użyć zewnętrznego `TELEGRAM_HEALTH_URL`; jeśli jest ustawiony, ma pierwszeństwo przed lokalnym testem.
 
 Należy zachować:
 - webhooki,
