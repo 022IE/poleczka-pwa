@@ -169,9 +169,11 @@ Z D1 pochodzą:
 
 Wyjątek: panel **Vinted** pozostaje niezależny i nie jest jeszcze zasilany z D1.
 
-Ograniczenia bieżącego modelu:
-- **szacowany zysk** nie może być liczony z `receipt_lines.cost` ani `receipt_lines.cost_total`. Obowiązująca reguła biznesowa: dla każdej dostawy wyliczamy **średni koszt sztuki = cena całej dostawy / liczba sztuk w dostawie**; koszt sprzedanej pozycji wynika z kanonicznego `receipt_lines.delivery_number`, a zysk = sprzedaż netto pozycji − przypisany średni koszt sztuki × sprzedana ilość. Tabela `deliveries` jest już wdrożona; sam KPI pozostaje wyłączony do wdrożenia uzgodnionej agregacji dashboardu,
-- **% zbytu** może być liczony z `deliveries.quantity` i sprzedaży powiązanej przez `receipt_lines.delivery_number`; sam KPI pozostaje wyłączony do wdrożenia agregacji dashboardu,
+Bieżące reguły dashboardu:
+- **szacowany zysk** jest liczony z dostaw: dla każdej pozycji sprzedaży koszt jednostkowy = `deliveries.total_cost / deliveries.quantity` dla dostawy wskazanej przez `receipt_lines.delivery_number`; koszt sprzedanej pozycji = koszt jednostkowy × sprzedana ilość, a szacowany zysk = sprzedaż netto pozycji − koszt sprzedanych sztuk. Nie używamy `receipt_lines.cost` ani `receipt_lines.cost_total`,
+- KPI zysku pokazuje również marżę dla sprzedaży objętej znanym kosztem dostawy oraz pokrycie kosztowe sprzedanych sztuk,
+- **% zbytu** jest liczony jako suma sprzedanych sztuk przypisanych do dostaw / suma `deliveries.quantity` dla dostaw o numerze `>= 0`,
+- rekord `-1` (dostawa niezidentyfikowana) nie wchodzi do mianownika % zbytu; rekord `0` (dostawa wewnętrzna) wchodzi do agregacji,
 - kwota kwartalnego limitu DNR jest konfiguracją aplikacji, a nie daną sprzedażową; do czasu uruchomienia ustawień może być przekazana przez konfigurację Workera `DNR_QUARTER_LIMIT`.
 
 
