@@ -1,6 +1,6 @@
 {
-  "state": "editing",
-  "label": "Wprowadzanie poprawek",
-  "task": "D1 — import historycznej sprzedaży 08.09.2026",
-  "updatedAt": "2026-09-18T10:11:00Z"
+  "state": "awaiting_publish",
+  "label": "Oczekiwanie na publikację",
+  "task": "D1 — zakończony import historycznej sprzedaży 08.09.2026",
+  "updatedAt": "2026-09-18T10:13:00Z"
 }
