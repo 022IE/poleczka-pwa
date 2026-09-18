@@ -1,6 +1,6 @@
 {
-  "state": "awaiting_publish",
-  "label": "Oczekiwanie na publikację",
-  "task": "Status integracji — dodano /api/telegram-health i monitoring Telegram Bot API",
-  "updatedAt": "2026-09-18T12:19:30Z"
+  "state": "editing",
+  "label": "Wprowadzanie poprawek",
+  "task": "DOSTAWY — koszt zakupu, menu wiersza, edycja, usuwanie i szczegóły",
+  "updatedAt": "2026-09-18T12:20:53.410Z"
 }
