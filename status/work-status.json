@@ -1,6 +1,6 @@
 {
-  "state": "awaiting_publish",
-  "label": "Oczekiwanie na publikację",
-  "task": "D1 — zakończona analiza cen i dopasowanie artykułów do sprzedaży 07.09",
-  "updatedAt": "2026-09-18T08:40:00Z"
+  "state": "editing",
+  "label": "Wprowadzanie poprawek",
+  "task": "D1 — import historycznej sprzedaży 07.09.2026",
+  "updatedAt": "2026-09-18T08:48:30Z"
 }
