@@ -1,6 +1,6 @@
 {
-  "state": "awaiting_publish",
-  "label": "Oczekiwanie na publikację",
-  "task": "Całe PWA — widżet pipeline wyłączony; build zakończony, oczekiwanie na publikację",
-  "updatedAt": "2026-09-18T06:37:15Z"
+  "state": "editing",
+  "label": "Wprowadzanie poprawek",
+  "task": "Layout — wyrównanie nagłówka głównego do prawej i odsunięcie KPI SPRZEDAŻY spod górnego paska",
+  "updatedAt": "2026-09-18T06:48:00Z"
 }
