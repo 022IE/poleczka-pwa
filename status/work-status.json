@@ -1,6 +1,6 @@
 {
-  "state": "editing",
-  "label": "Wprowadzanie poprawek",
-  "task": "Status integracji — rozszerzenie kafelka o API, D1, webhook Loyverse, Telegram i stan publikacji",
-  "updatedAt": "2026-09-18T07:57:00Z"
+  "state": "awaiting_publish",
+  "label": "Oczekiwanie na publikację",
+  "task": "Status integracji — API, D1, webhook Loyverse, Telegram i stan PWA; moduł Synchronizacja doprecyzowany",
+  "updatedAt": "2026-09-18T08:02:30Z"
 }
