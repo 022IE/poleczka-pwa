@@ -112,7 +112,7 @@ Kanonicznym numerem dostawy używanym przez moduł SPRZEDAŻ jest:
 
 `receipt_lines.delivery_number`
 
-Surowa wartość z Loyverse / importów pozostaje w `receipt_lines.delivery_number` i nie jest usuwana.
+Surowa wartość z Loyverse / importów pozostaje w `receipt_lines.line_note` i nie jest usuwana.
 
 Obowiązujące reguły:
 
