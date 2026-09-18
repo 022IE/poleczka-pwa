@@ -11,7 +11,7 @@ permissions:
   contents: read
 
 env:
-  PWA_URL: https://poleczkaiwonki.dpdns.org
+  PWA_URL: https://dev.poleczkaiwonki.dpdns.org
 
 jobs:
   monitor:
