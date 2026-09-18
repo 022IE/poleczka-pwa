@@ -209,16 +209,20 @@ Domyślnie:
 
 **bieżący miesiąc**
 
-Szybkie opcje w przyszłości:
+W selektorze dat dostępne są szybkie preselekcje:
 
-- dziś,
+- **Dzisiaj** — bieżący dzień,
+- **7 dni** — bieżący dzień oraz 6 poprzednich dni,
+- **Miesiąc** — bieżący miesiąc kalendarzowy.
+
+Kliknięcie preselekcji ustawia pola **Od / Do**. Filtrowanie KPI i tabeli następuje po kliknięciu **Zastosuj**, dzięki czemu zakres można jeszcze ręcznie skorygować.
+
+Dalsze szybkie opcje mogą zostać dodane później, np.:
+
 - wczoraj,
-- ostatnie 7 dni,
 - ostatnie 30 dni,
-- bieżący miesiąc,
 - poprzedni miesiąc,
-- bieżący kwartał,
-- własny zakres.
+- bieżący kwartał.
 
 ## 7.2 Forma płatności
 
