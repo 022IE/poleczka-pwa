@@ -1,6 +1,6 @@
 {
-  "state": "awaiting_publish",
-  "label": "Oczekiwanie na publikację",
-  "task": "DOSTAWY — wspólna typografia, filtr bar, wyrównanie nagłówka i sortowanie zakończone",
-  "updatedAt": "2026-09-18T12:10:08.995Z"
+  "state": "editing",
+  "label": "Wprowadzanie poprawek",
+  "task": "DOSTAWY — przeniesienie Rozwiń/Zwiń wszystko do nagłówka tabeli jak w SPRZEDAŻY",
+  "updatedAt": "2026-09-18T12:13:54.748Z"
 }
