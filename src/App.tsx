@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { NavLink, Route, Routes } from 'react-router-dom'
 import BuildStatus from './components/BuildStatus'
 import DataStatus from './components/DataStatus'
@@ -23,35 +23,131 @@ const nav = [
   ['/ustawienia', 'Ustawienia', '⚙'],
 ] as const
 
-const kpis = [
-  ['Sprzedaż dziś', '287,00 zł', '+12%', 'vs. wczoraj', '🛒', 'green'],
-  ['Sprzedaż w kwartale', '6 842,30 zł', '+18%', 'vs. poprzedni kwartał', '▥', 'green'],
-  ['Szacowany zysk', '2 314,80 zł', '+14%', 'marża 33,8%', '◉', 'gold'],
-  ['Sprzedane sztuki', '28', '+27%', 'vs. wczoraj', '◇', 'rose'],
-  ['Średni paragon', '47,83 zł', '+6%', 'vs. poprzedni tydzień', '◇', 'gold'],
-  ['% zbytu', '68%', '+5 p.p.', 'vs. poprzedni tydzień', '↗', 'green'],
-] as const
+type DashboardData = {
+  ok: boolean
+  generatedAt: string
+  quarter: {
+    label: string
+    start: string
+    end: string
+    used: number
+    limit: number
+    remaining: number
+    percent: number
+  }
+  kpis: {
+    todaySales: number
+    todaySalesChange: number | null
+    quarterSales: number
+    quarterSalesChange: number | null
+    estimatedProfit: number | null
+    estimatedProfitChange: number | null
+    profitMargin: number | null
+    costCoverage: number
+    todayUnits: number
+    todayUnitsChange: number | null
+    averageReceipt: number
+    averageReceiptChange: number | null
+    sellThrough: number | null
+    sellThroughChange: number | null
+    sellThroughAvailable: boolean
+  }
+  sales30: {
+    days: Array<{ date: string; value: number }>
+    total: number
+    average: number
+    bestDay: { date: string; value: number }
+  }
+  comparison: {
+    type: ComparisonPeriod
+    count: number
+    end: string
+    axis: string[]
+    series: Array<{ label: string; values: number[] }>
+  }
+  categories: {
+    total: number
+    items: Array<{ name: string; value: number; percent: number }>
+  }
+  heatmap: {
+    days: string[]
+    hours: number[]
+    averages: number[]
+    levels: number[]
+  }
+}
 
-const bars = [14, 21, 36, 28, 34, 18, 23, 17, 29, 22, 36, 19, 25, 32, 24, 19, 35, 37, 36, 15, 28, 34, 22, 38, 37, 36, 25, 18, 28, 34, 39, 51]
-const weeks = [
-  { c: '#9eb89a', p: '15,48 90,34 165,56 240,42 315,50 390,32 465,58' },
-  { c: '#d1a84f', p: '15,54 90,28 165,40 240,16 315,52 390,58 465,44' },
-  { c: '#c98378', p: '15,58 90,43 165,52 240,41 315,46 390,30 465,47' },
-  { c: '#7f9d8a', p: '15,44 90,31 165,46 240,34 315,43 390,22 465,38' },
-  { c: '#46705a', p: '15,49 90,25 165,35 240,28 315,36 390,15 465,30' },
-]
+const comparisonColors = ['#9eb89a', '#d1a84f', '#c98378', '#7f9d8a', '#46705a'] as const
+const categoryColors = ['#557b68', '#9db699', '#d9bb78', '#cf918a', '#9895c6'] as const
 
-const heatDays = ['Pon', 'Wt', 'Śr', 'Czw', 'Pt', 'Sob', 'Niedz'] as const
-const heatHours = Array.from({ length: 14 }, (_, index) => index + 8)
-const heat = [
-  1,1,1,1,1,2,2,2,3,3,2,2,1,1,
-  1,1,1,1,2,2,3,3,4,4,3,2,2,1,
-  1,1,1,2,2,3,3,4,4,4,3,3,2,1,
-  1,1,2,2,3,3,4,4,4,3,3,2,2,1,
-  1,2,2,3,3,4,4,4,3,3,2,2,1,1,
-  1,1,2,2,3,3,3,3,2,2,2,1,1,1,
-  1,1,1,1,1,2,2,2,2,2,1,1,1,1,
-]
+const moneyFormatter = new Intl.NumberFormat('pl-PL', {
+  style: 'currency',
+  currency: 'PLN',
+  minimumFractionDigits: 2,
+  maximumFractionDigits: 2,
+})
+
+const numberFormatter = new Intl.NumberFormat('pl-PL', { maximumFractionDigits: 1 })
+
+function formatMoney(value: number | null | undefined) {
+  return value === null || value === undefined ? '—' : moneyFormatter.format(value)
+}
+
+function formatPercent(value: number | null | undefined) {
+  return value === null || value === undefined ? '—' : `${numberFormatter.format(value)}%`
+}
+
+function formatTrend(value: number | null | undefined) {
+  if (value === null || value === undefined) return '—'
+  if (value === 0) return '→ 0%'
+  return `${value > 0 ? '↑' : '↓'} ${numberFormatter.format(Math.abs(value))}%`
+}
+
+function trendClass(value: number | null | undefined) {
+  if (value === null || value === undefined || value === 0) return 'neutral'
+  return value > 0 ? 'positive' : 'negative'
+}
+
+function formatChartDay(value: string) {
+  const date = new Date(`${value}T12:00:00Z`)
+  return new Intl.DateTimeFormat('pl-PL', { day: 'numeric', month: 'short', timeZone: 'UTC' })
+    .format(date)
+    .replace('.', '')
+}
+
+function formatBestDay(value: string, amount: number) {
+  const date = new Date(`${value}T12:00:00Z`)
+  const label = new Intl.DateTimeFormat('pl-PL', { day: 'numeric', month: 'long', timeZone: 'UTC' }).format(date)
+  return `${label} (${formatMoney(amount)})`
+}
+
+function comparisonPoints(values: number[], max: number) {
+  if (!values.length) return ''
+  const xStart = 15
+  const xEnd = 465
+  const yBottom = 68
+  const yRange = 53
+  const denominator = Math.max(1, values.length - 1)
+
+  return values.map((value, index) => {
+    const x = xStart + ((xEnd - xStart) * index / denominator)
+    const y = max > 0 ? yBottom - ((Math.max(0, value) / max) * yRange) : yBottom
+    return `${x.toFixed(1)},${y.toFixed(1)}`
+  }).join(' ')
+}
+
+function categoryGradient(items: DashboardData['categories']['items']) {
+  if (!items.length) return '#edf1ea'
+
+  let cursor = 0
+  const stops = items.map((item, index) => {
+    const start = cursor
+    cursor += item.percent
+    return `${categoryColors[index % categoryColors.length]} ${start}% ${Math.min(100, cursor)}%`
+  })
+  if (cursor < 100) stops.push(`#edf1ea ${cursor}% 100%`)
+  return `conic-gradient(${stops.join(',')})`
+}
 
 const quickLinks = [
   ['/sprzedaz','Sprzedaż','Dodaj i przeglądaj','🛒','mint'],
@@ -65,42 +161,6 @@ const quickLinks = [
   ['/narzedzia','Narzędzia','Przydatne funkcje','⌘','gold'],
   ['/ustawienia','Ustawienia','Dostosuj aplikację','⚙','gray'],
 ] as const
-
-function shiftPeriod(date: Date, period: ComparisonPeriod, amount: number) {
-  const result = new Date(date)
-
-  if (period === 'week') {
-    result.setDate(result.getDate() - (7 * amount))
-    return result
-  }
-
-  const day = result.getDate()
-  result.setDate(1)
-
-  if (period === 'month') {
-    result.setMonth(result.getMonth() - amount)
-  } else {
-    result.setFullYear(result.getFullYear() - amount)
-  }
-
-  const lastDay = new Date(result.getFullYear(), result.getMonth() + 1, 0).getDate()
-  result.setDate(Math.min(day, lastDay))
-  return result
-}
-
-function formatPeriodDate(date: Date) {
-  return new Intl.DateTimeFormat('pl-PL', { day: 'numeric', month: 'short', year: '2-digit' })
-    .format(date)
-    .replace('.', '')
-}
-
-function getPeriodLabel(endDateValue: string, period: ComparisonPeriod, offset: number) {
-  const baseEnd = new Date(`${endDateValue}T12:00:00`)
-  const periodEnd = shiftPeriod(baseEnd, period, offset)
-  const periodStart = shiftPeriod(periodEnd, period, 1)
-  periodStart.setDate(periodStart.getDate() + 1)
-  return `${formatPeriodDate(periodStart)} – ${formatPeriodDate(periodEnd)}`
-}
 
 function Placeholder({ title, text }: { title: string; text: string }) {
   return (
@@ -120,16 +180,110 @@ function Dashboard() {
   const [comparisonEndDate, setComparisonEndDate] = useState(todayValue)
   const [comparisonCount, setComparisonCount] = useState(4)
   const [comparisonType, setComparisonType] = useState<ComparisonPeriod>('week')
+  const [dashboardData, setDashboardData] = useState<DashboardData | null>(null)
+  const [dashboardError, setDashboardError] = useState<string | null>(null)
 
-  const comparisonLabels = Array.from({ length: comparisonCount }, (_, index) =>
-    getPeriodLabel(comparisonEndDate, comparisonType, index),
-  ).reverse()
-  const comparisonSeries = weeks.slice(-comparisonCount)
-  const comparisonAxis = comparisonType === 'week'
-    ? ['Pn', 'Wt', 'Śr', 'Cz', 'Pt', 'Sob', 'Nd']
-    : comparisonType === 'month'
-      ? ['1', '5', '10', '15', '20', '25', '30']
-      : ['sty', 'mar', 'maj', 'lip', 'wrz', 'lis', 'gru']
+  useEffect(() => {
+    const controller = new AbortController()
+    const params = new URLSearchParams({
+      comparisonEnd: comparisonEndDate,
+      comparisonCount: String(comparisonCount),
+      comparisonType,
+    })
+
+    setDashboardError(null)
+
+    fetch(`/api/dashboard?${params.toString()}`, {
+      cache: 'no-store',
+      signal: controller.signal,
+    })
+      .then(async (response) => {
+        const payload = await response.json() as DashboardData & { error?: string }
+        if (!response.ok || !payload.ok) throw new Error(payload.error || 'Nie udało się pobrać danych dashboardu')
+        return payload
+      })
+      .then((payload) => setDashboardData(payload))
+      .catch((error) => {
+        if (error instanceof DOMException && error.name === 'AbortError') return
+        setDashboardError(error instanceof Error ? error.message : 'Nie udało się pobrać danych dashboardu')
+      })
+
+    return () => controller.abort()
+  }, [comparisonEndDate, comparisonCount, comparisonType])
+
+  const kpis = useMemo(() => {
+    const data = dashboardData?.kpis
+    const profitCaption = data?.estimatedProfit === null || data?.estimatedProfit === undefined
+      ? 'brak wiarygodnych kosztów w D1'
+      : `marża ${formatPercent(data.profitMargin)} • koszt ${formatPercent(data.costCoverage)} szt.`
+
+    return [
+      {
+        label: 'Sprzedaż dziś',
+        value: data ? formatMoney(data.todaySales) : '—',
+        change: data?.todaySalesChange,
+        caption: 'vs. wczoraj',
+        icon: '🛒',
+        tone: 'green',
+      },
+      {
+        label: 'Sprzedaż w kwartale',
+        value: data ? formatMoney(data.quarterSales) : '—',
+        change: data?.quarterSalesChange,
+        caption: 'vs. poprzedni kwartał',
+        icon: '▥',
+        tone: 'green',
+      },
+      {
+        label: 'Szacowany zysk',
+        value: data ? formatMoney(data.estimatedProfit) : '—',
+        change: data?.estimatedProfitChange,
+        caption: profitCaption,
+        icon: '◉',
+        tone: 'gold',
+      },
+      {
+        label: 'Sprzedane sztuki',
+        value: data ? numberFormatter.format(data.todayUnits) : '—',
+        change: data?.todayUnitsChange,
+        caption: 'vs. wczoraj',
+        icon: '◇',
+        tone: 'rose',
+      },
+      {
+        label: 'Średni paragon',
+        value: data ? formatMoney(data.averageReceipt) : '—',
+        change: data?.averageReceiptChange,
+        caption: 'ostatnie 7 dni vs. poprzednie 7',
+        icon: '◇',
+        tone: 'gold',
+      },
+      {
+        label: '% zbytu',
+        value: data?.sellThroughAvailable ? formatPercent(data.sellThrough) : '—',
+        change: data?.sellThroughChange,
+        caption: data?.sellThroughAvailable ? 'wg danych dostaw' : 'brak tabeli dostaw w D1',
+        icon: '↗',
+        tone: 'green',
+      },
+    ]
+  }, [dashboardData])
+
+  const salesDays = dashboardData?.sales30.days || []
+  const maxSalesDay = Math.max(0, ...salesDays.map((item) => item.value))
+  const salesAxisIndexes = salesDays.length
+    ? Array.from(new Set([0, 7, 14, 21, salesDays.length - 1])).filter((index) => index >= 0 && index < salesDays.length)
+    : []
+  const yMax = maxSalesDay > 0 ? Math.ceil(maxSalesDay / 50) * 50 : 0
+  const yLabels = [yMax, yMax * .75, yMax * .5, yMax * .25, 0]
+
+  const comparisonSeries = dashboardData?.comparison.series || []
+  const comparisonMax = Math.max(0, ...comparisonSeries.flatMap((series) => series.values))
+  const comparisonAxis = dashboardData?.comparison.axis || []
+  const categoryItems = dashboardData?.categories.items || []
+  const heatDays = dashboardData?.heatmap.days || ['Pon', 'Wt', 'Śr', 'Czw', 'Pt', 'Sob', 'Niedz']
+  const heatHours = dashboardData?.heatmap.hours || Array.from({ length: 14 }, (_, index) => index + 8)
+  const heatLevels = dashboardData?.heatmap.levels || Array(98).fill(1)
 
   return (
     <div className="dashboard-wrap">
@@ -145,23 +299,28 @@ function Dashboard() {
         <div className="header-actions">
           <div className="date-block"><span className="header-icon">▣</span><div><b>{weekday}</b><span>{date}</span></div></div>
           <div className="header-divider" />
-          <button className="bell" aria-label="Powiadomienia">♟<span>3</span></button>
+          <button className="bell" aria-label="Powiadomienia">♟</button>
           <DataStatus />
           <div className="avatar">I</div>
         </div>
       </header>
+
+      {dashboardError && <div className="dashboard-data-note is-error">Dane z D1 są chwilowo niedostępne: {dashboardError}</div>}
 
       <section className="limit-card dashboard-summary-card">
         <div className="limit-dashboard-block">
           <div className="summary-title-row">
             <div>
               <span className="summary-eyebrow">Limit działalności nierejestrowanej</span>
-              <strong>III kwartał 2026</strong>
+              <strong>{dashboardData?.quarter.label || '—'}</strong>
             </div>
-            <div className="limit-remaining"><span>Pozostało</span><b>3 971,20 zł</b></div>
+            <div className="limit-remaining"><span>Pozostało</span><b>{formatMoney(dashboardData?.quarter.remaining)}</b></div>
           </div>
-          <div className="limit-value">Wykorzystano <b>6 842,30 zł</b> z 10 813,50 zł</div>
-          <div className="progress-row"><div className="progress"><span /></div><b>63%</b></div>
+          <div className="limit-value">Wykorzystano <b>{formatMoney(dashboardData?.quarter.used)}</b> z {formatMoney(dashboardData?.quarter.limit)}</div>
+          <div className="progress-row">
+            <div className="progress"><span style={{ width: `${Math.min(100, dashboardData?.quarter.percent || 0)}%` }} /></div>
+            <b>{formatPercent(dashboardData?.quarter.percent)}</b>
+          </div>
         </div>
         <div className="dashboard-summary-divider" />
         <div className="vinted-summary">
@@ -180,23 +339,41 @@ function Dashboard() {
       </section>
 
       <section className="kpi-grid">
-        {kpis.map(([label,value,change,caption,icon,tone]) => (
-          <article className="kpi-card" key={label}>
-            <div className={`kpi-icon ${tone}`}>{icon}</div>
-            <div className="kpi-copy"><span>{label}</span><strong>{value}</strong><b>↑ {change}</b><small>{caption}</small></div>
+        {kpis.map((kpi) => (
+          <article className="kpi-card" key={kpi.label}>
+            <div className={`kpi-icon ${kpi.tone}`}>{kpi.icon}</div>
+            <div className="kpi-copy">
+              <span>{kpi.label}</span>
+              <strong>{kpi.value}</strong>
+              <b className={`kpi-trend ${trendClass(kpi.change)}`}>{formatTrend(kpi.change)}</b>
+              <small>{kpi.caption}</small>
+            </div>
           </article>
         ))}
       </section>
 
       <section className="charts-row primary">
         <article className="panel sales-panel">
-          <div className="panel-head"><h2><span>▥</span> Sprzedaż w czasie</h2><select defaultValue="30"><option value="30">Ostatnie 30 dni</option></select></div>
+          <div className="panel-head"><h2><span>▥</span> Sprzedaż w czasie</h2><select value="30" readOnly><option value="30">Ostatnie 30 dni</option></select></div>
           <div className="bar-chart">
-            <div className="y-labels"><span>800</span><span>600</span><span>400</span><span>200</span><span>0</span></div>
-            <div className="bars">{bars.map((h,i)=><i key={i} style={{height:`${h}%`}} className={i===24?'active':''} />)}</div>
+            <div className="y-labels">{yLabels.map((value, index) => <span key={index}>{numberFormatter.format(value)}</span>)}</div>
+            <div className="bars">
+              {salesDays.map((day) => (
+                <i
+                  key={day.date}
+                  style={{ height: `${maxSalesDay > 0 ? Math.max(day.value > 0 ? 3 : 0, (day.value / maxSalesDay) * 100) : 0}%` }}
+                  className={day.date === dashboardData?.sales30.bestDay.date ? 'active' : ''}
+                  title={`${formatChartDay(day.date)}: ${formatMoney(day.value)}`}
+                />
+              ))}
+            </div>
           </div>
-          <div className="x-labels"><span>22 cze</span><span>29 cze</span><span>6 lip</span><span>13 lip</span><span>20 lip</span></div>
-          <div className="chart-summary"><div><span>Łączna sprzedaż</span><b>7 284,50 zł</b></div><div><span>Średnio dziennie</span><b>242,82 zł</b></div><div><span>Najlepszy dzień</span><b>18 lipca (642,00 zł)</b></div></div>
+          <div className="x-labels">{salesAxisIndexes.map((index) => <span key={salesDays[index].date}>{formatChartDay(salesDays[index].date)}</span>)}</div>
+          <div className="chart-summary">
+            <div><span>Łączna sprzedaż</span><b>{formatMoney(dashboardData?.sales30.total)}</b></div>
+            <div><span>Średnio dziennie</span><b>{formatMoney(dashboardData?.sales30.average)}</b></div>
+            <div><span>Najlepszy dzień</span><b>{dashboardData ? formatBestDay(dashboardData.sales30.bestDay.date, dashboardData.sales30.bestDay.value) : '—'}</b></div>
+          </div>
         </article>
 
         <article className="panel weeks-panel">
@@ -208,16 +385,47 @@ function Dashboard() {
               <label className="comparison-type"><span>Typ</span><select value={comparisonType} onChange={(event) => setComparisonType(event.target.value as ComparisonPeriod)} aria-label="Typ okresu"><option value="week">Tydzień</option><option value="month">Miesiąc</option><option value="year">Rok</option></select></label>
             </div>
           </div>
-          <div className="legend">{comparisonLabels.map((label, index) => <span key={label}><i style={{ backgroundColor: comparisonSeries[index].c }} />{label}</span>)}</div>
-          <div className="line-chart"><svg viewBox="0 0 480 80" preserveAspectRatio="none"><g className="gridlines"><line x1="0" y1="20" x2="480" y2="20"/><line x1="0" y1="40" x2="480" y2="40"/><line x1="0" y1="60" x2="480" y2="60"/></g>{comparisonSeries.map((series,i)=><polyline key={i} points={series.p} fill="none" stroke={series.c} strokeWidth="2.4" strokeLinejoin="round" strokeLinecap="round" />)}</svg></div>
-          <div className="week-days">{comparisonAxis.map((label) => <span key={label}>{label}</span>)}</div>
+          <div className="legend">
+            {comparisonSeries.map((series, index) => <span key={series.label}><i style={{ backgroundColor: comparisonColors[index % comparisonColors.length] }} />{series.label}</span>)}
+          </div>
+          <div className="line-chart">
+            <svg viewBox="0 0 480 80" preserveAspectRatio="none">
+              <g className="gridlines"><line x1="0" y1="20" x2="480" y2="20"/><line x1="0" y1="40" x2="480" y2="40"/><line x1="0" y1="60" x2="480" y2="60"/></g>
+              {comparisonSeries.map((series, index) => (
+                <polyline
+                  key={series.label}
+                  points={comparisonPoints(series.values, comparisonMax)}
+                  fill="none"
+                  stroke={comparisonColors[index % comparisonColors.length]}
+                  strokeWidth="2.4"
+                  strokeLinejoin="round"
+                  strokeLinecap="round"
+                />
+              ))}
+            </svg>
+          </div>
+          <div className="week-days">{comparisonAxis.map((label, index) => <span key={`${label}-${index}`}>{label}</span>)}</div>
         </article>
       </section>
 
       <section className="charts-row secondary">
         <article className="panel category-panel">
-          <div className="panel-head"><h2><span>◔</span> Sprzedaż wg kategorii</h2><select defaultValue="q3"><option value="q3">III kwartał 2026</option></select></div>
-          <div className="category-body"><div className="donut"><div><b>6 842,30 zł</b><span>łącznie</span></div></div><div className="category-list"><p><i className="c1"/>GÓRA <b>2 462,90 zł</b><span>36%</span></p><p><i className="c2"/>DÓŁ <b>1 641,20 zł</b><span>24%</span></p><p><i className="c3"/>OBUWIE <b>1 053,60 zł</b><span>15%</span></p><p><i className="c4"/>AKCESORIA <b>873,40 zł</b><span>13%</span></p><p><i className="c5"/>HANDMADE <b>811,20 zł</b><span>12%</span></p></div></div>
+          <div className="panel-head"><h2><span>◔</span> Sprzedaż wg kategorii</h2><select value="quarter" readOnly><option value="quarter">{dashboardData?.quarter.label || 'Bieżący kwartał'}</option></select></div>
+          <div className="category-body">
+            <div className="donut" style={{ background: categoryGradient(categoryItems) }}><div><b>{formatMoney(dashboardData?.categories.total)}</b><span>łącznie</span></div></div>
+            <div className="category-list">
+              {categoryItems.length > 0
+                ? categoryItems.map((item, index) => (
+                  <p key={item.name}>
+                    <i style={{ background: categoryColors[index % categoryColors.length] }} />
+                    {item.name.toLocaleUpperCase('pl-PL')}
+                    <b>{formatMoney(item.value)}</b>
+                    <span>{formatPercent(item.percent)}</span>
+                  </p>
+                ))
+                : <p><i style={{ background: '#d9ddd9' }} />BRAK SPRZEDAŻY <b>—</b><span>—</span></p>}
+            </div>
+          </div>
         </article>
 
         <article className="panel heat-panel">
@@ -225,7 +433,7 @@ function Dashboard() {
           <div className="hourly-heat-layout">
             <div className="hourly-heat-y">{heatDays.map((day) => <span key={day}>{day}</span>)}</div>
             <div className="hourly-heat-main">
-              <div className="hourly-heat-grid">{heat.map((value,index)=><i key={index} className={`h${value}`} />)}</div>
+              <div className="hourly-heat-grid">{heatLevels.map((value,index)=><i key={index} className={`h${value}`} title={dashboardData ? `${formatMoney(dashboardData.heatmap.averages[index])} średnio` : undefined} />)}</div>
               <div className="hourly-heat-x">{heatHours.map((hour) => <span key={hour}>{hour}</span>)}</div>
             </div>
           </div>
@@ -241,11 +449,10 @@ function Dashboard() {
       <section className="quick-grid">
         {quickLinks.map(([to,title,desc,icon,tone]) => <NavLink to={to} key={to} className={`quick-card ${tone}`}><span className="quick-icon">{icon}</span><div><b>{title}</b><small>{desc}</small></div></NavLink>)}
       </section>
-      <footer className="dashboard-footer"><span>PWA • wersja robocza</span><b>♡</b><strong>Półeczka Iwonki</strong><small>MAŁE RZECZY, WIELKIE HISTORIE</small></footer>
+      <footer className="dashboard-footer"><span>PWA • dane operacyjne: D1</span><b>♡</b><strong>Półeczka Iwonki</strong><small>MAŁE RZECZY, WIELKIE HISTORIE</small></footer>
     </div>
   )
 }
-
 function App() {
   return (
     <div className="app-shell">
