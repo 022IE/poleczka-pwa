@@ -1090,6 +1090,79 @@ async function createDelivery(request: Request, env: Env) {
   return salesJson({ ok: true, item: row }, 201)
 }
 
+
+async function updateDelivery(request: Request, deliveryNumber: number, env: Env) {
+  let body: { deliveryDate?: unknown; supplierName?: unknown; quantity?: unknown; totalCost?: unknown }
+  try {
+    body = await request.json() as typeof body
+  } catch {
+    return salesJson({ ok: false, error: 'Invalid JSON' }, 400)
+  }
+
+  const deliveryDate = typeof body.deliveryDate === 'string' ? body.deliveryDate.trim() : ''
+  const supplierName = typeof body.supplierName === 'string' ? body.supplierName.trim() : ''
+  const quantity = Number(body.quantity)
+  const totalCost = Number(body.totalCost)
+
+  if (!validYmd(deliveryDate) || !supplierName || !Number.isInteger(quantity) || quantity <= 0 || !Number.isFinite(totalCost) || totalCost < 0) {
+    return salesJson({ ok: false, error: 'Nieprawidłowe dane dostawy.' }, 400)
+  }
+
+  const row = await env.DB.prepare(`
+    UPDATE deliveries
+    SET
+      delivery_date = ?,
+      supplier_name = ?,
+      quantity = ?,
+      total_cost = ?,
+      updated_at = CURRENT_TIMESTAMP
+    WHERE delivery_number = ?
+    RETURNING
+      delivery_number AS deliveryNumber,
+      delivery_date AS deliveryDate,
+      supplier_name AS supplierName,
+      quantity,
+      total_cost AS totalCost
+  `).bind(deliveryDate, supplierName, quantity, money(totalCost), deliveryNumber).first<{
+    deliveryNumber: number
+    deliveryDate: string
+    supplierName: string
+    quantity: number
+    totalCost: number
+  }>()
+
+  if (!row) return salesJson({ ok: false, error: 'Dostawa nie istnieje.' }, 404)
+  return salesJson({ ok: true, item: row })
+}
+
+async function deleteDeliveryRecord(deliveryNumber: number, env: Env) {
+  if (deliveryNumber <= 0) {
+    return salesJson({ ok: false, error: 'Dostawy technicznej -1 lub 0 nie można usunąć.' }, 409)
+  }
+
+  const linked = await env.DB.prepare(`
+    SELECT COUNT(*) AS count
+    FROM receipt_lines
+    WHERE delivery_number = ?
+  `).bind(deliveryNumber).first<{ count: number }>()
+
+  if (Number(linked?.count || 0) > 0) {
+    return salesJson({
+      ok: false,
+      error: 'Nie można usunąć dostawy, do której są przypisane pozycje sprzedaży. Najpierw trzeba przepiąć te pozycje do innej dostawy.',
+    }, 409)
+  }
+
+  const deleted = await env.DB.prepare(`
+    DELETE FROM deliveries
+    WHERE delivery_number = ?
+    RETURNING delivery_number AS deliveryNumber
+  `).bind(deliveryNumber).first<{ deliveryNumber: number }>()
+
+  if (!deleted) return salesJson({ ok: false, error: 'Dostawa nie istnieje.' }, 404)
+  return salesJson({ ok: true, deliveryNumber: deleted.deliveryNumber })
+}
+
 async function handleDeliveriesApi(request: Request, url: URL, env: Env): Promise<Response | null> {
   if (url.pathname === '/api/deliveries' && request.method === 'GET') return deliveryRows(url, env)
   if (url.pathname === '/api/deliveries' && request.method === 'POST') return createDelivery(request, env)
@@ -1098,6 +1171,10 @@ async function handleDeliveriesApi(request: Request, url: URL, env: Env): Promis
 
   const itemMatch = url.pathname.match(/^\/api\/deliveries\/(-?\d+)\/items$/)
   if (itemMatch && request.method === 'GET') return deliveryItems(Number(itemMatch[1]), env)
+
+  const deliveryMatch = url.pathname.match(/^\/api\/deliveries\/(-?\d+)$/)
+  if (deliveryMatch && request.method === 'PUT') return updateDelivery(request, Number(deliveryMatch[1]), env)
+  if (deliveryMatch && request.method === 'DELETE') return deleteDeliveryRecord(Number(deliveryMatch[1]), env)
 
   return null
 }
