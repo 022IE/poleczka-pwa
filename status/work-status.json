@@ -1,6 +1,6 @@
 {
-  "state": "awaiting_publish",
-  "label": "Oczekiwanie na publikację",
-  "task": "Górny pasek — piktogramy zgodne z menu dodane, prawa część SPRZEDAŻY wyrównana do prawej; build zakończony",
-  "updatedAt": "2026-09-18T07:02:10Z"
+  "state": "editing",
+  "label": "Wprowadzanie poprawek",
+  "task": "Górny kafelek — zamiana mylącej synchronizacji na rzeczywisty status D1 i czas sprawdzenia",
+  "updatedAt": "2026-09-18T07:41:00Z"
 }
