@@ -1,6 +1,6 @@
 {
-  "state": "editing",
-  "label": "Wprowadzanie poprawek",
-  "task": "SPRZEDAŻ — szybkie preselekcje dat: Dzisiaj, 7 dni, Miesiąc",
-  "updatedAt": "2026-09-18T16:09:20Z"
+  "state": "awaiting_publish",
+  "label": "Oczekiwanie na publikację",
+  "task": "SPRZEDAŻ — preselekcje zakresu dat: Dzisiaj, 7 dni, Miesiąc",
+  "updatedAt": "2026-09-18T16:11:40Z"
 }
