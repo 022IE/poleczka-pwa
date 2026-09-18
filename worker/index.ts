@@ -1900,7 +1900,9 @@ async function integrationStatus(env: Env) {
   services.push(await telegramIntegrationStatus(env))
 
   try {
-    const pipeline = await getStoredSnapshot(env)
+    // Status integracji musi opierać się na świeżym stanie GitHub + BUILD_COMMIT_SHA,
+    // a nie na potencjalnie przeterminowanym snapshotcie Durable Object.
+    const pipeline = await reconcileSnapshot(env, 'dev')
     services.push({
       id: 'online',
       label: 'PWA',
