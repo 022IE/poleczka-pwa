@@ -1,6 +1,6 @@
 {
-  "state": "editing",
-  "label": "Wprowadzanie poprawek",
-  "task": "DOSTAWY — tabela deliveries w D1, migracja line_note → delivery_number i aktualizacja zależnych mechanizmów",
-  "updatedAt": "2026-09-18T10:20:18.404Z"
+  "state": "awaiting_publish",
+  "label": "Oczekiwanie na publikację",
+  "task": "DOSTAWY — tabela deliveries, migracja delivery_number i aktualizacja zależności zakończone",
+  "updatedAt": "2026-09-18T10:33:34.395Z"
 }
