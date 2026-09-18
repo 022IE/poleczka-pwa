@@ -1,11 +1,6 @@
 name: D1 Correct line_note batch 2026-09-18
 
 on:
-  push:
-    branches:
-      - dev
-    paths:
-      - '.github/workflows/d1-correct-line-note-batch-2026-09-18.yml'
   workflow_dispatch:
 
 permissions:
