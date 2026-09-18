@@ -936,3 +936,19 @@ Dla filtra kategorii lub artykułu KPI są liczone z pasujących pozycji sprzeda
 Tabela główna nadal reprezentuje całe paragony. Jeżeli paragon spełnia filtr pozycji, jego główny wiersz pokazuje pełne wartości paragonu. Rozwinięcie pokazuje wszystkie pozycje tego paragonu, aby zachować pełny kontekst dokumentu sprzedaży.
 
 SKU pozostaje wyłącznie techniczną kolumną w D1 i nie jest częścią modeli prezentacyjnych API modułu SPRZEDAŻ.
+
+
+---
+
+# 36. Sterowanie rozwinięciem wszystkich paragonów
+
+W lewym górnym rogu tabeli paragonów znajduje się przycisk zbiorczy:
+
+- `⊞` — rozwija wszystkie paragony aktualnie widoczne na bieżącej stronie,
+- `⊟` — zwija wszystkie paragony aktualnie widoczne na bieżącej stronie.
+
+Zasada wydajnościowa:
+- funkcja działa wyłącznie na paragonach bieżącej strony paginacji,
+- nie pobiera całej historii sprzedaży,
+- pozycje brakujących paragonów są pobierane z API dopiero przy zbiorczym rozwinięciu,
+- wcześniej pobrane pozycje pozostają w pamięci widoku i nie są pobierane ponownie przy kolejnym rozwinięciu.
