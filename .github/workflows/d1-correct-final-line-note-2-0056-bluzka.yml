@@ -1,0 +1,49 @@
+name: D1 Correct final line_note 2-0056 Bluzka
+
+on:
+  push:
+    branches:
+      - dev
+    paths:
+      - '.github/workflows/d1-correct-final-line-note-2-0056-bluzka.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  correct:
+    name: Correct 2-0056 Bluzka delivery
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Precheck exact row
+        env:
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+        run: |
+          npx --yes wrangler@latest d1 execute poleczka-dev --remote --command "SELECT line_id,receipt_number,item_name,sku,price,total_money,line_note FROM receipt_lines WHERE line_id='9553152a-9dd7-9cad-f6a3-2ab7d562516c' AND receipt_number='2-0056' AND item_name='Bluzka' AND ABS(COALESCE(total_money,price)-18.0)<0.001;"
+
+      - name: Set delivery 2
+        env:
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+        run: |
+          npx --yes wrangler@latest d1 execute poleczka-dev --remote --command "UPDATE receipt_lines SET line_note='2' WHERE line_id='9553152a-9dd7-9cad-f6a3-2ab7d562516c' AND receipt_number='2-0056' AND item_name='Bluzka' AND ABS(COALESCE(total_money,price)-18.0)<0.001 AND trim(line_note)='-1';"
+
+      - name: Verify exact row and relations
+        env:
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+        run: |
+          npx --yes wrangler@latest d1 execute poleczka-dev --remote --command "SELECT line_id,receipt_number,item_name,sku,price,total_money,line_note FROM receipt_lines WHERE line_id='9553152a-9dd7-9cad-f6a3-2ab7d562516c'; SELECT COUNT(*) AS remaining_unidentified FROM receipt_lines WHERE trim(line_note)='-1'; SELECT COUNT(*) AS remaining_missing FROM receipt_lines WHERE line_note IS NULL OR trim(line_note)='';"
+          npx --yes wrangler@latest d1 execute poleczka-dev --remote --command "PRAGMA foreign_key_check;"
