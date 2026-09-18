@@ -7,6 +7,9 @@ export default defineConfig({
     react(),
     VitePWA({
       registerType: 'autoUpdate',
+      workbox: {
+        cleanupOutdatedCaches: true,
+      },
       manifest: {
         name: 'Półeczka Iwonki',
         short_name: 'Półeczka',
