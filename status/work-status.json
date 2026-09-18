@@ -1,6 +1,6 @@
 {
-  "state": "editing",
-  "label": "Wprowadzanie poprawek",
-  "task": "Całe PWA — zwiększenie czytelności typografii o ok. 50% bez skalowania layoutu",
-  "updatedAt": "2026-09-18T06:03:10Z"
+  "state": "awaiting_publish",
+  "label": "Oczekiwanie na publikację",
+  "task": "Całe PWA — typografia +50% zapisana i build zakończony; oczekiwanie na potwierdzenie Cloudflare",
+  "updatedAt": "2026-09-18T06:09:20Z"
 }
