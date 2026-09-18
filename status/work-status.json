@@ -1,6 +1,6 @@
 {
-  "state": "editing",
-  "label": "Wprowadzanie poprawek",
-  "task": "DOSTAWY — ujednolicenie rozmiarów czcionek ze SPRZEDAŻĄ",
-  "updatedAt": "2026-09-18T11:00:15.635Z"
+  "state": "awaiting_publish",
+  "label": "Oczekiwanie na publikację",
+  "task": "DOSTAWY — rozmiary czcionek ujednolicone ze SPRZEDAŻĄ",
+  "updatedAt": "2026-09-18T11:01:00.299Z"
 }
