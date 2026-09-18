@@ -956,10 +956,10 @@ async function deliverySummary(url: URL, env: Env) {
     )
     SELECT
       COALESCE(SUM(CASE WHEN delivery_number >= 0 AND sold < quantity THEN 1 ELSE 0 END), 0) AS activeDeliveries,
-      COALESCE(SUM(quantity), 0) AS receivedUnits,
-      COALESCE(SUM(sold), 0) AS soldUnits,
-      COALESCE(SUM(sales), 0) AS sales,
-      COALESCE(SUM(profit), 0) AS profit
+      COALESCE(SUM(CASE WHEN delivery_number >= 0 THEN quantity ELSE 0 END), 0) AS receivedUnits,
+      COALESCE(SUM(CASE WHEN delivery_number >= 0 THEN sold ELSE 0 END), 0) AS soldUnits,
+      COALESCE(SUM(CASE WHEN delivery_number >= 0 THEN sales ELSE 0 END), 0) AS sales,
+      COALESCE(SUM(CASE WHEN delivery_number >= 0 THEN profit ELSE 0 END), 0) AS profit
     FROM filtered
   `).bind(...where.params).first<{
     activeDeliveries: number
