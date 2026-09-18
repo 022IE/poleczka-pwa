@@ -1,6 +1,6 @@
 {
-  "state": "awaiting_publish",
-  "label": "Oczekiwanie na publikację",
-  "task": "DOSTAWY — kontrolka Rozwiń/Zwiń wszystko przeniesiona do nagłówka tabeli jak w SPRZEDAŻY",
-  "updatedAt": "2026-09-18T12:14:50.510Z"
+  "state": "editing",
+  "label": "Wprowadzanie poprawek",
+  "task": "Status integracji — health endpoint dla Telegrama i podpięcie monitoringu",
+  "updatedAt": "2026-09-18T12:16:00Z"
 }
