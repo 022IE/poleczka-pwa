@@ -137,10 +137,26 @@ export default function DeliveriesPage() {
   const [newQuantity, setNewQuantity] = useState('')
   const [newCost, setNewCost] = useState('')
 
+  const [rowMenu, setRowMenu] = useState<number | null>(null)
+  const [editDelivery, setEditDelivery] = useState<Delivery | null>(null)
+  const [editSaving, setEditSaving] = useState(false)
+  const [editError, setEditError] = useState('')
+  const [editDate, setEditDate] = useState('')
+  const [editSupplier, setEditSupplier] = useState('')
+  const [editQuantity, setEditQuantity] = useState('')
+  const [editCost, setEditCost] = useState('')
+
   useEffect(() => {
     const timer = window.setTimeout(() => setDebouncedQuery(query.trim()), 250)
     return () => window.clearTimeout(timer)
   }, [query])
+
+  useEffect(() => {
+    if (rowMenu === null) return
+    const close = () => setRowMenu(null)
+    window.addEventListener('click', close)
+    return () => window.removeEventListener('click', close)
+  }, [rowMenu])
 
   useEffect(() => {
     const controller = new AbortController()
@@ -296,6 +312,85 @@ export default function DeliveriesPage() {
   }
 
   const sortArrow = (column: keyof Delivery) => sort === column ? (order === 'desc' ? '↓' : '↑') : '↕'
+
+  const showDetails = async (deliveryNumber: number) => {
+    setRowMenu(null)
+    setExpanded((current) => new Set(current).add(deliveryNumber))
+    await loadItems(deliveryNumber)
+  }
+
+  const openEditDelivery = (delivery: Delivery) => {
+    setRowMenu(null)
+    setEditError('')
+    setEditDelivery(delivery)
+    setEditDate(delivery.deliveryDate)
+    setEditSupplier(delivery.supplierName)
+    setEditQuantity(String(delivery.quantity))
+    setEditCost(String(delivery.totalCost))
+  }
+
+  const saveEditedDelivery = async (event: FormEvent) => {
+    event.preventDefault()
+    if (!editDelivery) return
+
+    const quantity = Number(editQuantity.replace(',', '.'))
+    const totalCost = Number(editCost.replace(',', '.'))
+    if (!editDate || !editSupplier.trim() || !Number.isInteger(quantity) || quantity <= 0 || !Number.isFinite(totalCost) || totalCost < 0) {
+      setEditError('Uzupełnij poprawnie datę, dostawcę, liczbę sztuk i koszt.')
+      return
+    }
+
+    setEditSaving(true)
+    setEditError('')
+    try {
+      const response = await fetch(`/api/deliveries/${editDelivery.deliveryNumber}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          deliveryDate: editDate,
+          supplierName: editSupplier.trim(),
+          quantity,
+          totalCost,
+        }),
+      })
+      const payload = await response.json() as { ok?: boolean; error?: string }
+      if (!response.ok || !payload.ok) throw new Error(payload.error || 'Nie udało się zapisać dostawy.')
+      setEditDelivery(null)
+      setReloadKey((value) => value + 1)
+    } catch (saveError) {
+      setEditError(saveError instanceof Error ? saveError.message : 'Nie udało się zapisać dostawy.')
+    } finally {
+      setEditSaving(false)
+    }
+  }
+
+  const deleteDelivery = async (delivery: Delivery) => {
+    setRowMenu(null)
+    if (delivery.deliveryNumber <= 0) {
+      setError('Dostawy technicznej -1 lub 0 nie można usunąć.')
+      return
+    }
+    if (!window.confirm(`Usunąć dostawę nr ${delivery.deliveryNumber} — ${delivery.supplierName}? Tej operacji nie można cofnąć.`)) return
+
+    try {
+      const response = await fetch(`/api/deliveries/${delivery.deliveryNumber}`, { method: 'DELETE' })
+      const payload = await response.json() as { ok?: boolean; error?: string }
+      if (!response.ok || !payload.ok) throw new Error(payload.error || 'Nie udało się usunąć dostawy.')
+      setExpanded((current) => {
+        const next = new Set(current)
+        next.delete(delivery.deliveryNumber)
+        return next
+      })
+      setItemsByDelivery((current) => {
+        const next = { ...current }
+        delete next[delivery.deliveryNumber]
+        return next
+      })
+      setReloadKey((value) => value + 1)
+    } catch (deleteError) {
+      setError(deleteError instanceof Error ? deleteError.message : 'Nie udało się usunąć dostawy.')
+    }
+  }
 
   const submitDelivery = async (event: FormEvent) => {
     event.preventDefault()
@@ -470,6 +565,7 @@ export default function DeliveriesPage() {
               <button type="button" className="deliveries-sort" onClick={() => toggleSort('deliveryNumber')}>Lp. <b>{sortArrow('deliveryNumber')}</b></button>
               <button type="button" className="deliveries-sort" onClick={() => toggleSort('deliveryDate')}>Data <b>{sortArrow('deliveryDate')}</b></button>
               <button type="button" className="deliveries-sort" onClick={() => toggleSort('supplierName')}>Dostawca <b>{sortArrow('supplierName')}</b></button>
+              <button type="button" className="deliveries-sort" onClick={() => toggleSort('totalCost')}>Koszt zakupu <b>{sortArrow('totalCost')}</b></button>
               <button type="button" className="deliveries-sort" onClick={() => toggleSort('quantity')}>Ilość <b>{sortArrow('quantity')}</b></button>
               <button type="button" className="deliveries-sort" onClick={() => toggleSort('unitCost')}>Cena/szt. <b>{sortArrow('unitCost')}</b></button>
               <button type="button" className="deliveries-sort" onClick={() => toggleSort('sold')}>Sprzedane <b>{sortArrow('sold')}</b></button>
@@ -477,6 +573,7 @@ export default function DeliveriesPage() {
               <button type="button" className="deliveries-sort" onClick={() => toggleSort('returnRate')}>% zwrotu <b>{sortArrow('returnRate')}</b></button>
               <button type="button" className="deliveries-sort" onClick={() => toggleSort('sales')}>Sprzedaż <b>{sortArrow('sales')}</b></button>
               <button type="button" className="deliveries-sort" onClick={() => toggleSort('profit')}>Zysk <b>{sortArrow('profit')}</b></button>
+              <span className="deliveries-menu-dots">⋮</span>
             </div>
 
             {loading && <div className="deliveries-empty">Ładowanie dostaw…</div>}
@@ -492,6 +589,7 @@ export default function DeliveriesPage() {
                     <strong>{delivery.deliveryNumber}</strong>
                     <span>{displayYmd(delivery.deliveryDate)}</span>
                     <span className="delivery-supplier">{delivery.supplierName}</span>
+                    <span>{formatMoney(delivery.totalCost)}</span>
                     <span>{formatNumber(delivery.quantity)}</span>
                     <span>{formatMoney(delivery.unitCost)}</span>
                     <span>{formatNumber(delivery.sold)}</span>
@@ -499,6 +597,35 @@ export default function DeliveriesPage() {
                     <span className={delivery.returnRate >= 100 ? 'metric-positive' : delivery.returnRate < 50 ? 'metric-negative' : ''}>{formatPercent(delivery.returnRate)}</span>
                     <span>{formatMoney(delivery.sales)}</span>
                     <span className={delivery.profit >= 0 ? 'metric-positive' : 'metric-negative'}>{formatMoney(delivery.profit)}</span>
+                    <div
+                      className="delivery-row-menu-wrap"
+                      onClick={(event) => event.stopPropagation()}
+                    >
+                      <button
+                        type="button"
+                        className="delivery-row-menu"
+                        aria-label={`Menu dostawy ${delivery.deliveryNumber}`}
+                        aria-expanded={rowMenu === delivery.deliveryNumber}
+                        onClick={() => setRowMenu((current) => current === delivery.deliveryNumber ? null : delivery.deliveryNumber)}
+                      >
+                        •••
+                      </button>
+                      {rowMenu === delivery.deliveryNumber && (
+                        <div className={`delivery-row-menu-popover ${index >= sortedDeliveries.length - 2 ? 'open-up' : ''}`}>
+                          <button type="button" onClick={() => void showDetails(delivery.deliveryNumber)}>Szczegóły</button>
+                          <button type="button" onClick={() => openEditDelivery(delivery)}>Edytuj dostawę</button>
+                          <button
+                            type="button"
+                            className="danger"
+                            disabled={delivery.deliveryNumber <= 0}
+                            title={delivery.deliveryNumber <= 0 ? 'Dostaw technicznych nie można usuwać' : undefined}
+                            onClick={() => void deleteDelivery(delivery)}
+                          >
+                            Usuń dostawę
+                          </button>
+                        </div>
+                      )}
+                    </div>
                   </div>
 
                   {isExpanded && (
@@ -526,6 +653,30 @@ export default function DeliveriesPage() {
           </div>
         </div>
       </section>
+
+      {editDelivery && (
+        <div className="delivery-modal-backdrop" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget && !editSaving) setEditDelivery(null) }}>
+          <section className="delivery-modal" role="dialog" aria-modal="true" aria-labelledby="edit-delivery-title">
+            <div className="delivery-modal-head">
+              <div><span>Dostawa nr {editDelivery.deliveryNumber}</span><h2 id="edit-delivery-title">Edytuj dostawę</h2></div>
+              <button type="button" onClick={() => setEditDelivery(null)} disabled={editSaving} aria-label="Zamknij">×</button>
+            </div>
+            <form onSubmit={saveEditedDelivery}>
+              <label><span>Data dostawy</span><input type="date" required value={editDate} onChange={(event) => setEditDate(event.target.value)} /></label>
+              <label><span>Dostawca</span><input required list="delivery-suppliers-edit" value={editSupplier} onChange={(event) => setEditSupplier(event.target.value)} /><datalist id="delivery-suppliers-edit">{suppliers.map((entry) => <option value={entry} key={entry} />)}</datalist></label>
+              <div className="delivery-form-pair">
+                <label><span>Ilość sztuk</span><input type="number" min="1" step="1" required value={editQuantity} onChange={(event) => setEditQuantity(event.target.value)} /></label>
+                <label><span>Koszt zakupu dostawy</span><input type="number" min="0" step="0.01" required value={editCost} onChange={(event) => setEditCost(event.target.value)} /></label>
+              </div>
+              {editError && <div className="delivery-form-error">{editError}</div>}
+              <div className="delivery-modal-actions">
+                <button type="button" className="secondary" disabled={editSaving} onClick={() => setEditDelivery(null)}>Anuluj</button>
+                <button type="submit" className="primary" disabled={editSaving}>{editSaving ? 'Zapisywanie…' : 'Zapisz zmiany'}</button>
+              </div>
+            </form>
+          </section>
+        </div>
+      )}
 
       {addOpen && (
         <div className="delivery-modal-backdrop" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget && !addSaving) setAddOpen(false) }}>
