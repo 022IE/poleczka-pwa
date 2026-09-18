@@ -23,6 +23,8 @@ D1 database ID:
 
 Live Worker `poleczka-loyverse-webhook` zapisuje dane Loyverse do `poleczka-dev`.
 
+Aktywny Worker aplikacji PWA w Cloudflare to `poleczka-pwa`. Gałąź `dev` jest weryfikowana pod adresem `https://dev.poleczkaiwonki.dpdns.org`. Konfiguracja `wrangler.toml` ma wskazywać ten sam Worker; środowisko developerskie rozróżnia aktywna baza `poleczka-dev` i gałąź `dev`, a nie osobna nazwa Workera.
+
 Poprzednia baza `poleczka-loyverse` (`4ababa0a-8912-49b0-9ee9-16ce771c27f3`) pozostaje jako archiwum po cutoverze i nie jest bieżącą bazą aplikacji.
 
 Szczegółowy schemat, relacje i zasady dalszych migracji są zapisane w `docs/D1_STAN_AKTUALNY.md`.
