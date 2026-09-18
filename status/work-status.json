@@ -1,6 +1,6 @@
 {
-  "state": "editing",
-  "label": "Wprowadzanie poprawek",
-  "task": "DOSTAWY — ujednolicenie menu ... ze standardem SPRZEDAŻY",
-  "updatedAt": "2026-09-18T16:54:00Z"
+  "state": "awaiting_publish",
+  "label": "Oczekiwanie na publikację",
+  "task": "DOSTAWY — menu ... ujednolicone ze standardem SPRZEDAŻY",
+  "updatedAt": "2026-09-18T16:56:00Z"
 }
