@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import BuildStatus from './components/BuildStatus'
 
-const SHOW_DEV_PIPELINE = true
+const SHOW_DEV_PIPELINE = false
 
 type DictionaryItem = {
   id: string

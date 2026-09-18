@@ -4,7 +4,7 @@ import BuildStatus from './components/BuildStatus'
 import SalesPage from './SalesPage'
 
 // Widget publikacji jest narzędziem developerskim. W wersji finalnej ustawiamy false.
-const SHOW_DEV_PIPELINE = true
+const SHOW_DEV_PIPELINE = false
 
 type ComparisonPeriod = 'week' | 'month' | 'year'
 
