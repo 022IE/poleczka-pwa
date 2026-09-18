@@ -1,4 +1,4 @@
-name = "poleczka-pwa-dev"
+name = "poleczka-pwa"
 main = "worker/index.ts"
 compatibility_date = "2026-09-16"
 
