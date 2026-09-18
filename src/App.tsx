@@ -145,7 +145,7 @@ function Dashboard() {
           <div className="date-block"><span className="header-icon">▣</span><div><b>{weekday}</b><span>{date}</span></div></div>
           <div className="header-divider" />
           <button className="bell" aria-label="Powiadomienia">♟<span>3</span></button>
-          <div className="sync-pill"><b>↻</b><div><strong>Zsynchronizowano</strong><small>Dzisiaj, 10:24</small></div><i /></div>
+          <DataStatus />
           <div className="avatar">I</div>
         </div>
       </header>
