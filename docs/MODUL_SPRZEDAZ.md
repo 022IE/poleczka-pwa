@@ -889,3 +889,50 @@ Obowiązuje dla dalszego wdrażania modułu SPRZEDAŻ:
 - artykuł identyfikujemy przez `item_id`, a pozycję sprzedaży przez `line_id`,
 - nowych funkcji nie budujemy w oparciu o SKU,
 - ewentualne fizyczne usunięcie kolumny SKU z D1 jest decyzją przyszłą i wymaga osobnego audytu zależności przed migracją.
+
+
+---
+
+# 35. Stan wdrożenia z 18.09.2026 — dane D1 i zakres dat
+
+W module SPRZEDAŻ wdrożono połączenie widoku z bazą developerską `poleczka-dev`.
+
+## Backend / Worker
+
+Dodane i używane przez frontend endpointy:
+
+- `GET /api/dictionaries/categories` — aktywne kategorie z `categories`,
+- `GET /api/dictionaries/items` — aktywne artykuły z `items`,
+- `GET /api/dictionaries/payment-types` — formy płatności z `receipt_payments`,
+- `GET /api/sales/summary` — KPI dla bieżących filtrów,
+- `GET /api/sales/receipts` — stronicowana lista paragonów,
+- `GET /api/sales/receipts/:receiptNumber/lines` — pozycje rozwijanego paragonu.
+
+Zakres dat jest przekazywany do Workera jako daty `YYYY-MM-DD`. Granice dnia są przeliczane według strefy `Europe/Warsaw`, a następnie porównywane z timestampem `receipt_date`.
+
+## Frontend
+
+Ekran SPRZEDAŻ:
+
+- nie korzysta już z demonstracyjnej listy paragonów ani demonstracyjnych KPI,
+- pobiera KPI z D1,
+- pobiera listę paragonów z D1,
+- pobiera pozycje dopiero po rozwinięciu konkretnego paragonu,
+- pobiera listy płatności, kategorii i artykułów z D1,
+- po wyborze kategorii ogranicza listę artykułów do tej kategorii,
+- wyszukuje po numerze paragonu, nazwie artykułu i numerze dostawy z `line_note`,
+- nie wyświetla i nie wyszukuje SKU,
+- posiada selektor zakresu dat z polami **Od** i **Do**,
+- domyślnie ustawia bieżący miesiąc,
+- posiada przycisk szybkiego ustawienia bieżącego miesiąca,
+- obsługuje sortowanie po dacie, liczbie sztuk, brutto, rabacie i netto,
+- obsługuje paginację 25 / 50 / 100 paragonów na stronę,
+- posiada stany ładowania, braku danych i błędu API.
+
+## Semantyka filtrów i KPI
+
+Dla filtra kategorii lub artykułu KPI są liczone z pasujących pozycji sprzedaży, dzięki czemu np. sprzedaż netto dla wybranej kategorii oznacza sprzedaż pozycji tej kategorii, a nie całkowitą wartość wszystkich paragonów, na których taka kategoria wystąpiła.
+
+Tabela główna nadal reprezentuje całe paragony. Jeżeli paragon spełnia filtr pozycji, jego główny wiersz pokazuje pełne wartości paragonu. Rozwinięcie pokazuje wszystkie pozycje tego paragonu, aby zachować pełny kontekst dokumentu sprzedaży.
+
+SKU pozostaje wyłącznie techniczną kolumną w D1 i nie jest częścią modeli prezentacyjnych API modułu SPRZEDAŻ.
