@@ -61,7 +61,7 @@ const quickLinks = [
   ['/kategorie','Kategorie','Porządkuj produkty','◇','gold'],
   ['/koszty','Koszty','Dodaj wydatek','◉','blue'],
   ['/analizy','Analizy','Poznaj swoje wyniki','▥','lavender'],
-  ['/synchronizacja','Synchronizacja','Zsynchronizuj dane','↻','aqua'],
+  ['/synchronizacja','Synchronizacja','Przepływ danych i importy','↻','aqua'],
   ['/narzedzia','Narzędzia','Przydatne funkcje','⌘','gold'],
   ['/ustawienia','Ustawienia','Dostosuj aplikację','⚙','gray'],
 ] as const
@@ -264,7 +264,7 @@ function App() {
         <Route path="/kategorie" element={<Placeholder title="Kategorie" text="Kategorie wykorzystywane w sprzedaży, filtrach i analizach."/>}/>
         <Route path="/koszty" element={<Placeholder title="Koszty" text="Koszty oraz dokumenty powiązane z Google Drive."/>}/>
         <Route path="/analizy" element={<Placeholder title="Analizy" text="Porównania okresów, heatmapy, histogramy i analizy dostaw."/>}/>
-        <Route path="/synchronizacja" element={<Placeholder title="Synchronizacja" text="Status Loyverse → D1 oraz historia synchronizacji."/>}/>
+        <Route path="/synchronizacja" element={<Placeholder title="Synchronizacja" text="Przepływ Loyverse / Vinted → D1, importy, kolejki i historia zdarzeń."/>}/>
         <Route path="/narzedzia" element={<Placeholder title="Narzędzia" text="Przydatne funkcje i narzędzia pomocnicze."/>}/>
         <Route path="/ustawienia" element={<Placeholder title="Ustawienia" text="Firma, limit działalności, integracje, słowniki i wygląd."/>}/>
       </Routes></main>
