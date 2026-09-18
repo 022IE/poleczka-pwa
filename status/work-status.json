@@ -1,6 +1,6 @@
 {
-  "state": "editing",
-  "label": "Wprowadzanie poprawek",
+  "state": "awaiting_publish",
+  "label": "Oczekiwanie na publikację",
   "task": "SPRZEDAŻ — readonly S.K. + menu Zaksięguj/Wyksięguj/Usuń",
-  "updatedAt": "2026-09-18T16:42:00Z"
+  "updatedAt": "2026-09-18T16:45:30Z"
 }
