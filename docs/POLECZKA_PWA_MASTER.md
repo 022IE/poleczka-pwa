@@ -170,7 +170,7 @@ Z D1 pochodzą:
 Wyjątek: panel **Vinted** pozostaje niezależny i nie jest jeszcze zasilany z D1.
 
 Ograniczenia bieżącego modelu:
-- **szacowany zysk** liczymy wyłącznie dla pozycji, dla których `receipt_lines.cost_total > 0`; historyczne importy z technicznym kosztem `0` nie są traktowane jako wiarygodny koszt zerowy,
+- **szacowany zysk** nie może być liczony z `receipt_lines.cost` ani `receipt_lines.cost_total`. Obowiązująca reguła biznesowa: dla każdej dostawy wyliczamy **średni koszt sztuki = cena całej dostawy / liczba sztuk w dostawie**; koszt sprzedanej pozycji wynika z numeru dostawy w `receipt_lines.line_note`, a zysk = sprzedaż netto pozycji − przypisany średni koszt sztuki × sprzedana ilość. Do czasu wdrożenia tabeli dostaw z ceną całkowitą i ilością sztuk dashboard pokazuje brak wartości zamiast szacować koszt z innych pól,
 - **% zbytu** pozostaje jako brak danych, dopóki w D1 nie będzie tabeli dostaw / ilości przyjętych,
 - kwota kwartalnego limitu DNR jest konfiguracją aplikacji, a nie daną sprzedażową; do czasu uruchomienia ustawień może być przekazana przez konfigurację Workera `DNR_QUARTER_LIMIT`.
 
@@ -261,6 +261,13 @@ Reguły:
 - pusty komentarz = `-1` niezidentyfikowana,
 - numer dostawy nieistniejący aktualnie w tabeli dostaw = tymczasowo `-1`,
 - przy kolejnej synchronizacji, jeżeli dana dostawa już istnieje, pozycja ma zostać ponownie przypisana prawidłowo.
+
+Reguła kosztu i zysku:
+- koszt jednostkowy dla pozycji sprzedaży pochodzi z dostawy wskazanej przez `line_note`,
+- **średni koszt sztuki dostawy = cena całej dostawy / liczba sztuk w dostawie**,
+- koszt sprzedanej pozycji = średni koszt sztuki dostawy × ilość sprzedana,
+- szacowany zysk = sprzedaż netto − koszt sprzedanych sztuk,
+- nie używamy `receipt_lines.cost` / `cost_total` jako źródła kosztu do dashboardu.
 
 ---
 
