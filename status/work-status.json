@@ -1,6 +1,6 @@
 {
-  "state": "awaiting_publish",
-  "label": "Oczekiwanie na publikację",
-  "task": "Całe PWA — typografia +50% zapisana i build zakończony; oczekiwanie na potwierdzenie Cloudflare",
-  "updatedAt": "2026-09-18T06:09:20Z"
+  "state": "editing",
+  "label": "Wprowadzanie poprawek",
+  "task": "Całe PWA — korekta powiększenia typografii z +50% do +25%",
+  "updatedAt": "2026-09-18T06:22:40Z"
 }
