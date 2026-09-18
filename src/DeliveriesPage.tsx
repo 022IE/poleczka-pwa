@@ -152,13 +152,6 @@ export default function DeliveriesPage() {
   }, [query])
 
   useEffect(() => {
-    if (rowMenu === null) return
-    const close = () => setRowMenu(null)
-    window.addEventListener('click', close)
-    return () => window.removeEventListener('click', close)
-  }, [rowMenu])
-
-  useEffect(() => {
     const controller = new AbortController()
     Promise.all([
       fetch('/api/deliveries/suppliers', { signal: controller.signal }),
@@ -597,36 +590,33 @@ export default function DeliveriesPage() {
                     <span className={delivery.returnRate >= 100 ? 'metric-positive' : delivery.returnRate < 50 ? 'metric-negative' : ''}>{formatPercent(delivery.returnRate)}</span>
                     <span>{formatMoney(delivery.sales)}</span>
                     <span className={delivery.profit >= 0 ? 'metric-positive' : 'metric-negative'}>{formatMoney(delivery.profit)}</span>
-                    <div
-                      className="delivery-row-menu-wrap"
-                      onClick={(event) => event.stopPropagation()}
+                    <button
+                      type="button"
+                      className="delivery-row-menu"
+                      aria-label={`Menu dostawy ${delivery.deliveryNumber}`}
+                      aria-expanded={rowMenu === delivery.deliveryNumber}
+                      onClick={() => setRowMenu((current) => current === delivery.deliveryNumber ? null : delivery.deliveryNumber)}
                     >
+                      •••
+                    </button>
+                  </div>
+
+                  {rowMenu === delivery.deliveryNumber && (
+                    <div className="delivery-row-actions" role="menu" aria-label={`Akcje dostawy ${delivery.deliveryNumber}`}>
+                      <button type="button" role="menuitem" onClick={() => void showDetails(delivery.deliveryNumber)}>Szczegóły</button>
+                      <button type="button" role="menuitem" onClick={() => openEditDelivery(delivery)}>Edytuj dostawę</button>
                       <button
                         type="button"
-                        className="delivery-row-menu"
-                        aria-label={`Menu dostawy ${delivery.deliveryNumber}`}
-                        aria-expanded={rowMenu === delivery.deliveryNumber}
-                        onClick={() => setRowMenu((current) => current === delivery.deliveryNumber ? null : delivery.deliveryNumber)}
+                        role="menuitem"
+                        className="danger"
+                        disabled={delivery.deliveryNumber <= 0}
+                        title={delivery.deliveryNumber <= 0 ? 'Dostaw technicznych nie można usuwać' : undefined}
+                        onClick={() => void deleteDelivery(delivery)}
                       >
-                        •••
+                        Usuń dostawę
                       </button>
-                      {rowMenu === delivery.deliveryNumber && (
-                        <div className={`delivery-row-menu-popover ${index >= sortedDeliveries.length - 2 ? 'open-up' : ''}`}>
-                          <button type="button" onClick={() => void showDetails(delivery.deliveryNumber)}>Szczegóły</button>
-                          <button type="button" onClick={() => openEditDelivery(delivery)}>Edytuj dostawę</button>
-                          <button
-                            type="button"
-                            className="danger"
-                            disabled={delivery.deliveryNumber <= 0}
-                            title={delivery.deliveryNumber <= 0 ? 'Dostaw technicznych nie można usuwać' : undefined}
-                            onClick={() => void deleteDelivery(delivery)}
-                          >
-                            Usuń dostawę
-                          </button>
-                        </div>
-                      )}
                     </div>
-                  </div>
+                  )}
 
                   {isExpanded && (
                     <div className="delivery-items-wrap">
