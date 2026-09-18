@@ -707,6 +707,12 @@ Pierwszym głównym modułem funkcjonalnym pozostaje **SPRZEDAŻ**.
 
 Repozytorium `022IE/poleczka-pwa` jest wspólnym źródłem prawdy dla kodu, konfiguracji, dokumentacji i workflow publikacji.
 
+Aktywna konfiguracja Cloudflare PWA:
+- Worker: `poleczka-pwa`,
+- trasa developerska: `https://dev.poleczkaiwonki.dpdns.org`,
+- aktywna baza developerska D1: `poleczka-dev`,
+- `wrangler.toml` ma używać nazwy Workera `poleczka-pwa`; nie utrzymujemy osobnego Workera `poleczka-pwa-dev`.
+
 Gałęzie:
 - `main` — wersja stabilna,
 - `dev` — bieżące prace rozwojowe,
