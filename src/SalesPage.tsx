@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import BuildStatus from './components/BuildStatus'
+import DataStatus from './components/DataStatus'
 
 const SHOW_DEV_PIPELINE = false
 
