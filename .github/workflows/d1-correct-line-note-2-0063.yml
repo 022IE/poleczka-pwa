@@ -1,11 +1,6 @@
 name: D1 Correct line_note 2-0063
 
 on:
-  push:
-    branches:
-      - dev
-    paths:
-      - '.github/workflows/d1-correct-line-note-2-0063.yml'
   workflow_dispatch:
 
 permissions:
