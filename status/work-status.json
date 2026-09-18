@@ -1,6 +1,6 @@
 {
-  "state": "editing",
-  "label": "Wprowadzanie poprawek",
-  "task": "DOSTAWY — typografia jak SPRZEDAŻ, wyrównanie nagłówka i sortowanie tabeli",
-  "updatedAt": "2026-09-18T12:05:54.703Z"
+  "state": "awaiting_publish",
+  "label": "Oczekiwanie na publikację",
+  "task": "DOSTAWY — wspólna typografia, filtr bar, wyrównanie nagłówka i sortowanie zakończone",
+  "updatedAt": "2026-09-18T12:10:08.995Z"
 }
