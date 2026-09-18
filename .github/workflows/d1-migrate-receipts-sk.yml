@@ -1,12 +1,6 @@
 name: D1 migrate receipts SK
 
 on:
-  push:
-    branches:
-      - dev
-    paths:
-      - 'migrations/0001_receipts_sk.sql'
-      - '.github/workflows/d1-migrate-receipts-sk.yml'
   workflow_dispatch:
 
 permissions:
