@@ -108,17 +108,19 @@ W przyszłości kolumna SKU może zostać usunięta z bazy ze względu na oszcz�
 
 # 4. Reguły Lp. dostawy
 
-Źródłem numeru dostawy jest:
+Kanonicznym numerem dostawy używanym przez moduł SPRZEDAŻ jest:
 
-`receipt_lines.line_note`
+`receipt_lines.delivery_number`
+
+Surowa wartość z Loyverse / importów pozostaje w `receipt_lines.delivery_number` i nie jest usuwana.
 
 Obowiązujące reguły:
 
-- `line_note = 0` -> dostawa wewnętrzna,
-- pusty `line_note` -> `-1`, niezidentyfikowana,
-- numer dostawy nieistniejący aktualnie w tabeli dostaw -> tymczasowo `-1`,
-- po dopisaniu brakującej dostawy kolejna synchronizacja ma przypisać pozycję do prawidłowej dostawy,
-- oryginalna wartość z D1 nie może zostać bezpowrotnie utracona.
+- `line_note = 0` -> `delivery_number = 0` -> dostawa wewnętrzna,
+- pusty `line_note` -> `delivery_number = -1` -> niezidentyfikowana,
+- numer nieistniejący aktualnie w tabeli `deliveries` -> tymczasowo `delivery_number = -1`,
+- po dopisaniu brakującej dostawy trigger D1 automatycznie przypisuje pasujące pozycje do prawidłowego `delivery_number`,
+- oryginalna wartość `line_note` pozostaje zachowana do diagnostyki i kontroli źródła.
 
 ---
 
@@ -257,7 +259,7 @@ Wyszukiwarka ma przeszukiwać:
 
 Mapowanie numeru dostawy:
 
-`receipt_lines.line_note`
+`receipt_lines.delivery_number`
 
 SKU **nie jest** elementem wyszukiwania.
 
@@ -412,7 +414,7 @@ Parametry:
 - `page`
 - `pageSize`
 
-Parametr `search` obejmuje numer paragonu, nazwę artykułu i numer dostawy (`line_note`). Nie obejmuje SKU.
+Parametr `search` obejmuje numer paragonu, nazwę artykułu i numer dostawy (`delivery_number`). Nie obejmuje SKU.
 
 Przykład:
 
@@ -718,7 +720,7 @@ Docelowo zapytania D1 mogą wymagać indeksów m.in. na:
 - dacie paragonu,
 - numerze paragonu,
 - `item_id`,
-- `line_note` dla wyszukiwania po numerze dostawy,
+- `delivery_number` dla wyszukiwania po numerze dostawy,
 - polach powiązań potrzebnych do kategorii i płatności.
 
 SKU nie jest planowane jako klucz wyszukiwania ani jako wymagany indeks dla modułu SPRZEDAŻ.
@@ -797,7 +799,7 @@ Następne kroki:
 2. zbudować / uzupełnić `/api/sales/summary`,
 3. zbudować / uzupełnić `/api/sales/receipts`,
 4. zasilić filtry rzeczywistymi danymi z `receipt_payments`, `categories` i `items`,
-5. wdrożyć wyszukiwanie po numerze paragonu, nazwie artykułu i `line_note`,
+5. wdrożyć wyszukiwanie po numerze paragonu, nazwie artykułu i `delivery_number`,
 6. podłączyć frontend do rzeczywistych odpowiedzi API,
 7. wykonać test porównawczy wartości z D1.
 
@@ -882,7 +884,7 @@ Obowiązuje dla dalszego wdrażania modułu SPRZEDAŻ:
 - lista form płatności korzysta z danych `receipt_payments`,
 - lista kategorii korzysta z tabeli `categories`,
 - lista artykułów korzysta z tabeli `items`,
-- wyszukiwarka obejmuje numer paragonu, nazwę artykułu oraz numer dostawy z `receipt_lines.line_note`,
+- wyszukiwarka obejmuje numer paragonu, nazwę artykułu oraz numer dostawy z `receipt_lines.delivery_number`,
 - SKU zostało wycofane z wyszukiwania,
 - SKU zostało wycofane z wyświetlania,
 - SKU pozostaje tymczasowo kolumną techniczną w D1,
@@ -920,7 +922,7 @@ Ekran SPRZEDAŻ:
 - pobiera pozycje dopiero po rozwinięciu konkretnego paragonu,
 - pobiera listy płatności, kategorii i artykułów z D1,
 - po wyborze kategorii ogranicza listę artykułów do tej kategorii,
-- wyszukuje po numerze paragonu, nazwie artykułu i numerze dostawy z `line_note`,
+- wyszukuje po numerze paragonu, nazwie artykułu i numerze dostawy z `delivery_number`,
 - nie wyświetla i nie wyszukuje SKU,
 - posiada selektor zakresu dat z polami **Od** i **Do**,
 - domyślnie ustawia bieżący miesiąc,
@@ -952,3 +954,25 @@ Zasada wydajnościowa:
 - nie pobiera całej historii sprzedaży,
 - pozycje brakujących paragonów są pobierane z API dopiero przy zbiorczym rozwinięciu,
 - wcześniej pobrane pozycje pozostają w pamięci widoku i nie są pobierane ponownie przy kolejnym rozwinięciu.
+
+
+---
+
+# 37. Kanoniczne `delivery_number` — migracja 18.09.2026
+
+Od 18.09.2026 moduł SPRZEDAŻ nie interpretuje numeru dostawy bezpośrednio z `line_note`.
+
+Obowiązujący model:
+- `receipt_lines.line_note` — surowa notatka / komentarz pochodzący z Loyverse lub importu, zachowywany do audytu i diagnostyki,
+- `receipt_lines.delivery_number` — kanoniczny numer dostawy używany przez API, wyszukiwanie i interfejs,
+- `receipt_lines.delivery_number -> deliveries.delivery_number` — relacja z tabelą dostaw.
+
+Kompatybilność:
+- live Worker Loyverse może nadal zapisywać `line_note`,
+- istniejące importy historyczne mogą nadal zapisywać `line_note`,
+- istniejące korekty `line_note` pozostają wspierane,
+- triggery D1 po każdym INSERT / UPDATE synchronizują `delivery_number`,
+- brakujący lub nierozpoznany numer daje `delivery_number = -1`,
+- dodanie brakującej dostawy do `deliveries` automatycznie rozwiązuje pasujące pozycje.
+
+Warstwa odczytu PWA korzysta z `delivery_number`; nie należy budować nowych funkcji biznesowych bezpośrednio na `line_note`.

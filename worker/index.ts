@@ -547,7 +547,7 @@ function buildReceiptWhere(filters: SalesQuery) {
         WHERE lfs.receipt_number = r.receipt_number
           AND (
             COALESCE(ifs.item_name, lfs.item_name, '') LIKE ? ESCAPE '\\'
-            OR COALESCE(lfs.line_note, '') LIKE ? ESCAPE '\\'
+            OR CAST(COALESCE(lfs.delivery_number, -1) AS TEXT) LIKE ? ESCAPE '\\'
           )
       )
     )`)
@@ -598,7 +598,7 @@ function buildSummaryWhere(filters: SalesQuery) {
     clauses.push(`(
       r.receipt_number LIKE ? ESCAPE '\\'
       OR COALESCE(i.item_name, l.item_name, '') LIKE ? ESCAPE '\\'
-      OR COALESCE(l.line_note, '') LIKE ? ESCAPE '\\'
+      OR CAST(COALESCE(l.delivery_number, -1) AS TEXT) LIKE ? ESCAPE '\\'
     )`)
     params.push(pattern, pattern, pattern)
   }
@@ -789,10 +789,7 @@ async function salesReceiptLines(receiptNumber: string, env: Env) {
       COALESCE(l.price, 0) AS price,
       COALESCE(l.total_discount, 0) AS discount,
       COALESCE(l.total_money, 0) AS net,
-      CASE
-        WHEN TRIM(COALESCE(l.line_note, '')) = '' THEN '-1'
-        ELSE TRIM(l.line_note)
-      END AS deliveryNo
+      CAST(COALESCE(l.delivery_number, -1) AS TEXT) AS deliveryNo
     FROM receipt_lines l
     LEFT JOIN items i ON i.item_id = l.item_id
     LEFT JOIN categories c ON c.category_id = i.category_id
@@ -1174,7 +1171,7 @@ async function dashboardData(url: URL, env: Env) {
       quarterSalesChange: metricChange(quarterSales, previousQuarterSales),
       // Zysk nie korzysta z receipt_lines.cost/cost_total.
       // Obowiązująca reguła: koszt sztuki = cena całej dostawy / liczba sztuk w dostawie.
-      // Do czasu wdrożenia tabeli dostaw i jej powiązania przez line_note zwracamy brak danych.
+      // Powiązanie sprzedaży z dostawą jest kanonicznie przez receipt_lines.delivery_number. Sam KPI pozostaje wyłączony do wdrożenia uzgodnionej agregacji dashboardu.
       estimatedProfit: null,
       estimatedProfitChange: null,
       profitMargin: null,

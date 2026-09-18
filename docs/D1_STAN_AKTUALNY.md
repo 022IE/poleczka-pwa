@@ -1,7 +1,7 @@
 # PÓŁECZKA IWONKI — D1 STAN AKTUALNY
 
 **Status:** dokument techniczny obowiązującego środowiska D1  
-**Aktualizacja:** 17.09.2026  
+**Aktualizacja:** 18.09.2026  
 **Gałąź robocza:** `dev`
 
 ---
@@ -92,8 +92,9 @@ Aktualnie potwierdzone tabele użytkowe w D1:
 2. `items`
 3. `receipts`
 4. `receipt_lines`
-5. `receipt_payments`
-6. `webhook_events`
+5. `deliveries`
+6. `receipt_payments`
+7. `webhook_events`
 
 Tabela `_cf_KV` jest tabelą techniczną Cloudflare i nie jest traktowana jako część modelu biznesowego PWA.
 
@@ -194,6 +195,7 @@ CREATE TABLE receipt_lines (
   cost_total REAL,
   total_discount REAL,
   line_note TEXT,
+  delivery_number INTEGER REFERENCES deliveries(delivery_number),
   FOREIGN KEY(receipt_number) REFERENCES receipts(receipt_number)
 );
 ```
@@ -204,13 +206,66 @@ Indeksy:
 CREATE INDEX idx_lines_receipt ON receipt_lines(receipt_number);
 CREATE INDEX idx_lines_sku ON receipt_lines(sku);
 CREATE INDEX idx_lines_note ON receipt_lines(line_note);
+CREATE INDEX idx_lines_delivery ON receipt_lines(delivery_number);
 ```
 
 Powiązanie:
 
 `receipt_lines.receipt_number -> receipts.receipt_number`
 
-Pole `line_note` jest źródłem numeru Lp. dostawy zgodnie z regułami projektu.
+`line_note` pozostaje surową wartością źródłową z Loyverse / importu i nie jest usuwane.
+Kanonicznym powiązaniem aplikacji z dostawą jest `receipt_lines.delivery_number`, wskazujące na `deliveries.delivery_number`.
+
+Reguła synchronizacji:
+- dokładna wartość `line_note`, dla której istnieje dostawa, ustawia ten sam `delivery_number`,
+- puste albo nierozpoznane `line_note` ustawia `delivery_number = -1`,
+- `line_note = 0` ustawia `delivery_number = 0`,
+- dodanie wcześniej brakującej dostawy automatycznie przepina pasujące pozycje z surowym `line_note`.
+
+Triggery D1 utrzymujące zgodność:
+- `trg_receipt_lines_delivery_insert`,
+- `trg_receipt_lines_delivery_note_update`,
+- `trg_deliveries_resolve_lines`.
+
+---
+
+## 9.1. `deliveries`
+
+Tabela dostaw została wdrożona 18.09.2026.
+
+Aktualny schemat:
+
+```sql
+CREATE TABLE deliveries (
+  delivery_number INTEGER PRIMARY KEY,
+  delivery_date TEXT NOT NULL,
+  supplier_name TEXT NOT NULL,
+  quantity INTEGER NOT NULL CHECK (quantity > 0),
+  total_cost REAL NOT NULL CHECK (total_cost >= 0),
+  created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+```
+
+Pola są nazwane po angielsku zgodnie ze standardem D1 projektu.
+
+Dane startowe zaimportowane z arkusza:
+
+| delivery_number | delivery_date | supplier_name | quantity | total_cost |
+|---:|:---:|---|---:|---:|
+| -1 | 2026-09-05 | Dostawa niezidentyfikowana | 100 | 1200.00 |
+| 0 | 2026-09-05 | Dostawa wewnętrzna | 100 | 1200.00 |
+| 1 | 2026-09-05 | MAT Fortuna Targowisko | 160 | 2300.00 |
+| 2 | 2026-09-05 | Talia Brzesko | 220 | 1750.00 |
+| 3 | 2026-09-05 | StockHurt Skawina | 80 | 1200.00 |
+| 4 | 2026-09-16 | Aneta | 10 | 100.00 |
+| 5 | 2026-06-16 | Talia Brzesko | 149 | 975.00 |
+| 6 | 2026-09-16 | MAT Fortuna Targowisko | 90 | 1280.00 |
+| 7 | 2026-09-18 | Karolina | 10 | 100.00 |
+
+Znaczenie rekordów specjalnych:
+- `-1` — dostawa niezidentyfikowana,
+- `0` — dostawa wewnętrzna.
 
 ---
 
@@ -443,13 +498,16 @@ Jeżeli źródło zawiera tylko datę bez godziny:
 
 ### 16.7 Dostawa
 
-Numer dostawy z pliku źródłowego trafia do `receipt_lines.line_note`.
+Numer dostawy z pliku źródłowego nadal trafia do surowego pola `receipt_lines.line_note`.
+D1 następnie utrzymuje kanoniczne `receipt_lines.delivery_number`.
 
-Obowiązują nadal reguły projektu:
+Obowiązują reguły projektu:
 
-- `0` = dostawa wewnętrzna,
-- puste pole = niezidentyfikowana / `-1` w warstwie interpretacji,
-- surowej wartości źródłowej nie wolno bezpowrotnie utracić.
+- `line_note = 0` -> `delivery_number = 0` = dostawa wewnętrzna,
+- puste pole -> `delivery_number = -1` = niezidentyfikowana,
+- numer, którego nie ma jeszcze w `deliveries`, tymczasowo daje `delivery_number = -1`,
+- po dodaniu brakującej dostawy pasujące pozycje są automatycznie przepinane na właściwy `delivery_number`,
+- surowej wartości `line_note` nie wolno bezpowrotnie utracić.
 
 ### 16.8 Płatności
 

@@ -170,8 +170,8 @@ Z D1 pochodzą:
 Wyjątek: panel **Vinted** pozostaje niezależny i nie jest jeszcze zasilany z D1.
 
 Ograniczenia bieżącego modelu:
-- **szacowany zysk** nie może być liczony z `receipt_lines.cost` ani `receipt_lines.cost_total`. Obowiązująca reguła biznesowa: dla każdej dostawy wyliczamy **średni koszt sztuki = cena całej dostawy / liczba sztuk w dostawie**; koszt sprzedanej pozycji wynika z numeru dostawy w `receipt_lines.line_note`, a zysk = sprzedaż netto pozycji − przypisany średni koszt sztuki × sprzedana ilość. Do czasu wdrożenia tabeli dostaw z ceną całkowitą i ilością sztuk dashboard pokazuje brak wartości zamiast szacować koszt z innych pól,
-- **% zbytu** pozostaje jako brak danych, dopóki w D1 nie będzie tabeli dostaw / ilości przyjętych,
+- **szacowany zysk** nie może być liczony z `receipt_lines.cost` ani `receipt_lines.cost_total`. Obowiązująca reguła biznesowa: dla każdej dostawy wyliczamy **średni koszt sztuki = cena całej dostawy / liczba sztuk w dostawie**; koszt sprzedanej pozycji wynika z kanonicznego `receipt_lines.delivery_number`, a zysk = sprzedaż netto pozycji − przypisany średni koszt sztuki × sprzedana ilość. Tabela `deliveries` jest już wdrożona; sam KPI pozostaje wyłączony do wdrożenia uzgodnionej agregacji dashboardu,
+- **% zbytu** może być liczony z `deliveries.quantity` i sprzedaży powiązanej przez `receipt_lines.delivery_number`; sam KPI pozostaje wyłączony do wdrożenia agregacji dashboardu,
 - kwota kwartalnego limitu DNR jest konfiguracją aplikacji, a nie daną sprzedażową; do czasu uruchomienia ustawień może być przekazana przez konfigurację Workera `DNR_QUARTER_LIMIT`.
 
 
@@ -254,16 +254,20 @@ Osobna zebra dla paragonów i osobna dla pozycji rozwiniętego paragonu.
 
 ## 8. Reguły sprzedaży i dostaw
 
-Pole Loyverse `line_note / komentarz` jest numerem Lp. dostawy.
+Surowe pole Loyverse `line_note / komentarz` nadal jest zapisywane w D1 i zachowywane bez utraty informacji.
+Kanoniczne powiązanie pozycji sprzedaży z dostawą to:
+
+`receipt_lines.delivery_number -> deliveries.delivery_number`
 
 Reguły:
-- `0` = dostawa wewnętrzna,
-- pusty komentarz = `-1` niezidentyfikowana,
-- numer dostawy nieistniejący aktualnie w tabeli dostaw = tymczasowo `-1`,
-- przy kolejnej synchronizacji, jeżeli dana dostawa już istnieje, pozycja ma zostać ponownie przypisana prawidłowo.
+- `line_note = 0` -> `delivery_number = 0` = dostawa wewnętrzna,
+- pusty komentarz -> `delivery_number = -1` = dostawa niezidentyfikowana,
+- numer nieistniejący aktualnie w `deliveries` -> tymczasowo `delivery_number = -1`,
+- dodanie brakującej dostawy automatycznie przypisuje do niej pozycje, których surowy `line_note` zawiera ten numer,
+- Worker Loyverse oraz importy historyczne mogą nadal zapisywać `line_note`; triggery D1 utrzymują `delivery_number`.
 
 Reguła kosztu i zysku:
-- koszt jednostkowy dla pozycji sprzedaży pochodzi z dostawy wskazanej przez `line_note`,
+- koszt jednostkowy dla pozycji sprzedaży pochodzi z dostawy wskazanej przez `delivery_number`,
 - **średni koszt sztuki dostawy = cena całej dostawy / liczba sztuk w dostawie**,
 - koszt sprzedanej pozycji = średni koszt sztuki dostawy × ilość sprzedana,
 - szacowany zysk = sprzedaż netto − koszt sprzedanych sztuk,
@@ -536,7 +540,19 @@ Aktualnie działający model w środowisku developerskim dotyczy bazy **`poleczk
 - cost,
 - cost_total,
 - total_discount,
-- line_note.
+- line_note,
+- delivery_number.
+
+### `deliveries`
+- delivery_number,
+- delivery_date,
+- supplier_name,
+- quantity,
+- total_cost,
+- created_at,
+- updated_at.
+
+`line_note` pozostaje polem surowym. Polem używanym przez aplikację do relacji z dostawą jest `delivery_number`.
 
 Dalsze tabele będą projektowane modułowo.
 

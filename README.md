@@ -47,6 +47,7 @@ migrations/   migracje D1
 - `docs/POLECZKA_PWA_MASTER.md` — główne źródło prawdy projektu,
 - `docs/D1_STAN_AKTUALNY.md` — obowiązujący stan aktywnej bazy D1, schemat i relacje,
 - `docs/MODUL_SPRZEDAZ.md` — specyfikacja modułu sprzedaży,
+- `docs/MODUL_DOSTAWY.md` — specyfikacja modułu dostaw i relacji z pozycjami sprzedaży,
 - `docs/MODUL_ANALIZY.md` — specyfikacja modułu analiz,
 - `docs/MODUL_USTAWIENIA.md` — specyfikacja ustawień,
 - `docs/MODUL_VINTED.md` — specyfikacja modułu Vinted,
