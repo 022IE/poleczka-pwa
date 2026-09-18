@@ -449,9 +449,6 @@ export default function DeliveriesPage() {
             <span>{deliveries.length} pozycji</span>
           </div>
           <div className="deliveries-table-actions">
-            <button type="button" className="deliveries-expand-all" onClick={() => void toggleAll()} disabled={!deliveries.length} aria-pressed={allExpanded}>
-              {allExpanded ? '⊟ Zwiń wszystko' : '⊞ Rozwiń wszystko'}
-            </button>
             <button type="button" className="deliveries-add" onClick={() => setAddOpen(true)}>＋ Dodaj dostawę</button>
           </div>
         </div>
@@ -459,7 +456,17 @@ export default function DeliveriesPage() {
         <div className="deliveries-table-scroll">
           <div className="deliveries-table">
             <div className="deliveries-grid deliveries-table-head">
-              <span />
+              <button
+                type="button"
+                className="sales-expand-all"
+                disabled={loading || sortedDeliveries.length === 0}
+                aria-label={allExpanded ? 'Zwiń wszystkie dostawy' : 'Rozwiń wszystkie dostawy'}
+                title={allExpanded ? 'Zwiń wszystkie' : 'Rozwiń wszystkie'}
+                aria-pressed={allExpanded}
+                onClick={() => void toggleAll()}
+              >
+                {allExpanded ? '⊟' : '⊞'}
+              </button>
               <button type="button" className="deliveries-sort" onClick={() => toggleSort('deliveryNumber')}>Lp. <b>{sortArrow('deliveryNumber')}</b></button>
               <button type="button" className="deliveries-sort" onClick={() => toggleSort('deliveryDate')}>Data <b>{sortArrow('deliveryDate')}</b></button>
               <button type="button" className="deliveries-sort" onClick={() => toggleSort('supplierName')}>Dostawca <b>{sortArrow('supplierName')}</b></button>
