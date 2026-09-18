@@ -1,4 +1,5 @@
 name: D1 Import 2026-09-09
+# retry after delivery_number validation fix
 
 on:
   push:
