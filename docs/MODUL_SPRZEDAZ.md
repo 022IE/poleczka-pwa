@@ -996,12 +996,23 @@ Do tabeli `receipts` dodano lokalne pole:
 
 W tabeli głównej SPRZEDAŻY znajduje się kolumna **S.K.** z checkboxem dla każdego paragonu.
 
-Zachowanie:
+Zachowanie checkboxa:
+- checkbox jest wyłącznie wskaźnikiem stanu i nie może być zmieniany bezpośrednim kliknięciem,
 - zaznaczony checkbox = `sk = true`,
-- odznaczony checkbox = `sk = false`,
-- zmiana checkboxa zapisuje wartość do D1 przez endpoint:
-  `PATCH /api/sales/receipts/:receiptNumber/sk`,
-- zapis jest wykonywany optymistycznie; w przypadku błędu checkbox wraca do poprzedniej wartości,
-- nowy paragon bez jawnie podanej wartości otrzymuje `sk = true` z domyślnej wartości D1.
+- odznaczony checkbox = `sk = false`.
+
+Zmiana S.K. odbywa się wyłącznie z menu `...` paragonu:
+
+- **Zaksięguj** → zapisuje `sk = true`,
+- **Wyksięguj** → zapisuje `sk = false`,
+- **Usuń** → opcja jest widoczna, ale na obecnym etapie nie wykonuje żadnej akcji.
+
+Zapis S.K. do D1 korzysta z endpointu:
+
+`PATCH /api/sales/receipts/:receiptNumber/sk`
+
+Zapis jest wykonywany optymistycznie; w przypadku błędu interfejs przywraca poprzednią wartość.
+
+Nowy paragon bez jawnie podanej wartości otrzymuje `sk = true` z domyślnej wartości D1.
 
 Pole S.K. jest własnym polem biznesowym PWA i nie może być uzależnione od danych zwracanych przez Loyverse.
