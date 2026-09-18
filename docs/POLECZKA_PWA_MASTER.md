@@ -426,10 +426,21 @@ Obecny model:
 
 `Loyverse -> D1 -> aplikacja`
 
+D1 jest centralnym źródłem prawdy dla danych operacyjnych. PWA nie utrzymuje lokalnej bazy biznesowej ani nie wykonuje dwukierunkowej synchronizacji D1 ↔ przeglądarka. Ekrany aplikacji pobierają dane przez API Workera bezpośrednio z D1.
+
+Moduł **Synchronizacja** dotyczy przepływu danych ze źródeł zewnętrznych do D1, w szczególności:
+- webhooków Loyverse,
+- importu historii,
+- przyszłej integracji Vinted,
+- statusu ostatnich operacji,
+- komunikatów o błędach i zdarzeniach oczekujących.
+
+Kafelek w prawym górnym rogu nie oznacza synchronizacji lokalnej. Pokazuje rzeczywisty status połączenia PWA z D1 (**D1 online / D1 offline**) oraz czas ostatniego sprawdzenia.
+
 Należy zachować:
 - webhooki,
 - import historii,
-- automatyczną synchronizację,
+- automatyczną synchronizację źródeł zewnętrznych do D1,
 - status ostatniej synchronizacji,
 - komunikaty o błędach.
 
