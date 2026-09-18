@@ -161,7 +161,8 @@ CREATE TABLE receipts (
   total_tax REAL,
   tip REAL,
   surcharge REAL,
-  synced_at TEXT NOT NULL
+  synced_at TEXT NOT NULL,
+  sk BOOLEAN NOT NULL DEFAULT TRUE CHECK (sk IN (0, 1))
 );
 ```
 
@@ -171,6 +172,14 @@ Indeksy:
 CREATE INDEX idx_receipts_date ON receipts(receipt_date);
 CREATE INDEX idx_receipts_updated ON receipts(updated_at);
 ```
+
+Pole `receipts.sk`:
+- jest lokalnym polem aplikacji Półeczka Iwonki,
+- typ logiczny: boolean,
+- w D1/SQLite wartości są przechowywane jako `0/1`,
+- wartość domyślna: `TRUE`,
+- nie pochodzi z Loyverse i nie jest częścią mapowania danych źródłowych,
+- zmiana wartości następuje przez PWA / API aplikacji.
 
 ---
 
