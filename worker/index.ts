@@ -986,7 +986,7 @@ async function deliverySummary(url: URL, env: Env) {
     )
     SELECT supplier_name AS supplierName, ROUND(SUM(profit), 2) AS profit
     FROM filtered
-    WHERE delivery_number >= 0
+    WHERE delivery_number > 0
     GROUP BY supplier_name
     ORDER BY profit DESC, supplier_name COLLATE NOCASE
     LIMIT 1
