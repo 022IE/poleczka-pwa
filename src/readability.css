@@ -55,14 +55,14 @@ button,input,select,textarea{font-size:12.75px}
 .sales-filter-copy small{font-size:12px}
 .sales-filter select,.sales-filter button,.sales-search input{font-size:12.75px;height:44px}
 .sales-search{height:48px}
-.sales-table-head{min-height:58px;font-size:12px}
-.sales-receipt-row{min-height:58px;font-size:13.5px}
-.sales-receipt-row>strong{font-size:14.25px}
-.sales-payment{font-size:12.75px}
-.sales-lines-head{min-height:44px;font-size:11.25px}
-.sales-line{min-height:50px;font-size:12.75px}
-.sales-line strong{font-size:12.75px}
-.sales-lines-empty,.sales-empty{font-size:12.75px}
+.sales-table-head{min-height:58px;font-size:13.8px}
+.sales-receipt-row{min-height:58px;font-size:15.53px}
+.sales-receipt-row>strong{font-size:16.39px}
+.sales-payment{font-size:14.66px}
+.sales-lines-head{min-height:44px;font-size:12.94px}
+.sales-line{min-height:50px;font-size:14.66px}
+.sales-line strong{font-size:14.66px}
+.sales-lines-empty,.sales-empty{font-size:14.66px}
 .sales-hint,.sales-page-size,.sales-page-size select{font-size:12px}
 .sales-pagination button{font-size:12.75px}
 .sales-pagination span,.sales-pagination .sales-page-gap{font-size:11.25px}
@@ -96,6 +96,6 @@ button,input,select,textarea{font-size:12.75px}
 }
 
 @media(max-width:640px){
-  .sales-table-head{font-size:11.25px}
-  .sales-receipt-row{font-size:12.75px}
+  .sales-table-head{font-size:12.94px}
+  .sales-receipt-row{font-size:14.66px}
 }
