@@ -1,6 +1,6 @@
 {
-  "state": "awaiting_publish",
-  "label": "Oczekiwanie na publikację",
-  "task": "PWA — globalnie większa typografia + SPRZEDAŻ rozwiń/zwiń wszystkie paragony",
-  "updatedAt": "2026-09-18T08:08:00Z"
+  "state": "editing",
+  "label": "Wprowadzanie poprawek",
+  "task": "Typografia — zmniejszenie wszystkich czcionek o 25%, kalendarz i Status integracji o 15%",
+  "updatedAt": "2026-09-18T08:21:30Z"
 }
