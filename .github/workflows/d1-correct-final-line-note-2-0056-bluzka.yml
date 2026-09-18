@@ -1,11 +1,6 @@
 name: D1 Correct final line_note 2-0056 Bluzka
 
 on:
-  push:
-    branches:
-      - dev
-    paths:
-      - '.github/workflows/d1-correct-final-line-note-2-0056-bluzka.yml'
   workflow_dispatch:
 
 permissions:
