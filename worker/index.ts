@@ -5,6 +5,7 @@ export interface Env {
   PIPELINE_HUB: DurableObjectNamespace
   TELEGRAM_HEALTH_URL?: string
   TELEGRAM_BOT_TOKEN?: string
+  DNR_QUARTER_LIMIT?: string
 }
 
 type StageState = 'waiting' | 'running' | 'ready' | 'failed' | 'blocked' | 'unknown'
@@ -813,6 +814,442 @@ async function salesReceiptLines(receiptNumber: string, env: Env) {
   return salesJson({ ok: true, items: result.results || [] })
 }
 
+type DashboardComparisonPeriod = 'week' | 'month' | 'year'
+
+type DashboardReceiptRow = {
+  receiptNumber: string
+  date: string
+  net: number
+}
+
+type DashboardLineRow = {
+  date: string
+  quantity: number
+  net: number
+  costTotal: number
+  category: string
+}
+
+type DashboardRange = {
+  start: string
+  end: string
+  label: string
+}
+
+function warsawYmd(date = new Date()) {
+  const parts = new Intl.DateTimeFormat('en-CA', {
+    timeZone: SALES_TIME_ZONE,
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  }).formatToParts(date)
+
+  const pick = (type: Intl.DateTimeFormatPartTypes) => parts.find((part) => part.type === type)?.value || ''
+  return `${pick('year')}-${pick('month')}-${pick('day')}`
+}
+
+function ymdUtc(value: string) {
+  const [year, month, day] = value.split('-').map(Number)
+  return new Date(Date.UTC(year, month - 1, day))
+}
+
+function utcYmd(date: Date) {
+  return date.toISOString().slice(0, 10)
+}
+
+function diffDaysInclusive(start: string, end: string) {
+  return Math.max(1, Math.round((ymdUtc(end).getTime() - ymdUtc(start).getTime()) / 86400000) + 1)
+}
+
+function localReceiptParts(value: string) {
+  const date = new Date(value)
+  const parts = new Intl.DateTimeFormat('en-CA', {
+    timeZone: SALES_TIME_ZONE,
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    hourCycle: 'h23',
+  }).formatToParts(date)
+  const pick = (type: Intl.DateTimeFormatPartTypes) => parts.find((part) => part.type === type)?.value || '0'
+  const ymd = `${pick('year')}-${pick('month')}-${pick('day')}`
+  return { ymd, hour: Number(pick('hour')) }
+}
+
+function weekdayIndexFromYmd(value: string) {
+  const day = ymdUtc(value).getUTCDay()
+  return (day + 6) % 7
+}
+
+function quarterForYmd(value: string) {
+  const [year, month] = value.split('-').map(Number)
+  const quarter = Math.floor((month - 1) / 3) + 1
+  const startMonth = ((quarter - 1) * 3) + 1
+  const start = `${year}-${String(startMonth).padStart(2, '0')}-01`
+  const nextQuarter = startMonth === 10
+    ? `${year + 1}-01-01`
+    : `${year}-${String(startMonth + 3).padStart(2, '0')}-01`
+  const end = addDaysYmd(nextQuarter, -1)
+  const roman = ['I', 'II', 'III', 'IV'][quarter - 1]
+  return { year, quarter, start, end, label: `${roman} kwartał ${year}` }
+}
+
+function previousQuarterForYmd(value: string) {
+  const current = quarterForYmd(value)
+  return quarterForYmd(addDaysYmd(current.start, -1))
+}
+
+function shiftPeriodYmd(value: string, period: DashboardComparisonPeriod, amount: number) {
+  const date = ymdUtc(value)
+
+  if (period === 'week') {
+    date.setUTCDate(date.getUTCDate() - (7 * amount))
+    return utcYmd(date)
+  }
+
+  const originalDay = date.getUTCDate()
+  date.setUTCDate(1)
+
+  if (period === 'month') {
+    date.setUTCMonth(date.getUTCMonth() - amount)
+  } else {
+    date.setUTCFullYear(date.getUTCFullYear() - amount)
+  }
+
+  const lastDay = new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth() + 1, 0)).getUTCDate()
+  date.setUTCDate(Math.min(originalDay, lastDay))
+  return utcYmd(date)
+}
+
+function formatRangeLabel(start: string, end: string) {
+  const formatter = new Intl.DateTimeFormat('pl-PL', { day: 'numeric', month: 'short', year: '2-digit', timeZone: 'UTC' })
+  const format = (value: string) => formatter.format(ymdUtc(value)).replace('.', '')
+  return `${format(start)} – ${format(end)}`
+}
+
+function comparisonRanges(end: string, type: DashboardComparisonPeriod, count: number): DashboardRange[] {
+  return Array.from({ length: count }, (_, index) => {
+    const offset = count - index - 1
+    const periodEnd = shiftPeriodYmd(end, type, offset)
+    const periodStart = addDaysYmd(shiftPeriodYmd(periodEnd, type, 1), 1)
+    return { start: periodStart, end: periodEnd, label: formatRangeLabel(periodStart, periodEnd) }
+  })
+}
+
+function metricChange(current: number, previous: number) {
+  if (Math.abs(previous) < 0.00001) return current === 0 ? 0 : null
+  return Math.round((((current - previous) / Math.abs(previous)) * 100) * 10) / 10
+}
+
+function sumReceipts(rows: DashboardReceiptRow[], start: string, end: string) {
+  return money(rows.reduce((sum, row) => {
+    const ymd = localReceiptParts(row.date).ymd
+    return ymd >= start && ymd <= end ? sum + Number(row.net || 0) : sum
+  }, 0))
+}
+
+function countReceipts(rows: DashboardReceiptRow[], start: string, end: string) {
+  return rows.reduce((count, row) => {
+    const ymd = localReceiptParts(row.date).ymd
+    return ymd >= start && ymd <= end ? count + 1 : count
+  }, 0)
+}
+
+function sumUnits(rows: DashboardLineRow[], start: string, end: string) {
+  return rows.reduce((sum, row) => {
+    const ymd = localReceiptParts(row.date).ymd
+    return ymd >= start && ymd <= end ? sum + Number(row.quantity || 0) : sum
+  }, 0)
+}
+
+function profitSummary(rows: DashboardLineRow[], start: string, end: string) {
+  let profit = 0
+  let sales = 0
+  let knownUnits = 0
+  let allUnits = 0
+
+  for (const row of rows) {
+    const ymd = localReceiptParts(row.date).ymd
+    if (ymd < start || ymd > end) continue
+
+    const quantity = Number(row.quantity || 0)
+    const net = Number(row.net || 0)
+    const costTotal = Number(row.costTotal || 0)
+    allUnits += quantity
+
+    // Historyczne importy mają koszt 0 jako wartość techniczną. Nie traktujemy ich
+    // jako wiarygodnego kosztu zerowego przy wyliczaniu zysku.
+    if (costTotal > 0) {
+      knownUnits += quantity
+      sales += net
+      profit += net - costTotal
+    }
+  }
+
+  return {
+    profit: money(profit),
+    sales: money(sales),
+    knownUnits,
+    allUnits,
+    coverage: allUnits > 0 ? Math.round((knownUnits / allUnits) * 1000) / 10 : 0,
+  }
+}
+
+function comparisonBins(range: DashboardRange, type: DashboardComparisonPeriod) {
+  const count = type === 'year' ? 12 : 7
+  const totalDays = diffDaysInclusive(range.start, range.end)
+
+  return Array.from({ length: count }, (_, index) => {
+    const startOffset = Math.floor((index * totalDays) / count)
+    const nextOffset = Math.floor(((index + 1) * totalDays) / count)
+    const endOffset = Math.max(startOffset, nextOffset - 1)
+    return {
+      start: addDaysYmd(range.start, startOffset),
+      end: addDaysYmd(range.start, Math.min(totalDays - 1, endOffset)),
+    }
+  })
+}
+
+function comparisonAxis(range: DashboardRange, type: DashboardComparisonPeriod) {
+  const bins = comparisonBins(range, type)
+
+  if (type === 'week') {
+    const labels = ['Nd', 'Pn', 'Wt', 'Śr', 'Cz', 'Pt', 'Sob']
+    return bins.map((bin) => labels[ymdUtc(bin.start).getUTCDay()])
+  }
+
+  if (type === 'year') {
+    const formatter = new Intl.DateTimeFormat('pl-PL', { month: 'short', timeZone: 'UTC' })
+    return bins.map((bin) => formatter.format(ymdUtc(bin.start)).replace('.', ''))
+  }
+
+  const formatter = new Intl.DateTimeFormat('pl-PL', { day: 'numeric', month: 'short', timeZone: 'UTC' })
+  return bins.map((bin) => formatter.format(ymdUtc(bin.start)).replace('.', ''))
+}
+
+async function dashboardData(url: URL, env: Env) {
+  const today = warsawYmd()
+  const yesterday = addDaysYmd(today, -1)
+  const currentQuarter = quarterForYmd(today)
+  const previousQuarter = previousQuarterForYmd(today)
+  const last30Start = addDaysYmd(today, -29)
+  const currentWeekStart = addDaysYmd(today, -6)
+  const previousWeekStart = addDaysYmd(today, -13)
+  const previousWeekEnd = addDaysYmd(today, -7)
+
+  const comparisonTypeRaw = url.searchParams.get('comparisonType')
+  const comparisonType: DashboardComparisonPeriod =
+    comparisonTypeRaw === 'month' || comparisonTypeRaw === 'year' ? comparisonTypeRaw : 'week'
+  const comparisonCount = Math.min(5, Math.max(1, Number.parseInt(url.searchParams.get('comparisonCount') || '4', 10) || 4))
+  const comparisonEndRaw = url.searchParams.get('comparisonEnd')
+  const comparisonEnd = validYmd(comparisonEndRaw) ? String(comparisonEndRaw) : today
+  const ranges = comparisonRanges(comparisonEnd, comparisonType, comparisonCount)
+  const comparisonStart = ranges[0]?.start || comparisonEnd
+
+  const baseStart = [previousQuarter.start, previousWeekStart, last30Start].sort()[0]
+  const baseEndExclusive = warsawMidnightUtcIso(addDaysYmd(today, 1))
+
+  const [receiptResult, lineResult, comparisonReceiptResult] = await Promise.all([
+    env.DB.prepare(`
+      SELECT
+        receipt_number AS receiptNumber,
+        receipt_date AS date,
+        COALESCE(total_money, 0) AS net
+      FROM receipts
+      WHERE COALESCE(receipt_type, 'SALE') = 'SALE'
+        AND cancelled_at IS NULL
+        AND receipt_date >= ?
+        AND receipt_date < ?
+      ORDER BY receipt_date
+    `).bind(warsawMidnightUtcIso(baseStart), baseEndExclusive).all<DashboardReceiptRow>(),
+
+    env.DB.prepare(`
+      SELECT
+        r.receipt_date AS date,
+        COALESCE(l.quantity, 0) AS quantity,
+        COALESCE(l.total_money, 0) AS net,
+        COALESCE(l.cost_total, 0) AS costTotal,
+        COALESCE(NULLIF(TRIM(c.name), ''), 'Bez kategorii') AS category
+      FROM receipt_lines l
+      JOIN receipts r ON r.receipt_number = l.receipt_number
+      LEFT JOIN items i ON i.item_id = l.item_id
+      LEFT JOIN categories c ON c.category_id = i.category_id
+      WHERE COALESCE(r.receipt_type, 'SALE') = 'SALE'
+        AND r.cancelled_at IS NULL
+        AND r.receipt_date >= ?
+        AND r.receipt_date < ?
+      ORDER BY r.receipt_date
+    `).bind(warsawMidnightUtcIso(baseStart), baseEndExclusive).all<DashboardLineRow>(),
+
+    env.DB.prepare(`
+      SELECT
+        receipt_number AS receiptNumber,
+        receipt_date AS date,
+        COALESCE(total_money, 0) AS net
+      FROM receipts
+      WHERE COALESCE(receipt_type, 'SALE') = 'SALE'
+        AND cancelled_at IS NULL
+        AND receipt_date >= ?
+        AND receipt_date < ?
+      ORDER BY receipt_date
+    `).bind(
+      warsawMidnightUtcIso(comparisonStart),
+      warsawMidnightUtcIso(addDaysYmd(comparisonEnd, 1)),
+    ).all<DashboardReceiptRow>(),
+  ])
+
+  const receipts = receiptResult.results || []
+  const lines = lineResult.results || []
+  const comparisonReceipts = comparisonReceiptResult.results || []
+
+  const todaySales = sumReceipts(receipts, today, today)
+  const yesterdaySales = sumReceipts(receipts, yesterday, yesterday)
+  const quarterSales = sumReceipts(receipts, currentQuarter.start, today)
+  const previousQuarterSales = sumReceipts(receipts, previousQuarter.start, previousQuarter.end)
+  const todayUnits = sumUnits(lines, today, today)
+  const yesterdayUnits = sumUnits(lines, yesterday, yesterday)
+  const currentWeekSales = sumReceipts(receipts, currentWeekStart, today)
+  const currentWeekReceipts = countReceipts(receipts, currentWeekStart, today)
+  const previousWeekSales = sumReceipts(receipts, previousWeekStart, previousWeekEnd)
+  const previousWeekReceipts = countReceipts(receipts, previousWeekStart, previousWeekEnd)
+  const averageReceipt = currentWeekReceipts ? money(currentWeekSales / currentWeekReceipts) : 0
+  const previousAverageReceipt = previousWeekReceipts ? money(previousWeekSales / previousWeekReceipts) : 0
+
+  const currentProfit = profitSummary(lines, currentQuarter.start, today)
+  const previousProfit = profitSummary(lines, previousQuarter.start, previousQuarter.end)
+
+  const dailyMap = new Map<string, number>()
+  for (let offset = 0; offset < 30; offset += 1) {
+    dailyMap.set(addDaysYmd(last30Start, offset), 0)
+  }
+  for (const row of receipts) {
+    const ymd = localReceiptParts(row.date).ymd
+    if (ymd >= last30Start && ymd <= today) dailyMap.set(ymd, (dailyMap.get(ymd) || 0) + Number(row.net || 0))
+  }
+  const daily = Array.from(dailyMap, ([date, value]) => ({ date, value: money(value) }))
+  const total30 = money(daily.reduce((sum, day) => sum + day.value, 0))
+  const average30 = money(total30 / 30)
+  const bestDay = daily.reduce((best, day) => day.value > best.value ? day : best, { date: last30Start, value: 0 })
+
+  const categoryMap = new Map<string, number>()
+  for (const row of lines) {
+    const ymd = localReceiptParts(row.date).ymd
+    if (ymd < currentQuarter.start || ymd > today) continue
+    categoryMap.set(row.category, (categoryMap.get(row.category) || 0) + Number(row.net || 0))
+  }
+  let categoryEntries = Array.from(categoryMap, ([name, value]) => ({ name, value: money(value) }))
+    .sort((a, b) => b.value - a.value)
+  if (categoryEntries.length > 5) {
+    const top = categoryEntries.slice(0, 4)
+    const otherValue = money(categoryEntries.slice(4).reduce((sum, item) => sum + item.value, 0))
+    categoryEntries = [...top, { name: 'Pozostałe', value: otherValue }]
+  }
+  const categoryTotal = money(categoryEntries.reduce((sum, item) => sum + item.value, 0))
+  const categories = categoryEntries.map((item) => ({
+    ...item,
+    percent: categoryTotal > 0 ? Math.round((item.value / categoryTotal) * 1000) / 10 : 0,
+  }))
+
+  const weekdayOccurrences = Array(7).fill(0) as number[]
+  for (let date = currentQuarter.start; date <= today; date = addDaysYmd(date, 1)) {
+    weekdayOccurrences[weekdayIndexFromYmd(date)] += 1
+  }
+
+  const heatTotals = Array(7 * 14).fill(0) as number[]
+  for (const row of receipts) {
+    const local = localReceiptParts(row.date)
+    if (local.ymd < currentQuarter.start || local.ymd > today) continue
+    if (local.hour < 8 || local.hour > 21) continue
+    const weekday = weekdayIndexFromYmd(local.ymd)
+    const index = (weekday * 14) + (local.hour - 8)
+    heatTotals[index] += Number(row.net || 0)
+  }
+
+  const heatAverages = heatTotals.map((total, index) => {
+    const weekday = Math.floor(index / 14)
+    const divisor = weekdayOccurrences[weekday] || 1
+    return money(total / divisor)
+  })
+  const heatMax = Math.max(0, ...heatAverages)
+  const heatLevels = heatAverages.map((value) => {
+    if (value <= 0 || heatMax <= 0) return 1
+    const ratio = value / heatMax
+    if (ratio <= 0.25) return 1
+    if (ratio <= 0.5) return 2
+    if (ratio <= 0.75) return 3
+    return 4
+  })
+
+  const comparisonSeries = ranges.map((range) => {
+    const bins = comparisonBins(range, comparisonType)
+    return {
+      label: range.label,
+      values: bins.map((bin) => sumReceipts(comparisonReceipts, bin.start, bin.end)),
+    }
+  })
+
+  const configuredLimit = Number(env.DNR_QUARTER_LIMIT || '10813.50')
+  const dnrLimit = Number.isFinite(configuredLimit) && configuredLimit > 0 ? configuredLimit : 10813.50
+  const dnrRemaining = money(Math.max(0, dnrLimit - quarterSales))
+  const dnrPercent = dnrLimit > 0 ? Math.round((quarterSales / dnrLimit) * 1000) / 10 : 0
+
+  return salesJson({
+    ok: true,
+    generatedAt: nowIso(),
+    quarter: {
+      label: currentQuarter.label,
+      start: currentQuarter.start,
+      end: currentQuarter.end,
+      used: quarterSales,
+      limit: dnrLimit,
+      remaining: dnrRemaining,
+      percent: dnrPercent,
+    },
+    kpis: {
+      todaySales,
+      todaySalesChange: metricChange(todaySales, yesterdaySales),
+      quarterSales,
+      quarterSalesChange: metricChange(quarterSales, previousQuarterSales),
+      estimatedProfit: currentProfit.knownUnits > 0 ? currentProfit.profit : null,
+      estimatedProfitChange: currentProfit.knownUnits > 0 && previousProfit.knownUnits > 0
+        ? metricChange(currentProfit.profit, previousProfit.profit)
+        : null,
+      profitMargin: currentProfit.sales > 0 ? Math.round((currentProfit.profit / currentProfit.sales) * 1000) / 10 : null,
+      costCoverage: currentProfit.coverage,
+      todayUnits,
+      todayUnitsChange: metricChange(todayUnits, yesterdayUnits),
+      averageReceipt,
+      averageReceiptChange: metricChange(averageReceipt, previousAverageReceipt),
+      sellThrough: null,
+      sellThroughChange: null,
+      sellThroughAvailable: false,
+    },
+    sales30: {
+      days: daily,
+      total: total30,
+      average: average30,
+      bestDay,
+    },
+    comparison: {
+      type: comparisonType,
+      count: comparisonCount,
+      end: comparisonEnd,
+      axis: comparisonAxis(ranges[ranges.length - 1], comparisonType),
+      series: comparisonSeries,
+    },
+    categories: {
+      total: categoryTotal,
+      items: categories,
+    },
+    heatmap: {
+      days: ['Pon', 'Wt', 'Śr', 'Czw', 'Pt', 'Sob', 'Niedz'],
+      hours: Array.from({ length: 14 }, (_, index) => index + 8),
+      averages: heatAverages,
+      levels: heatLevels,
+    },
+  })
+}
+
 async function handleSalesApi(request: Request, url: URL, env: Env): Promise<Response | null> {
   if (request.method !== 'GET') return null
 
@@ -1054,6 +1491,17 @@ export default {
       }, { headers: { 'Cache-Control': 'no-store' } })
     }
 
+
+    if (url.pathname === '/api/dashboard' && request.method === 'GET') {
+      try {
+        return dashboardData(url, env)
+      } catch (error) {
+        return salesJson({
+          ok: false,
+          error: error instanceof Error ? error.message : 'Dashboard API failed',
+        }, 500)
+      }
+    }
 
     if (url.pathname.startsWith('/api/sales/') || url.pathname.startsWith('/api/dictionaries/')) {
       try {
