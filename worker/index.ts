@@ -826,7 +826,6 @@ type DashboardLineRow = {
   date: string
   quantity: number
   net: number
-  costTotal: number
   category: string
 }
 
@@ -962,39 +961,6 @@ function sumUnits(rows: DashboardLineRow[], start: string, end: string) {
   }, 0)
 }
 
-function profitSummary(rows: DashboardLineRow[], start: string, end: string) {
-  let profit = 0
-  let sales = 0
-  let knownUnits = 0
-  let allUnits = 0
-
-  for (const row of rows) {
-    const ymd = localReceiptParts(row.date).ymd
-    if (ymd < start || ymd > end) continue
-
-    const quantity = Number(row.quantity || 0)
-    const net = Number(row.net || 0)
-    const costTotal = Number(row.costTotal || 0)
-    allUnits += quantity
-
-    // Historyczne importy mają koszt 0 jako wartość techniczną. Nie traktujemy ich
-    // jako wiarygodnego kosztu zerowego przy wyliczaniu zysku.
-    if (costTotal > 0) {
-      knownUnits += quantity
-      sales += net
-      profit += net - costTotal
-    }
-  }
-
-  return {
-    profit: money(profit),
-    sales: money(sales),
-    knownUnits,
-    allUnits,
-    coverage: allUnits > 0 ? Math.round((knownUnits / allUnits) * 1000) / 10 : 0,
-  }
-}
-
 function comparisonBins(range: DashboardRange, type: DashboardComparisonPeriod) {
   const count = type === 'year' ? 12 : 7
   const totalDays = diffDaysInclusive(range.start, range.end)
@@ -1068,7 +1034,6 @@ async function dashboardData(url: URL, env: Env) {
         r.receipt_date AS date,
         COALESCE(l.quantity, 0) AS quantity,
         COALESCE(l.total_money, 0) AS net,
-        COALESCE(l.cost_total, 0) AS costTotal,
         COALESCE(NULLIF(TRIM(c.name), ''), 'Bez kategorii') AS category
       FROM receipt_lines l
       JOIN receipts r ON r.receipt_number = l.receipt_number
@@ -1114,9 +1079,6 @@ async function dashboardData(url: URL, env: Env) {
   const previousWeekReceipts = countReceipts(receipts, previousWeekStart, previousWeekEnd)
   const averageReceipt = currentWeekReceipts ? money(currentWeekSales / currentWeekReceipts) : 0
   const previousAverageReceipt = previousWeekReceipts ? money(previousWeekSales / previousWeekReceipts) : 0
-
-  const currentProfit = profitSummary(lines, currentQuarter.start, today)
-  const previousProfit = profitSummary(lines, previousQuarter.start, previousQuarter.end)
 
   const dailyMap = new Map<string, number>()
   for (let offset = 0; offset < 30; offset += 1) {
@@ -1210,12 +1172,13 @@ async function dashboardData(url: URL, env: Env) {
       todaySalesChange: metricChange(todaySales, yesterdaySales),
       quarterSales,
       quarterSalesChange: metricChange(quarterSales, previousQuarterSales),
-      estimatedProfit: currentProfit.knownUnits > 0 ? currentProfit.profit : null,
-      estimatedProfitChange: currentProfit.knownUnits > 0 && previousProfit.knownUnits > 0
-        ? metricChange(currentProfit.profit, previousProfit.profit)
-        : null,
-      profitMargin: currentProfit.sales > 0 ? Math.round((currentProfit.profit / currentProfit.sales) * 1000) / 10 : null,
-      costCoverage: currentProfit.coverage,
+      // Zysk nie korzysta z receipt_lines.cost/cost_total.
+      // Obowiązująca reguła: koszt sztuki = cena całej dostawy / liczba sztuk w dostawie.
+      // Do czasu wdrożenia tabeli dostaw i jej powiązania przez line_note zwracamy brak danych.
+      estimatedProfit: null,
+      estimatedProfitChange: null,
+      profitMargin: null,
+      costCoverage: 0,
       todayUnits,
       todayUnitsChange: metricChange(todayUnits, yesterdayUnits),
       averageReceipt,
