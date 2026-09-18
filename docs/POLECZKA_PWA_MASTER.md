@@ -703,3 +703,19 @@ Na obecnym etapie:
 - moduł ma trasę `/vinted`,
 - widok jest jeszcze placeholderem,
 - automatyczny monitoring sprzedaży i tworzenie wpisów sprzedaży nie są jeszcze uruchomione.
+
+
+---
+
+## 32. Czytelność interfejsu — powiększona typografia
+
+Od 18.09.2026 w wersji developerskiej obowiązuje testowo powiększona typografia całego PWA.
+
+Założenie:
+- wszystkie jawnie zdefiniowane rozmiary tekstu w interfejsie zostały zwiększone o około 50%,
+- zachowana zostaje dotychczasowa hierarchia nagłówków, opisów, tabel i KPI,
+- nie skalujemy automatycznie całego layoutu, kart ani wykresów,
+- sztywne wartości `line-height` podnosimy razem z tekstem, aby uniknąć ściskania wierszy,
+- po ocenie na realnym ekranie dopuszczamy korektę skali w dół lub w górę.
+
+Cel: poprawić czytelność PWA bez konieczności wpatrywania się w drobny tekst.
