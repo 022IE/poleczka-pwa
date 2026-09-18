@@ -48,6 +48,7 @@ const payment = {
 
 const itemIds = new Map()
 let deliveryColumn = null
+let hasLineNote = false
 
 async function query(sql, params = []) {
   const response = await fetch(`https://api.cloudflare.com/client/v4/accounts/${accountId}/d1/database/${DB_ID}/query`, {
@@ -97,8 +98,9 @@ function validatePlan() {
 async function detectDeliverySchema() {
   const cols = await query('PRAGMA table_info(receipt_lines)')
   const names = new Set(cols.map((c) => String(c.name)))
+  hasLineNote = names.has('line_note')
   if (names.has('delivery_number')) deliveryColumn = 'delivery_number'
-  else if (names.has('line_note')) deliveryColumn = 'line_note'
+  else if (hasLineNote) deliveryColumn = 'line_note'
   else throw new Error('Neither delivery_number nor line_note exists in receipt_lines')
 
   if (deliveryColumn === 'delivery_number') {
@@ -182,15 +184,30 @@ async function doImport() {
 
   for (const line of lines) {
     const itemId = itemIds.get(line.item)
-    const sql = `INSERT INTO receipt_lines (
-      line_id, receipt_number, item_id, variant_id, item_name, variant_name,
-      sku, quantity, price, gross_total_money, total_money,
-      cost, cost_total, total_discount, ${deliveryColumn}
-    ) VALUES (?, ?, ?, NULL, ?, NULL, ?, 1, ?, ?, ?, 0, 0, 0, ?)`
-    await query(sql, [
-      lineId(line.lp), line.receipt, itemId, line.item, line.sku,
-      line.price, line.price, line.price, line.delivery,
-    ])
+
+    if (deliveryColumn === 'delivery_number' && hasLineNote) {
+      await query(
+        `INSERT INTO receipt_lines (
+          line_id, receipt_number, item_id, variant_id, item_name, variant_name,
+          sku, quantity, price, gross_total_money, total_money,
+          cost, cost_total, total_discount, line_note, delivery_number
+        ) VALUES (?, ?, ?, NULL, ?, NULL, ?, 1, ?, ?, ?, 0, 0, 0, ?, ?)`,
+        [
+          lineId(line.lp), line.receipt, itemId, line.item, line.sku,
+          line.price, line.price, line.price, String(line.delivery), line.delivery,
+        ],
+      )
+    } else {
+      const sql = `INSERT INTO receipt_lines (
+        line_id, receipt_number, item_id, variant_id, item_name, variant_name,
+        sku, quantity, price, gross_total_money, total_money,
+        cost, cost_total, total_discount, ${deliveryColumn}
+      ) VALUES (?, ?, ?, NULL, ?, NULL, ?, 1, ?, ?, ?, 0, 0, 0, ?)`
+      await query(sql, [
+        lineId(line.lp), line.receipt, itemId, line.item, line.sku,
+        line.price, line.price, line.price, line.delivery,
+      ])
+    }
   }
 
   for (const [receiptNumber, receipt] of Object.entries(receipts)) {
@@ -239,21 +256,21 @@ async function verify() {
   assert(Number(detail.missing_item_id) === 0, 'Missing item_id found')
   assert(Number(detail.missing_sku) === 0, 'Missing SKU found')
 
-  const deliveryDiag = await query(
-    `SELECT line_id,delivery_number,typeof(delivery_number) AS value_type,
-            CASE WHEN delivery_number IN (0,1,2) THEN 1 ELSE 0 END AS numeric_ok
-     FROM receipt_lines
-     WHERE line_id LIKE 'manual-20260909-%'
-     ORDER BY line_id`,
-  )
-  console.log('DELIVERY_DIAG', JSON.stringify(deliveryDiag))
-
   const deliveryValidation = (await query(
     `SELECT COUNT(*) AS n FROM receipt_lines
      WHERE line_id LIKE 'manual-20260909-%'
        AND (${deliveryColumn} IS NULL OR ${deliveryColumn} NOT IN (0,1,2))`,
   ))[0]
   assert(Number(deliveryValidation.n) === 0, `Invalid delivery values: ${deliveryValidation.n}`)
+
+  if (deliveryColumn === 'delivery_number' && hasLineNote) {
+    const rawDeliveryMismatch = (await query(
+      `SELECT COUNT(*) AS n FROM receipt_lines
+       WHERE line_id LIKE 'manual-20260909-%'
+         AND TRIM(COALESCE(line_note,'')) <> CAST(delivery_number AS TEXT)`,
+    ))[0]
+    assert(Number(rawDeliveryMismatch.n) === 0, `line_note/delivery_number mismatches: ${rawDeliveryMismatch.n}`)
+  }
 
   const lineMismatch = (await query(
     `SELECT COUNT(*) AS n FROM (
