@@ -93,6 +93,21 @@ function currentMonthRange() {
   }
 }
 
+function todayRange() {
+  const today = localYmd(new Date())
+  return { from: today, to: today }
+}
+
+function lastSevenDaysRange() {
+  const today = new Date()
+  const from = new Date(today)
+  from.setDate(from.getDate() - 6)
+  return {
+    from: localYmd(from),
+    to: localYmd(today),
+  }
+}
+
 function displayYmd(value: string) {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) return value
   const [year, month, day] = value.split('-')
@@ -344,11 +359,26 @@ function SalesPage() {
     setDateOpen(false)
   }
 
-  const selectCurrentMonth = () => {
-    const range = currentMonthRange()
+  const selectDatePreset = (preset: 'today' | '7days' | 'month') => {
+    const range = preset === 'today'
+      ? todayRange()
+      : preset === '7days'
+        ? lastSevenDaysRange()
+        : currentMonthRange()
+
     setDraftFrom(range.from)
     setDraftTo(range.to)
   }
+
+  const activeDatePreset = useMemo(() => {
+    const presets = [
+      ['today', todayRange()],
+      ['7days', lastSevenDaysRange()],
+      ['month', currentMonthRange()],
+    ] as const
+
+    return presets.find(([, range]) => range.from === draftFrom && range.to === draftTo)?.[0] ?? null
+  }, [draftFrom, draftTo])
 
   const toggleSort = (nextSort: string) => {
     if (sort === nextSort) {
@@ -483,13 +513,17 @@ function SalesPage() {
           </span>
           {dateOpen && (
             <div className="sales-date-popover">
+              <div className="sales-date-presets" aria-label="Szybki wybór zakresu dat">
+                <button type="button" className={activeDatePreset === 'today' ? 'active' : ''} onClick={() => selectDatePreset('today')}>Dzisiaj</button>
+                <button type="button" className={activeDatePreset === '7days' ? 'active' : ''} onClick={() => selectDatePreset('7days')}>7 dni</button>
+                <button type="button" className={activeDatePreset === 'month' ? 'active' : ''} onClick={() => selectDatePreset('month')}>Miesiąc</button>
+              </div>
               <div className="sales-date-fields">
                 <label><span>Od</span><input type="date" value={draftFrom} onChange={(event) => setDraftFrom(event.target.value)} /></label>
                 <label><span>Do</span><input type="date" value={draftTo} onChange={(event) => setDraftTo(event.target.value)} /></label>
               </div>
               {draftFrom > draftTo && <small className="sales-date-error">Data „od” nie może być późniejsza niż „do”.</small>}
               <div className="sales-date-actions">
-                <button type="button" className="secondary" onClick={selectCurrentMonth}>Bieżący miesiąc</button>
                 <button type="button" className="primary" disabled={!draftFrom || !draftTo || draftFrom > draftTo} onClick={applyDateRange}>Zastosuj</button>
               </div>
             </div>
