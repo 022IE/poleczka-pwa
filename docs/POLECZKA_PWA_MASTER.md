@@ -152,6 +152,29 @@ Limit:
 - sprzedaż wg kategorii,
 - heatmapa dzień tygodnia × godzina.
 
+### Dane dashboardu z D1
+
+Od 18.09.2026 operacyjne dane strony głównej są pobierane przez endpoint Workera `/api/dashboard` bezpośrednio z aktywnej bazy `poleczka-dev`.
+
+Z D1 pochodzą:
+- sprzedaż dziś i porównanie z wczoraj,
+- sprzedaż w bieżącym kwartale i porównanie z poprzednim kwartałem,
+- liczba sprzedanych sztuk,
+- średni paragon za ostatnie 7 dni i porównanie z poprzednimi 7 dniami,
+- wykorzystanie limitu DNR,
+- sprzedaż z ostatnich 30 dni,
+- porównanie okresów `Tydzień / Miesiąc / Rok`,
+- sprzedaż wg kategorii,
+- heatmapa dzień tygodnia × godzina.
+
+Wyjątek: panel **Vinted** pozostaje niezależny i nie jest jeszcze zasilany z D1.
+
+Ograniczenia bieżącego modelu:
+- **szacowany zysk** liczymy wyłącznie dla pozycji, dla których `receipt_lines.cost_total > 0`; historyczne importy z technicznym kosztem `0` nie są traktowane jako wiarygodny koszt zerowy,
+- **% zbytu** pozostaje jako brak danych, dopóki w D1 nie będzie tabeli dostaw / ilości przyjętych,
+- kwota kwartalnego limitu DNR jest konfiguracją aplikacji, a nie daną sprzedażową; do czasu uruchomienia ustawień może być przekazana przez konfigurację Workera `DNR_QUARTER_LIMIT`.
+
+
 ### Szybki dostęp
 
 Na dashboardzie znajduje się kafelek `Vinted`, prowadzący do modułu `/vinted`.
