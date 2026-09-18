@@ -1,6 +1,6 @@
 {
-  "state": "awaiting_publish",
-  "label": "Oczekiwanie na publikację",
-  "task": "Layout — nagłówek główny wyrównany do prawej, KPI SPRZEDAŻY odsunięte spod górnego paska; build zakończony",
-  "updatedAt": "2026-09-18T06:49:45Z"
+  "state": "editing",
+  "label": "Wprowadzanie poprawek",
+  "task": "Górny pasek — dodanie piktogramów zgodnych z ikonami bocznego menu",
+  "updatedAt": "2026-09-18T07:00:20Z"
 }
