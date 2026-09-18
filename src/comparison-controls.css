@@ -1,0 +1,71 @@
+/* Sterowanie porównaniem okresów na dashboardzie. */
+.weeks-panel .comparison-head {
+  align-items: flex-start;
+  flex-wrap: wrap;
+  row-gap: 6px;
+}
+
+.comparison-controls {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: 6px 8px;
+  margin-left: auto;
+}
+
+.comparison-controls label {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: #737973;
+  font-size:8.44px;
+  white-space: nowrap;
+}
+
+.comparison-controls input,
+.comparison-controls select {
+  height: 30px;
+  border: 1px solid #dcd9d2;
+  background: #fff;
+  border-radius: 9px;
+  padding: 5px 8px;
+  color: #4f534f;
+  font: inherit;
+  font-size:10.31px;
+  outline: none;
+}
+
+.comparison-controls input:focus,
+.comparison-controls select:focus {
+  border-color: #b8aa91;
+  box-shadow: 0 0 0 2px rgba(184, 170, 145, .15);
+}
+
+.comparison-date input {
+  width: 124px;
+}
+
+.comparison-count select {
+  width: 52px;
+}
+
+.comparison-type select {
+  width: 86px;
+}
+
+.weeks-panel .legend {
+  min-height: 28px;
+}
+
+@media (max-width: 1380px) {
+  .weeks-panel .comparison-head h2 {
+    width: 100%;
+  }
+
+  .comparison-controls {
+    width: 100%;
+    justify-content: flex-start;
+    margin-left: 0;
+  }
+}

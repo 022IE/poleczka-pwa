@@ -1,0 +1,35 @@
+name: D1 Final Cutover to Dev
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: d1-final-cutover
+  cancel-in-progress: true
+
+jobs:
+  cutover:
+    name: Cut over Loyverse webhook to poleczka-dev
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Synchronize and cut over
+        env:
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          SOURCE_D1_DATABASE_ID: 4ababa0a-8912-49b0-9ee9-16ce771c27f3
+          TARGET_D1_DATABASE_ID: 099b4d9e-ad73-441b-a2be-a00f347a5905
+          LOYVERSE_WORKER_NAME: poleczka-loyverse-webhook
+        run: node scripts/cutover-loyverse-to-dev-v3.mjs

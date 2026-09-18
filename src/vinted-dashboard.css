@@ -1,0 +1,259 @@
+/* Dashboard — dwa osobne panele 50/50, zgodne z osią podziału KPI 3/4. */
+.dashboard-summary-card {
+  min-height: 0 !important;
+  padding: 0 !important;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) !important;
+  align-items: stretch;
+  gap: 10px !important;
+  background: transparent !important;
+  border: 0 !important;
+  box-shadow: none !important;
+}
+
+.dashboard-summary-divider {
+  display: none !important;
+}
+
+.limit-dashboard-block,
+.vinted-summary {
+  min-width: 0;
+  min-height: 118px;
+  padding: 14px 16px;
+  background: rgba(255,255,255,.86);
+  border: 1px solid #ebe8e2;
+  border-radius: 16px;
+  box-shadow: 0 5px 18px rgba(71,60,45,.06);
+}
+
+/* Vinted ma być po lewej, DNR po prawej. */
+.vinted-summary {
+  order: 1;
+}
+
+.limit-dashboard-block {
+  order: 2;
+}
+
+/* Typografia jak na kafelkach KPI poniżej. */
+.summary-eyebrow,
+.vinted-summary-stats span,
+.limit-remaining span {
+  font-size:12.19px !important;
+  line-height: 1.2;
+}
+
+.summary-title-row strong,
+.limit-value b,
+.limit-remaining > b,
+.vinted-summary-stats b {
+  font-size:19.69px !important;
+  line-height: 1.15;
+  font-variant-numeric: tabular-nums;
+}
+
+.limit-value {
+  font-size:12.19px !important;
+}
+
+.progress-row > b {
+  font-size:14.06px;
+}
+
+/* DNR po prawej. */
+.limit-dashboard-block {
+  display: grid;
+  align-content: center;
+  gap: 8px;
+}
+
+.summary-title-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 18px;
+}
+
+.summary-title-row > div:first-child {
+  display: grid;
+  gap: 3px;
+}
+
+.summary-eyebrow {
+  color: #66706b;
+}
+
+.summary-title-row strong {
+  color: #20231f;
+}
+
+.limit-dashboard-block .limit-value {
+  margin: 0;
+}
+
+.limit-dashboard-block .progress-row {
+  gap: 12px;
+}
+
+.limit-remaining {
+  flex: 0 0 auto;
+  text-align: right;
+  padding-left: 10px;
+}
+
+.limit-remaining span {
+  display: block;
+  color: #8a6d3e;
+}
+
+.limit-remaining > b {
+  display: block;
+  margin-top: 2px;
+  color: #946a22;
+  white-space: nowrap;
+}
+
+/* Vinted po lewej. */
+.vinted-summary {
+  display: grid;
+  grid-template-columns: 96px minmax(0, 1fr);
+  align-items: center;
+  gap: 14px;
+}
+
+.vinted-summary-brand {
+  min-width: 0;
+  display: grid;
+  justify-items: center;
+  align-content: center;
+  gap: 5px;
+  color: inherit;
+  text-align: center;
+}
+
+.vinted-summary-brand img {
+  width: 58px;
+  height: 58px;
+  object-fit: cover;
+  border-radius: 15px;
+  box-shadow: 0 5px 14px rgba(22, 117, 119, 0.16);
+}
+
+.vinted-summary-brand strong {
+  color: #087a7c;
+  font-size:12.19px;
+  line-height: 1.2;
+}
+
+/* Usuwamy dodatkowy napis „Podsumowanie ...”. */
+.vinted-summary-brand span {
+  display: none !important;
+}
+
+.vinted-summary-stats {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 6px;
+}
+
+.vinted-summary-stats > div {
+  grid-column: span 2;
+  min-width: 0;
+  min-height: 43px;
+  padding: 6px 7px;
+  display: grid;
+  align-content: center;
+  justify-items: center;
+  gap: 3px;
+  border-radius: 9px;
+  background: rgba(224, 243, 242, 0.58);
+  text-align: center;
+}
+
+.vinted-summary-stats > div.money {
+  grid-column: span 3;
+  background: rgba(240, 244, 239, 0.82);
+}
+
+.vinted-summary-stats span {
+  color: #66716d;
+  text-align: center;
+}
+
+.vinted-summary-stats b {
+  color: #215d5e;
+  text-align: center;
+}
+
+.vinted-summary-stats .money b {
+  color: #315f45;
+}
+
+@media (max-width: 1050px) {
+  .vinted-summary {
+    grid-template-columns: 78px minmax(0, 1fr);
+    gap: 10px;
+  }
+
+  .vinted-summary-brand img {
+    width: 50px;
+    height: 50px;
+  }
+
+  .summary-eyebrow,
+  .vinted-summary-stats span,
+  .limit-remaining span,
+  .limit-value {
+    font-size:11.25px !important;
+  }
+
+  .summary-title-row strong,
+  .limit-value b,
+  .limit-remaining > b,
+  .vinted-summary-stats b {
+    font-size:17.81px !important;
+  }
+}
+
+@media (max-width: 820px) {
+  .dashboard-summary-card {
+    grid-template-columns: 1fr !important;
+  }
+
+  .limit-dashboard-block,
+  .vinted-summary {
+    min-height: 0;
+  }
+}
+
+@media (max-width: 620px) {
+  .vinted-summary {
+    grid-template-columns: 1fr;
+  }
+
+  .vinted-summary-brand {
+    grid-template-columns: auto auto;
+    justify-content: start;
+    justify-items: start;
+    text-align: left;
+  }
+
+  .vinted-summary-brand img {
+    width: 48px;
+    height: 48px;
+  }
+
+  .vinted-summary-stats {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .vinted-summary-stats > div,
+  .vinted-summary-stats > div.money {
+    grid-column: span 1;
+  }
+
+  .vinted-summary-stats > div:last-child {
+    grid-column: 1 / -1;
+  }
+}

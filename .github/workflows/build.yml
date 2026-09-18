@@ -1,0 +1,114 @@
+name: Build PWA
+
+on:
+  push:
+    branches:
+      - dev
+      - main
+    paths-ignore:
+      - 'status/**'
+  pull_request:
+    branches:
+      - main
+    paths-ignore:
+      - 'status/**'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: build-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  PWA_URL: https://dev.poleczkaiwonki.dpdns.org
+
+jobs:
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Push status — build started
+        if: github.event_name == 'push' && github.ref_name == 'dev'
+        continue-on-error: true
+        shell: bash
+        run: |
+          payload="$(jq -nc \
+            --arg type 'build_start' \
+            --arg branch "$GITHUB_REF_NAME" \
+            --arg sha "$GITHUB_SHA" \
+            --arg url "https://github.com/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID" \
+            --argjson runNumber "$GITHUB_RUN_NUMBER" \
+            '{type:$type,branch:$branch,sha:$sha,url:$url,runNumber:$runNumber}')"
+          curl --connect-timeout 3 --max-time 8 -fsS \
+            -H 'Content-Type: application/json' \
+            -X POST "$PWA_URL/api/pipeline-event" \
+            --data "$payload" >/dev/null
+
+      - name: Push status — work handed off
+        if: github.event_name == 'push' && github.ref_name == 'dev'
+        continue-on-error: true
+        shell: bash
+        run: |
+          payload="$(jq -nc \
+            --arg type 'work' \
+            --arg branch "$GITHUB_REF_NAME" \
+            --arg state 'awaiting_publish' \
+            --arg label 'Poprawki przekazane' \
+            --arg task "Commit $GITHUB_SHA przekazany do builda" \
+            '{type:$type,branch:$branch,work:{state:$state,label:$label,task:$task}}')"
+          curl --connect-timeout 3 --max-time 8 -fsS \
+            -H 'Content-Type: application/json' \
+            -X POST "$PWA_URL/api/pipeline-event" \
+            --data "$payload" >/dev/null
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Install dependencies
+        run: npm install --no-audit --no-fund
+
+      - name: Build application
+        id: app_build
+        run: npm run build
+
+      - name: Push status — build ready
+        if: success() && github.event_name == 'push' && github.ref_name == 'dev'
+        continue-on-error: true
+        shell: bash
+        run: |
+          payload="$(jq -nc \
+            --arg type 'build_ready' \
+            --arg branch "$GITHUB_REF_NAME" \
+            --arg sha "$GITHUB_SHA" \
+            --arg url "https://github.com/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID" \
+            --argjson runNumber "$GITHUB_RUN_NUMBER" \
+            '{type:$type,branch:$branch,sha:$sha,url:$url,runNumber:$runNumber}')"
+          curl --connect-timeout 3 --max-time 8 -fsS \
+            -H 'Content-Type: application/json' \
+            -X POST "$PWA_URL/api/pipeline-event" \
+            --data "$payload" >/dev/null
+
+      - name: Push status — build failed
+        if: failure() && github.event_name == 'push' && github.ref_name == 'dev'
+        continue-on-error: true
+        shell: bash
+        run: |
+          payload="$(jq -nc \
+            --arg type 'build_failed' \
+            --arg branch "$GITHUB_REF_NAME" \
+            --arg sha "$GITHUB_SHA" \
+            --arg url "https://github.com/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID" \
+            --argjson runNumber "$GITHUB_RUN_NUMBER" \
+            '{type:$type,branch:$branch,sha:$sha,url:$url,runNumber:$runNumber}')"
+          curl --connect-timeout 3 --max-time 8 -fsS \
+            -H 'Content-Type: application/json' \
+            -X POST "$PWA_URL/api/pipeline-event" \
+            --data "$payload" >/dev/null

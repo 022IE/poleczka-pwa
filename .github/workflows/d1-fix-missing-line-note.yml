@@ -1,0 +1,45 @@
+name: D1 Fix Missing line_note
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  fix:
+    name: Fix missing line_note in poleczka-dev
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Precheck affected rows
+        env:
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+        run: |
+          npx --yes wrangler@latest d1 execute poleczka-dev --remote --command "SELECT COUNT(*) AS missing_line_note FROM receipt_lines WHERE line_note IS NULL OR trim(line_note)='';"
+          npx --yes wrangler@latest d1 execute poleczka-dev --remote --command "SELECT l.line_id,l.receipt_number,r.receipt_date,r.source,l.item_name,l.sku,CASE WHEN l.line_note IS NULL THEN 'NULL' ELSE 'EMPTY' END AS previous_line_note FROM receipt_lines l LEFT JOIN receipts r ON r.receipt_number=l.receipt_number WHERE l.line_note IS NULL OR trim(l.line_note)='' ORDER BY r.receipt_date,l.receipt_number,l.line_id;"
+
+      - name: Set missing line_note to -1
+        env:
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+        run: |
+          npx --yes wrangler@latest d1 execute poleczka-dev --remote --command "UPDATE receipt_lines SET line_note='-1' WHERE line_note IS NULL OR trim(line_note)='';"
+
+      - name: Verify
+        env:
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+        run: |
+          npx --yes wrangler@latest d1 execute poleczka-dev --remote --command "SELECT COUNT(*) AS remaining_missing_line_note FROM receipt_lines WHERE line_note IS NULL OR trim(line_note)=''; SELECT COUNT(*) AS unidentified_delivery FROM receipt_lines WHERE trim(line_note)='-1';"
+          npx --yes wrangler@latest d1 execute poleczka-dev --remote --command "PRAGMA foreign_key_check;"

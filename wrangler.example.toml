@@ -1,0 +1,24 @@
+name = "poleczka-pwa"
+main = "worker/index.ts"
+compatibility_date = "2026-09-16"
+
+[assets]
+directory = "./dist"
+not_found_handling = "single-page-application"
+run_worker_first = ["/api/*"]
+
+[[d1_databases]]
+binding = "DB"
+database_name = "poleczka-dev"
+database_id = "SET_YOUR_DATABASE_ID"
+migrations_dir = "migrations"
+
+[[durable_objects.bindings]]
+name = "PIPELINE_HUB"
+class_name = "PipelineHub"
+
+[[migrations]]
+tag = "pipeline-hub-v1"
+new_sqlite_classes = ["PipelineHub"]
+
+# Sekrety dodawaj przez `wrangler secret put`, nie wpisuj ich do repozytorium.

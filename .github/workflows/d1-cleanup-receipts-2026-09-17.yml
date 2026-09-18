@@ -1,0 +1,33 @@
+name: D1 Cleanup Receipts 2026-09-17
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: d1-cleanup-receipts-2026-09-17
+  cancel-in-progress: false
+
+jobs:
+  cleanup:
+    name: Delete selected receipts from poleczka-dev
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Delete selected receipt graph and verify relations
+        env:
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          TARGET_D1_DATABASE_ID: 099b4d9e-ad73-441b-a2be-a00f347a5905
+        run: node scripts/cleanup-receipts-2026-09-17.mjs

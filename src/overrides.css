@@ -1,0 +1,446 @@
+/* Korekty UI — 16.09.2026 */
+html {
+  overflow-y: scroll;
+  scrollbar-gutter: stable;
+}
+
+body,
+#root {
+  min-height: 100vh;
+}
+
+body {
+  overflow-y: auto;
+}
+
+.main-area {
+  min-height: 100vh;
+  overflow: visible;
+}
+
+/* Lewy panel dopasowany dokładnie do wysokości okna. */
+.sidebar {
+  height: 100vh;
+  min-height: 100vh;
+  max-height: 100vh;
+  padding: 10px 9px 9px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+  scrollbar-color: #c9c2b8 transparent;
+}
+
+.sidebar::-webkit-scrollbar {
+  width: 6px;
+}
+
+.sidebar::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.sidebar::-webkit-scrollbar-thumb {
+  background: #c9c2b8;
+  border-radius: 999px;
+}
+
+.brand-block {
+  padding: 0 7px 8px;
+}
+
+/* Finalny sygnet P/I z wieszakiem — zastępuje serduszko. */
+.brand-symbol {
+  width: 70px;
+  height: 74px;
+  margin: 0 auto 2px;
+  font-size: 0;
+  line-height: 0;
+  background-image: url('/assets/poleczka-logo-pi.png');
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: contain;
+  transform: none;
+}
+
+.brand-block strong {
+  font-size:25.31px;
+  line-height: 1;
+  margin: 4px 0 6px;
+}
+
+.brand-block > span {
+  font-size:7.5px;
+  line-height: 1.4;
+}
+
+.sidebar nav {
+  gap: 1px;
+}
+
+.sidebar nav a {
+  gap: 10px;
+  padding: 8px 11px;
+  border-radius: 10px;
+  font-size:12.19px;
+}
+
+.sidebar nav a > span {
+  width: 20px;
+  font-size:16.88px;
+}
+
+/* Aktywny link ma być widoczny od pierwszego renderu, nie dopiero po kliknięciu. */
+.sidebar nav a.active,
+.sidebar nav a[aria-current="page"] {
+  background: #eee5d6;
+  box-shadow: inset 3px 0 0 #9c7534;
+  color: #242722;
+  font-weight: 600;
+}
+
+.sidebar-quote {
+  margin: 8px 5px 5px;
+  padding: 9px 7px;
+}
+
+.sidebar-quote > span {
+  font-size:25.31px;
+}
+
+.sidebar-quote p {
+  font-size:12.19px;
+  line-height: 1.35;
+  margin: 4px 0;
+}
+
+.sidebar-quote b {
+  font-size:16.88px;
+}
+
+.sidebar-thanks {
+  font-size:9.38px;
+  line-height: 1.3;
+  padding-top: 4px;
+}
+
+/*
+ * Pasek górny jest nieruchomy. Po powiększeniu widżetu publikacji
+ * rezerwujemy więcej miejsca pionowego, żeby pierwszy panel dashboardu
+ * zawsze zaczynał się wyraźnie poniżej nagłówka.
+ */
+.dashboard-wrap {
+  padding-top: 128px;
+}
+
+.dashboard-header {
+  position: fixed;
+  top: 0;
+  left: 178px;
+  right: 0;
+  z-index: 60;
+  min-height: 74px;
+  margin: 0;
+  padding: 13px 25px 12px;
+  background: rgba(247, 246, 243, 0.98);
+  border-bottom: 1px solid rgba(229, 225, 218, 0.95);
+  box-shadow: 0 5px 16px rgba(71, 60, 45, 0.06);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
+/* Czytelniejsza typografia bez zmiany układu kart i wykresów. */
+.dashboard-header h1 { font-size:27.19px; }
+.dashboard-header p { font-size:15px; }
+.date-block div { font-size:13.81px; }
+.sync-pill strong { font-size:13.81px; }
+.sync-pill small { font-size:11.69px; }
+
+.limit-intro h2 { font-size:18.75px; }
+.limit-intro p { font-size:14.06px; }
+.limit-main > strong { font-size:15.94px; }
+.limit-value { font-size:16.88px; }
+.limit-value b { font-size:20.63px; }
+.limit-left span { font-size:12.19px; }
+.limit-left > b { font-size:20.63px; }
+
+.kpi-copy > span { font-size:12.19px; }
+.kpi-copy strong { font-size:19.69px; }
+.kpi-copy b { font-size:14.06px; }
+.kpi-copy small { font-size:10.31px; }
+
+.panel-head h2 { font-size:18.75px; }
+.panel-head select { font-size:11.25px; }
+.y-labels,
+.x-labels,
+.week-days { font-size:9.38px; }
+.chart-summary span { font-size:9.38px; }
+.chart-summary b { font-size:12.19px; }
+.legend { font-size:10.31px; }
+
+.category-list p,
+.category-list p b { font-size:10.31px; }
+.heat-y,
+.heat-x { font-size:9.38px; }
+.heat-legend { font-size:8.44px; }
+
+.company-mode span { font-size:10.31px; }
+.company-mode b { font-size:13.13px; }
+.company-mode small { font-size:9.38px; }
+
+.quick-card b { font-size:11.25px; }
+.quick-card small { font-size:9.38px; }
+.dashboard-footer { font-size:9.38px; }
+
+/* Górny rząd wykresów: środkowa szczelina dokładnie w osi przerwy między 3. i 4. KPI. */
+.charts-row.primary {
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 10px;
+}
+
+/* Dolny rząd zgodny proporcjami z referencją. */
+.charts-row.secondary {
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) minmax(0, .72fr);
+  align-items: stretch;
+}
+
+.category-panel,
+.heat-panel,
+.right-stack {
+  height: 250px;
+  min-height: 250px;
+}
+
+.category-panel,
+.heat-panel {
+  overflow: hidden;
+}
+
+.category-panel .panel-head,
+.heat-panel .panel-head {
+  margin-bottom: 5px;
+}
+
+.category-body {
+  height: 194px;
+  gap: 14px;
+  padding: 2px 4px 0;
+}
+
+.donut {
+  width: 154px;
+  height: 154px;
+}
+
+.donut:after {
+  width: 92px;
+  height: 92px;
+}
+
+.donut b {
+  font-size:15px;
+}
+
+/* Lista kategorii: wycentrowany blok w wolnej przestrzeni obok wykresu. */
+.category-list {
+  flex: 1;
+  gap: 4px;
+  width: min(100%, 280px);
+  max-width: 280px;
+  margin: 0 auto;
+  align-self: center;
+}
+
+.category-list p {
+  width: 100%;
+  grid-template-columns: 12px minmax(76px, 1fr) 92px 34px;
+  justify-content: stretch;
+  column-gap: 6px;
+  min-height: 28px;
+  padding: 5px 7px;
+  border-radius: 7px;
+}
+
+.category-list p:nth-child(even) {
+  background: rgba(181, 166, 141, 0.10);
+}
+
+.category-list p:nth-child(odd) {
+  background: rgba(255, 255, 255, 0.45);
+}
+
+.category-list p b {
+  justify-self: end;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.category-list p span {
+  justify-self: end;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Heatmapa w referencji ma prostokątne, niższe pola. */
+.heat-layout {
+  grid-template-columns: 26px 1fr;
+}
+
+.heat-y {
+  grid-template-rows: repeat(7, 23px);
+  gap: 3px;
+  padding-top: 18px;
+}
+
+.heat-x {
+  margin-bottom: 4px;
+}
+
+.heat-grid {
+  grid-template-rows: repeat(7, 23px);
+  gap: 3px;
+}
+
+.heat-grid i {
+  width: auto;
+  height: 23px;
+  aspect-ratio: auto;
+}
+
+.heat-legend {
+  margin-top: 7px;
+}
+
+/* Prawa kolumna: fotografia dokładnie z grafiki referencyjnej + zwarty tryb firmy. */
+.right-stack {
+  display: grid;
+  grid-template-rows: 145px 95px;
+  gap: 10px;
+}
+
+.quote-card {
+  min-height: 0;
+  height: 145px;
+  padding: 0;
+  background: url('/assets/home-right-quote.jpg') center center / cover no-repeat;
+  border-radius: 15px;
+}
+
+/* Tekst jest już częścią grafiki z referencji — nie dublujemy go HTML-em. */
+.quote-card > span,
+.quote-card > b,
+.quote-card > em,
+.quote-card::after {
+  display: none;
+}
+
+.company-mode {
+  min-height: 0;
+  height: 95px;
+  padding: 10px 12px;
+  gap: 10px;
+  overflow: hidden;
+}
+
+.mode-icon {
+  width: 42px;
+  height: 42px;
+  flex: 0 0 42px;
+}
+
+.company-mode b {
+  margin: 2px 0 4px;
+}
+
+@media (max-width: 1180px) {
+  .dashboard-header {
+    left: 150px;
+  }
+
+  .category-panel,
+  .heat-panel,
+  .right-stack {
+    height: auto;
+    min-height: 0;
+  }
+
+  .right-stack {
+    grid-template-rows: none;
+  }
+
+  .quote-card {
+    height: 170px;
+  }
+
+  .company-mode {
+    height: auto;
+    min-height: 96px;
+  }
+}
+
+@media (max-width: 820px) {
+  html {
+    overflow-y: auto;
+  }
+
+  .sidebar {
+    height: auto;
+    min-height: 0;
+    max-height: none;
+    overflow: visible;
+  }
+
+  .dashboard-wrap {
+    padding-top: 13px;
+  }
+
+  .dashboard-header {
+    position: sticky;
+    top: 0;
+    left: auto;
+    right: auto;
+    min-height: auto;
+    margin: -13px -12px 12px;
+    padding: 12px 16px;
+  }
+}
+
+
+/* Wyrównanie prawej części nagłówka dashboardu do prawej krawędzi ekranu. */
+.dashboard-wrap > .dashboard-header .header-actions {
+  margin-left: auto;
+  justify-content: flex-end;
+}
+
+
+/* Ikona modułu w górnym pasku — zgodna z ikoną z bocznego menu. */
+.header-title-block {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+
+.page-title-icon {
+  width: 38px;
+  height: 38px;
+  flex: 0 0 38px;
+  display: grid;
+  place-items: center;
+  border-radius: 10px;
+  background: rgba(238, 229, 214, 0.85);
+  color: #8b692f;
+  font-size:18px;
+  line-height: 1;
+}
+
+/* Prawa część nagłówka ma przylegać do prawej krawędzi także w SPRZEDAŻY. */
+.sales-wrap > .dashboard-header .header-actions {
+  margin-left: auto;
+  justify-content: flex-end;
+}
+
+
+/* Prawa część nagłówka DOSTAW tak samo jak w SPRZEDAŻY. */
+.deliveries-wrap > .dashboard-header .header-actions {
+  margin-left: auto;
+  justify-content: flex-end;
+}
