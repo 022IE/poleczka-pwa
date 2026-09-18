@@ -31,6 +31,7 @@ type Receipt = {
   discount: number
   net: number
   payment: string
+  sk: boolean
 }
 
 type SaleLine = {
@@ -206,6 +207,7 @@ function SalesPage() {
   const [expanded, setExpanded] = useState<Set<string>>(() => new Set())
   const [linesByReceipt, setLinesByReceipt] = useState<Record<string, SaleLine[]>>({})
   const [lineLoading, setLineLoading] = useState<Set<string>>(() => new Set())
+  const [skSaving, setSkSaving] = useState<Set<string>>(() => new Set())
 
   const [loading, setLoading] = useState(true)
   const [summaryLoading, setSummaryLoading] = useState(true)
@@ -474,6 +476,41 @@ function SalesPage() {
     })
   }
 
+  const updateReceiptSk = async (receiptNumber: string, nextSk: boolean) => {
+    const previous = receipts.find((receipt) => receipt.receiptNumber === receiptNumber)?.sk
+    if (previous === undefined || previous === nextSk || skSaving.has(receiptNumber)) return
+
+    setError('')
+    setReceipts((current) => current.map((receipt) => (
+      receipt.receiptNumber === receiptNumber ? { ...receipt, sk: nextSk } : receipt
+    )))
+    setSkSaving((current) => new Set(current).add(receiptNumber))
+
+    try {
+      const response = await fetch(`/api/sales/receipts/${encodeURIComponent(receiptNumber)}/sk`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ sk: nextSk }),
+      })
+      if (!response.ok) throw new Error('SK update failed')
+      const payload = await response.json() as { ok: boolean; sk: boolean }
+      setReceipts((current) => current.map((receipt) => (
+        receipt.receiptNumber === receiptNumber ? { ...receipt, sk: Boolean(payload.sk) } : receipt
+      )))
+    } catch {
+      setReceipts((current) => current.map((receipt) => (
+        receipt.receiptNumber === receiptNumber ? { ...receipt, sk: previous } : receipt
+      )))
+      setError(`Nie udało się zapisać S.K. dla paragonu ${receiptNumber}.`)
+    } finally {
+      setSkSaving((current) => {
+        const next = new Set(current)
+        next.delete(receiptNumber)
+        return next
+      })
+    }
+  }
+
   const pageNumbers = useMemo(() => {
     if (totalPages <= 7) return Array.from({ length: totalPages }, (_, index) => index + 1)
     const candidates = new Set([1, totalPages, page - 1, page, page + 1])
@@ -576,7 +613,7 @@ function SalesPage() {
 
       {error && (
         <div className="sales-error" role="alert">
-          <span>Nie udało się pobrać danych sprzedaży.</span>
+          <span>{error}</span>
           <button type="button" onClick={() => setReloadKey((current) => current + 1)}>Spróbuj ponownie</button>
         </div>
       )}
@@ -604,6 +641,7 @@ function SalesPage() {
               <button type="button" className="sales-sort" onClick={() => toggleSort('discount')}>Rabat <b>{sortArrow('discount')}</b></button>
               <button type="button" className="sales-sort" onClick={() => toggleSort('net')}>Netto <b>{sortArrow('net')}</b></button>
               <span>Płatność</span>
+              <span className="sales-sk-head">S.K.</span>
               <span className="sales-menu-dots">⋮</span>
             </div>
 
@@ -627,6 +665,16 @@ function SalesPage() {
                     <span>{formatMoney(receipt.discount)}</span>
                     <strong>{formatMoney(receipt.net)}</strong>
                     <PaymentBadge payment={receipt.payment} />
+                    <label className={`sales-sk ${skSaving.has(receipt.receiptNumber) ? 'saving' : ''}`}>
+                      <input
+                        type="checkbox"
+                        checked={receipt.sk}
+                        disabled={skSaving.has(receipt.receiptNumber)}
+                        aria-label={`S.K. dla paragonu ${receipt.receiptNumber}`}
+                        title={receipt.sk ? 'S.K. włączone' : 'S.K. wyłączone'}
+                        onChange={(event) => void updateReceiptSk(receipt.receiptNumber, event.target.checked)}
+                      />
+                    </label>
                     <button type="button" className="sales-row-menu" aria-label={`Menu paragonu ${receipt.receiptNumber}`}>•••</button>
                   </div>
 
