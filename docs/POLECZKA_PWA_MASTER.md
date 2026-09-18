@@ -729,16 +729,15 @@ Na obecnym etapie:
 
 ---
 
-## 32. Czytelność interfejsu — powiększona typografia
+## 32. Czytelność interfejsu — korekta typografii
 
-Od 18.09.2026 w wersji developerskiej obowiązuje globalna warstwa zwiększonej czytelności dla całego PWA.
+Od 18.09.2026 typografia jest korygowana niezależnie od layoutu, bez używania globalnego `zoom`.
 
-Implementacja:
-- osobny plik `src/readability.css`, ładowany jako ostatnia warstwa stylów,
-- większe teksty w menu, nagłówkach, KPI, wykresach, formularzach, tabelach i paginacji,
-- najmniejsze teksty pomocnicze są powiększane mocniej niż duże nagłówki,
-- wysokości wierszy i pól formularzy są zwiększone tam, gdzie większy tekst tego wymaga,
-- nie skalujemy całego interfejsu przez `zoom`; zwiększamy przede wszystkim typografię i niezbędne odstępy,
-- warstwa jest celowo odseparowana od stylów modułów, aby można było łatwo skorygować skalę po ocenie wizualnej.
+Aktualne ustalenie po korekcie wizualnej:
+- wszystkie bieżące rozmiary czcionek w PWA zostały zmniejszone o **25% względem poprzedniego stanu**,
+- wyjątkiem jest górny **kalendarz / blok daty** oraz **Status integracji** — tam rozmiary zmniejszono tylko o **15% względem poprzedniego stanu**,
+- korekta obejmuje również fontowe ikony i etykiety, jeśli ich rozmiar jest określany przez `font-size`,
+- nie zmieniamy z tego powodu wymiarów kart, wykresów ani ogólnego układu strony,
+- `src/readability.css` pozostaje ostatnią warstwą stylów i służy do kontrolowanej korekty czytelności.
 
-Cel: poprawić czytelność PWA bez konieczności wpatrywania się w drobny tekst, przy zachowaniu obecnego układu aplikacji.
+Cel: przywrócić proporcje typografii bliższe zaakceptowanemu wariantowi, pozostawiając nieco większą czytelność kalendarza i Statusu integracji.
