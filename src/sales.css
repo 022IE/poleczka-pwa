@@ -37,6 +37,12 @@
 
 .sales-sk-head{text-align:center;padding:0!important}
 .sales-sk{display:grid;place-items:center;padding:0!important}
-.sales-sk input{width:20px;height:20px;margin:0;accent-color:#80653c;cursor:pointer}
+.sales-sk input{width:20px;height:20px;margin:0;accent-color:#80653c;cursor:default;pointer-events:none}
 .sales-sk.saving{opacity:.5}
-.sales-sk input:disabled{cursor:progress}
+
+.sales-row-actions{display:flex;justify-content:flex-end;gap:8px;padding:8px 15px 10px;background:#fbfaf7;border-bottom:1px solid rgba(232,229,223,.75)}
+.sales-row-actions button{min-width:104px;height:36px;border:1px solid #ddd6ca;border-radius:8px;background:#fff;color:#474b47;padding:0 12px;cursor:pointer}
+.sales-row-actions button:hover:not(:disabled){background:#f3eee5;border-color:#cdbb9d}
+.sales-row-actions button:disabled{opacity:.45;cursor:not-allowed}
+.sales-row-actions button.danger{color:#9a4f58;border-color:#e2c7cb;background:#fffafa}
+.sales-row-menu[aria-expanded="true"]{color:#80653c;font-weight:700}
