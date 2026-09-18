@@ -133,9 +133,12 @@ function Dashboard() {
   return (
     <div className="dashboard-wrap">
       <header className="dashboard-header">
-        <div>
-          <h1>Dzień dobry, Iwonko! <span>👋</span></h1>
-          <p>Cieszę się, że tu jesteś. Dobry dzień na piękne rzeczy!</p>
+        <div className="header-title-block">
+          <span className="page-title-icon" aria-hidden="true">⌂</span>
+          <div>
+            <h1>Dzień dobry, Iwonko! <span>👋</span></h1>
+            <p>Cieszę się, że tu jesteś. Dobry dzień na piękne rzeczy!</p>
+          </div>
         </div>
         {SHOW_DEV_PIPELINE && <div className="header-build-slot"><BuildStatus /></div>}
         <div className="header-actions">

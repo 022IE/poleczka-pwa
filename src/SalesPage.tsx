@@ -141,9 +141,12 @@ function SalesHeader() {
 
   return (
     <header className="dashboard-header sales-header">
-      <div>
-        <h1>Sprzedaż</h1>
-        <p>Tu znajdziesz wszystkie paragony i szczegóły sprzedaży.</p>
+      <div className="header-title-block">
+        <span className="page-title-icon" aria-hidden="true">▢</span>
+        <div>
+          <h1>Sprzedaż</h1>
+          <p>Tu znajdziesz wszystkie paragony i szczegóły sprzedaży.</p>
+        </div>
       </div>
       {SHOW_DEV_PIPELINE && <div className="header-build-slot"><BuildStatus /></div>}
       <div className="header-actions">
