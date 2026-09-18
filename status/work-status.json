@@ -1,6 +1,6 @@
 {
-  "state": "awaiting_publish",
-  "label": "Oczekiwanie na publikację",
-  "task": "Całe PWA — typografia skorygowana do +25%; build/publikacja w toku",
-  "updatedAt": "2026-09-18T06:23:50Z"
+  "state": "editing",
+  "label": "Wprowadzanie poprawek",
+  "task": "Całe PWA — tymczasowe wyłączenie widżetu pipeline w celu sprawdzenia górnego paska",
+  "updatedAt": "2026-09-18T06:36:10Z"
 }
