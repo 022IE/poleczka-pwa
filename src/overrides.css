@@ -402,3 +402,10 @@ body {
     padding: 12px 16px;
   }
 }
+
+
+/* Wyrównanie prawej części nagłówka dashboardu do prawej krawędzi ekranu. */
+.dashboard-wrap > .dashboard-header .header-actions {
+  margin-left: auto;
+  justify-content: flex-end;
+}
