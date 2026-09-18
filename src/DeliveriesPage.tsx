@@ -110,6 +110,9 @@ export default function DeliveriesPage() {
 
   const [from, setFrom] = useState('')
   const [to, setTo] = useState('')
+  const [draftFrom, setDraftFrom] = useState('')
+  const [draftTo, setDraftTo] = useState('')
+  const [dateOpen, setDateOpen] = useState(false)
   const [supplier, setSupplier] = useState('')
   const [status, setStatus] = useState('')
   const [category, setCategory] = useState('')
@@ -123,6 +126,8 @@ export default function DeliveriesPage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [reloadKey, setReloadKey] = useState(0)
+  const [sort, setSort] = useState<keyof Delivery>('deliveryNumber')
+  const [order, setOrder] = useState<'asc' | 'desc'>('desc')
 
   const [addOpen, setAddOpen] = useState(false)
   const [addSaving, setAddSaving] = useState(false)
@@ -230,7 +235,21 @@ export default function DeliveriesPage() {
     await loadItems(deliveryNumber)
   }
 
-  const visibleNumbers = deliveries.map((delivery) => delivery.deliveryNumber)
+  const sortedDeliveries = useMemo(() => {
+    const direction = order === 'asc' ? 1 : -1
+    return [...deliveries].sort((left, right) => {
+      const leftValue = left[sort]
+      const rightValue = right[sort]
+
+      if (typeof leftValue === 'string' || typeof rightValue === 'string') {
+        return String(leftValue).localeCompare(String(rightValue), 'pl-PL', { sensitivity: 'base' }) * direction
+      }
+
+      return (Number(leftValue) - Number(rightValue)) * direction
+    })
+  }, [deliveries, sort, order])
+
+  const visibleNumbers = sortedDeliveries.map((delivery) => delivery.deliveryNumber)
   const allExpanded = visibleNumbers.length > 0 && visibleNumbers.every((number) => expanded.has(number))
 
   const toggleAll = async () => {
@@ -252,14 +271,31 @@ export default function DeliveriesPage() {
     await Promise.all(visibleNumbers.map((number) => loadItems(number)))
   }
 
-  const resetFilters = () => {
+  const applyDateRange = () => {
+    if (draftFrom && draftTo && draftFrom > draftTo) return
+    setFrom(draftFrom)
+    setTo(draftTo)
+    setDateOpen(false)
+  }
+
+  const clearDateRange = () => {
+    setDraftFrom('')
+    setDraftTo('')
     setFrom('')
     setTo('')
-    setSupplier('')
-    setStatus('')
-    setCategory('')
-    setQuery('')
+    setDateOpen(false)
   }
+
+  const toggleSort = (nextSort: keyof Delivery) => {
+    if (sort === nextSort) {
+      setOrder((current) => current === 'desc' ? 'asc' : 'desc')
+    } else {
+      setSort(nextSort)
+      setOrder('desc')
+    }
+  }
+
+  const sortArrow = (column: keyof Delivery) => sort === column ? (order === 'desc' ? '↓' : '↑') : '↕'
 
   const submitDelivery = async (event: FormEvent) => {
     event.preventDefault()
@@ -320,6 +356,85 @@ export default function DeliveriesPage() {
         ))}
       </section>
 
+      <section className="sales-filters deliveries-filters" aria-label="Filtry dostaw">
+        <div className="sales-filter sales-filter-date">
+          <span className="sales-filter-icon gold">▣</span>
+          <span className="sales-filter-copy">
+            <small>Zakres dat</small>
+            <button
+              type="button"
+              className="sales-date-trigger"
+              aria-expanded={dateOpen}
+              onClick={() => {
+                setDraftFrom(from)
+                setDraftTo(to)
+                setDateOpen((current) => !current)
+              }}
+            >
+              {from || to ? `${from ? displayYmd(from) : '…'} — ${to ? displayYmd(to) : '…'}` : 'Wszystkie daty'} <i>⌄</i>
+            </button>
+          </span>
+          {dateOpen && (
+            <div className="sales-date-popover">
+              <div className="sales-date-fields">
+                <label><span>Od</span><input type="date" value={draftFrom} onChange={(event) => setDraftFrom(event.target.value)} /></label>
+                <label><span>Do</span><input type="date" value={draftTo} onChange={(event) => setDraftTo(event.target.value)} /></label>
+              </div>
+              {draftFrom && draftTo && draftFrom > draftTo && <small className="sales-date-error">Data „od” nie może być późniejsza niż „do”.</small>}
+              <div className="sales-date-actions">
+                <button type="button" className="secondary" onClick={clearDateRange}>Wszystkie daty</button>
+                <button type="button" className="primary" disabled={Boolean(draftFrom && draftTo && draftFrom > draftTo)} onClick={applyDateRange}>Zastosuj</button>
+              </div>
+            </div>
+          )}
+        </div>
+
+        <label className="sales-filter">
+          <span className="sales-filter-icon blue">♧</span>
+          <span className="sales-filter-copy">
+            <small>Dostawca</small>
+            <select value={supplier} onChange={(event) => setSupplier(event.target.value)}>
+              <option value="">Wszyscy</option>
+              {suppliers.map((entry) => <option key={entry} value={entry}>{entry}</option>)}
+            </select>
+          </span>
+        </label>
+
+        <label className="sales-filter">
+          <span className="sales-filter-icon green">↗</span>
+          <span className="sales-filter-copy">
+            <small>Status</small>
+            <select value={status} onChange={(event) => setStatus(event.target.value)}>
+              <option value="">Wszystkie</option>
+              <option value="active">Aktywne</option>
+              <option value="unsold">Bez sprzedaży</option>
+              <option value="sold-out">Wyprzedane</option>
+            </select>
+          </span>
+        </label>
+
+        <label className="sales-filter">
+          <span className="sales-filter-icon gold">◇</span>
+          <span className="sales-filter-copy">
+            <small>Kategoria</small>
+            <select value={category} onChange={(event) => setCategory(event.target.value)}>
+              <option value="">Wszystkie</option>
+              {categories.map((entry) => <option key={entry.id} value={entry.id}>{entry.name}</option>)}
+            </select>
+          </span>
+        </label>
+
+        <label className="sales-search">
+          <span>⌕</span>
+          <input
+            value={query}
+            onChange={(event) => setQuery(event.target.value)}
+            placeholder="Szukaj Lp. dostawy lub dostawcy..."
+          />
+          {query && <button type="button" aria-label="Wyczyść wyszukiwanie" onClick={() => setQuery('')}>×</button>}
+        </label>
+      </section>
+
       {error && (
         <div className="deliveries-error">
           <span>{error}</span>
@@ -333,19 +448,8 @@ export default function DeliveriesPage() {
             <h2>Dostawy</h2>
             <span>{deliveries.length} pozycji</span>
           </div>
-
-          <div className="deliveries-filter-row">
-            <label><span>Od</span><input type="date" value={from} onChange={(event) => setFrom(event.target.value)} /></label>
-            <label><span>Do</span><input type="date" value={to} onChange={(event) => setTo(event.target.value)} /></label>
-            <label><span>Dostawca</span><select value={supplier} onChange={(event) => setSupplier(event.target.value)}><option value="">Wszyscy</option>{suppliers.map((entry) => <option key={entry} value={entry}>{entry}</option>)}</select></label>
-            <label><span>Status</span><select value={status} onChange={(event) => setStatus(event.target.value)}><option value="">Wszystkie</option><option value="active">Aktywne</option><option value="unsold">Bez sprzedaży</option><option value="sold-out">Wyprzedane</option></select></label>
-            <label><span>Kategoria</span><select value={category} onChange={(event) => setCategory(event.target.value)}><option value="">Wszystkie</option>{categories.map((entry) => <option key={entry.id} value={entry.id}>{entry.name}</option>)}</select></label>
-            <label className="deliveries-search"><span>Szukaj</span><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Lp. lub dostawca" /></label>
-            <button className="deliveries-reset" onClick={resetFilters} type="button">Wyczyść</button>
-          </div>
-
           <div className="deliveries-table-actions">
-            <button type="button" className="deliveries-expand-all" onClick={() => void toggleAll()} disabled={!deliveries.length}>
+            <button type="button" className="deliveries-expand-all" onClick={() => void toggleAll()} disabled={!deliveries.length} aria-pressed={allExpanded}>
               {allExpanded ? '⊟ Zwiń wszystko' : '⊞ Rozwiń wszystko'}
             </button>
             <button type="button" className="deliveries-add" onClick={() => setAddOpen(true)}>＋ Dodaj dostawę</button>
@@ -356,22 +460,22 @@ export default function DeliveriesPage() {
           <div className="deliveries-table">
             <div className="deliveries-grid deliveries-table-head">
               <span />
-              <span>Lp.</span>
-              <span>Data</span>
-              <span>Dostawca</span>
-              <span>Ilość</span>
-              <span>Cena/szt.</span>
-              <span>Sprzedane</span>
-              <span>% zbytu</span>
-              <span>% zwrotu</span>
-              <span>Sprzedaż</span>
-              <span>Zysk</span>
+              <button type="button" className="deliveries-sort" onClick={() => toggleSort('deliveryNumber')}>Lp. <b>{sortArrow('deliveryNumber')}</b></button>
+              <button type="button" className="deliveries-sort" onClick={() => toggleSort('deliveryDate')}>Data <b>{sortArrow('deliveryDate')}</b></button>
+              <button type="button" className="deliveries-sort" onClick={() => toggleSort('supplierName')}>Dostawca <b>{sortArrow('supplierName')}</b></button>
+              <button type="button" className="deliveries-sort" onClick={() => toggleSort('quantity')}>Ilość <b>{sortArrow('quantity')}</b></button>
+              <button type="button" className="deliveries-sort" onClick={() => toggleSort('unitCost')}>Cena/szt. <b>{sortArrow('unitCost')}</b></button>
+              <button type="button" className="deliveries-sort" onClick={() => toggleSort('sold')}>Sprzedane <b>{sortArrow('sold')}</b></button>
+              <button type="button" className="deliveries-sort" onClick={() => toggleSort('sellThrough')}>% zbytu <b>{sortArrow('sellThrough')}</b></button>
+              <button type="button" className="deliveries-sort" onClick={() => toggleSort('returnRate')}>% zwrotu <b>{sortArrow('returnRate')}</b></button>
+              <button type="button" className="deliveries-sort" onClick={() => toggleSort('sales')}>Sprzedaż <b>{sortArrow('sales')}</b></button>
+              <button type="button" className="deliveries-sort" onClick={() => toggleSort('profit')}>Zysk <b>{sortArrow('profit')}</b></button>
             </div>
 
             {loading && <div className="deliveries-empty">Ładowanie dostaw…</div>}
             {!loading && deliveries.length === 0 && <div className="deliveries-empty">Brak dostaw dla wybranych filtrów.</div>}
 
-            {!loading && deliveries.map((delivery, index) => {
+            {!loading && sortedDeliveries.map((delivery, index) => {
               const isExpanded = expanded.has(delivery.deliveryNumber)
               const items = itemsByDelivery[delivery.deliveryNumber] || []
               return (

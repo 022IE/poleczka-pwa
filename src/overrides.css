@@ -437,3 +437,10 @@ body {
   margin-left: auto;
   justify-content: flex-end;
 }
+
+
+/* Prawa część nagłówka DOSTAW tak samo jak w SPRZEDAŻY. */
+.deliveries-wrap > .dashboard-header .header-actions {
+  margin-left: auto;
+  justify-content: flex-end;
+}

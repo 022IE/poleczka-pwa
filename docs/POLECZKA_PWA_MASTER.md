@@ -787,3 +787,24 @@ Aktualne ustalenie po korekcie wizualnej:
 - `src/readability.css` pozostaje ostatnią warstwą stylów i służy do kontrolowanej korekty czytelności.
 
 Cel: przywrócić proporcje typografii bliższe zaakceptowanemu wariantowi, pozostawiając nieco większą czytelność kalendarza i Statusu integracji.
+
+---
+
+## 33. Wspólny standard UI modułów
+
+Od 18.09.2026 wszystkie moduły PWA mają zachowywać wspólny wzorzec wizualny ustalony na module **SPRZEDAŻ**.
+
+Obowiązuje:
+- ta sama skala typografii i warstwa czytelności,
+- ten sam układ nagłówka strony,
+- blok daty / kalendarza, Status integracji i avatar wyrównane do prawej krawędzi nagłówka,
+- KPI w tej samej skali wizualnej,
+- osobny pasek filtrów pod KPI, zamiast wciskania filtrów do nagłówka tabeli,
+- pola filtrów o tych samych wysokościach, promieniach, ikonach i odstępach,
+- pole wyszukiwania w tym samym wzorcu co w SPRZEDAŻY,
+- tabela jako osobna karta pod paskiem filtrów,
+- jeżeli tabela ma sensowne kolumny do porządkowania, nagłówki otrzymują kontrolki sortowania `↑ / ↓ / ↕`,
+- elementy rozwijane używają spójnego wzorca `+ / −` oraz, gdy potrzebne, akcji „Rozwiń wszystko / Zwiń wszystko”.
+
+Nowe moduły należy projektować od początku według tego standardu. Odstępstwa powinny wynikać z funkcji danego modułu, a nie z przypadkowo innej typografii lub układu kontrolek.
+

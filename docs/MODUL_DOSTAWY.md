@@ -186,7 +186,7 @@ Ekran `/dostawy` ma następujący układ:
    - szacowany zysk,
    - najlepszy dostawca.
 2. Poniżej jedna tabela dostaw.
-3. Filtry są umieszczone w nagłówku karty tabeli:
+3. Filtry są umieszczone w osobnym pasku pomiędzy KPI a tabelą, zgodnym wizualnie z modułem SPRZEDAŻ:
    - data od / do,
    - dostawca,
    - status,
@@ -199,6 +199,8 @@ Ekran `/dostawy` ma następujący układ:
 6. Rozwinięcie pokazuje zagregowane sprzedane artykuły z tej dostawy, np. `Spodnie — 25 szt.`, `Koszula — 10 szt.`.
 7. Wiersze artykułów, dla których zagregowana sprzedaż ilościowa wynosi `0`, **nie są wyświetlane**.
 8. **Dostawa nr 0 jest normalnie wyświetlana** w tabeli i może być rozwijana. Reguła ukrywania zera dotyczy wyłącznie artykułów z zerową sprzedażą w rozwinięciu, nie numeru dostawy.
+9. Nagłówki kolumn tabeli mają kontrolki sortowania `↑ / ↓ / ↕`.
+10. Typografia, pasek filtrów, wyszukiwarka oraz prawa część nagłówka są zgodne ze wspólnym standardem modułu SPRZEDAŻ.
 
 Tabela główna pokazuje:
 - Lp.,
