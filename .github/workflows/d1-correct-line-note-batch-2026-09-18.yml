@@ -1,0 +1,49 @@
+name: D1 Correct line_note batch 2026-09-18
+
+on:
+  push:
+    branches:
+      - dev
+    paths:
+      - '.github/workflows/d1-correct-line-note-batch-2026-09-18.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  correct:
+    name: Correct remaining known delivery numbers
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Precheck exact rows
+        env:
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+        run: |
+          npx --yes wrangler@latest d1 execute poleczka-dev --remote --command "SELECT line_id,receipt_number,item_name,sku,price,total_money,line_note FROM receipt_lines WHERE line_id IN ('9553152a-9dd7-9cad-f6a3-2ab7d559516e','9553152a-9dd7-9cad-f6a3-2ab7d55e516d','9553152a-9dd7-9cad-f6a3-2ab7d562516d') ORDER BY receipt_number,line_id;"
+
+      - name: Apply corrections
+        env:
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+        run: |
+          npx --yes wrangler@latest d1 execute poleczka-dev --remote --command "UPDATE receipt_lines SET line_note='3' WHERE line_id='9553152a-9dd7-9cad-f6a3-2ab7d559516e' AND receipt_number='2-0047' AND item_name='Majtki' AND trim(line_note)='-1'; UPDATE receipt_lines SET line_note='0' WHERE line_id='9553152a-9dd7-9cad-f6a3-2ab7d55e516d' AND receipt_number='2-0052' AND item_name='Zegarek' AND trim(line_note)='-1'; UPDATE receipt_lines SET line_note='0' WHERE line_id='9553152a-9dd7-9cad-f6a3-2ab7d562516d' AND receipt_number='2-0056' AND item_name='Pasek' AND trim(line_note)='-1';"
+
+      - name: Verify exact rows and relations
+        env:
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+        run: |
+          npx --yes wrangler@latest d1 execute poleczka-dev --remote --command "SELECT line_id,receipt_number,item_name,sku,price,total_money,line_note FROM receipt_lines WHERE line_id IN ('9553152a-9dd7-9cad-f6a3-2ab7d559516e','9553152a-9dd7-9cad-f6a3-2ab7d55e516d','9553152a-9dd7-9cad-f6a3-2ab7d562516d') ORDER BY receipt_number,line_id; SELECT COUNT(*) AS remaining_unidentified FROM receipt_lines WHERE trim(line_note)='-1'; SELECT line_id,receipt_number,item_name,sku,price,total_money,line_note FROM receipt_lines WHERE trim(line_note)='-1' ORDER BY receipt_number,line_id;"
+          npx --yes wrangler@latest d1 execute poleczka-dev --remote --command "PRAGMA foreign_key_check;"
