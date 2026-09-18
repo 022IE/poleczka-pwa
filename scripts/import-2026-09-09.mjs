@@ -239,6 +239,15 @@ async function verify() {
   assert(Number(detail.missing_item_id) === 0, 'Missing item_id found')
   assert(Number(detail.missing_sku) === 0, 'Missing SKU found')
 
+  const deliveryDiag = await query(
+    `SELECT line_id,delivery_number,typeof(delivery_number) AS value_type,
+            CASE WHEN delivery_number IN (0,1,2) THEN 1 ELSE 0 END AS numeric_ok
+     FROM receipt_lines
+     WHERE line_id LIKE 'manual-20260909-%'
+     ORDER BY line_id`,
+  )
+  console.log('DELIVERY_DIAG', JSON.stringify(deliveryDiag))
+
   const deliveryValidation = (await query(
     `SELECT COUNT(*) AS n FROM receipt_lines
      WHERE line_id LIKE 'manual-20260909-%'
