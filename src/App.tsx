@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { NavLink, Route, Routes } from 'react-router-dom'
 import BuildStatus from './components/BuildStatus'
+import DataStatus from './components/DataStatus'
 import SalesPage from './SalesPage'
 
 // Widget publikacji jest narzędziem developerskim. W wersji finalnej ustawiamy false.
