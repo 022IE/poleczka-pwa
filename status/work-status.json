@@ -1,6 +1,6 @@
 {
-  "state": "editing",
-  "label": "Wprowadzanie poprawek",
-  "task": "DOSTAWY — korekta dokumentacji po migracji delivery_number",
-  "updatedAt": "2026-09-18T10:34:05.931Z"
+  "state": "awaiting_publish",
+  "label": "Oczekiwanie na publikację",
+  "task": "DOSTAWY — tabela deliveries, migracja delivery_number i aktualizacja zależności zakończone",
+  "updatedAt": "2026-09-18T10:35:49.388Z"
 }
