@@ -980,3 +980,28 @@ Kompatybilność:
 - dodanie brakującej dostawy do `deliveries` automatycznie rozwiązuje pasujące pozycje.
 
 Warstwa odczytu PWA korzysta z `delivery_number`; nie należy budować nowych funkcji biznesowych bezpośrednio na `line_note`.
+
+
+---
+
+# 38. Pole S.K. paragonu — 18.09.2026
+
+Do tabeli `receipts` dodano lokalne pole:
+
+- nazwa techniczna: `sk`,
+- typ logiczny: boolean,
+- wartość domyślna: `true`,
+- pole nie pochodzi z Loyverse,
+- synchronizacja Loyverse nie jest źródłem wartości S.K.
+
+W tabeli głównej SPRZEDAŻY znajduje się kolumna **S.K.** z checkboxem dla każdego paragonu.
+
+Zachowanie:
+- zaznaczony checkbox = `sk = true`,
+- odznaczony checkbox = `sk = false`,
+- zmiana checkboxa zapisuje wartość do D1 przez endpoint:
+  `PATCH /api/sales/receipts/:receiptNumber/sk`,
+- zapis jest wykonywany optymistycznie; w przypadku błędu checkbox wraca do poprzedniej wartości,
+- nowy paragon bez jawnie podanej wartości otrzymuje `sk = true` z domyślnej wartości D1.
+
+Pole S.K. jest własnym polem biznesowym PWA i nie może być uzależnione od danych zwracanych przez Loyverse.
