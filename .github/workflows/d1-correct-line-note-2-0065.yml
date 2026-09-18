@@ -1,0 +1,49 @@
+name: D1 Correct line_note 2-0065
+
+on:
+  push:
+    branches:
+      - dev
+    paths:
+      - '.github/workflows/d1-correct-line-note-2-0065.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  correct:
+    name: Correct 2-0065 Kamizelka delivery
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Precheck exact row
+        env:
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+        run: |
+          npx --yes wrangler@latest d1 execute poleczka-dev --remote --command "SELECT line_id,receipt_number,item_name,sku,price,total_money,line_note FROM receipt_lines WHERE line_id='9553152a-9dd7-9cad-f6a3-2ab7d56b516c';"
+
+      - name: Set delivery 4
+        env:
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+        run: |
+          npx --yes wrangler@latest d1 execute poleczka-dev --remote --command "UPDATE receipt_lines SET line_note='4' WHERE line_id='9553152a-9dd7-9cad-f6a3-2ab7d56b516c' AND receipt_number='2-0065' AND item_name='Kamizelka' AND ABS(COALESCE(total_money,price)-35.0)<0.001 AND trim(line_note)='-1';"
+
+      - name: Verify exact row and relations
+        env:
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+        run: |
+          npx --yes wrangler@latest d1 execute poleczka-dev --remote --command "SELECT line_id,receipt_number,item_name,sku,price,total_money,line_note FROM receipt_lines WHERE line_id='9553152a-9dd7-9cad-f6a3-2ab7d56b516c'; SELECT COUNT(*) AS remaining_unidentified FROM receipt_lines WHERE trim(line_note)='-1';"
+          npx --yes wrangler@latest d1 execute poleczka-dev --remote --command "PRAGMA foreign_key_check;"
