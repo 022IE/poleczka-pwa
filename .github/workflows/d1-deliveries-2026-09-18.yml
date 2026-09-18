@@ -5,7 +5,6 @@ on:
     branches:
       - dev
     paths:
-      - migrations/0001_deliveries.sql
       - scripts/migrate-deliveries-2026-09-18.mjs
       - .github/workflows/d1-deliveries-2026-09-18.yml
   workflow_dispatch:
