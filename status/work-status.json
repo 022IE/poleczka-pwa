@@ -1,6 +1,6 @@
 {
-  "state": "awaiting_publish",
-  "label": "Oczekiwanie na publikację",
-  "task": "Dashboard — dane z D1 podpięte; Vinted pozostaje niezależny",
-  "updatedAt": "2026-09-18T09:10:30Z"
+  "state": "editing",
+  "label": "Wprowadzanie poprawek",
+  "task": "Dashboard — korekta reguły szacowanego zysku według średniego kosztu sztuki z dostawy",
+  "updatedAt": "2026-09-18T09:36:00Z"
 }
