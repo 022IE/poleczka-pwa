@@ -242,7 +242,7 @@ async function verify() {
   const deliveryValidation = (await query(
     `SELECT COUNT(*) AS n FROM receipt_lines
      WHERE line_id LIKE 'manual-20260909-%'
-       AND (${deliveryColumn} IS NULL OR CAST(${deliveryColumn} AS TEXT) NOT IN ('0','1','2'))`,
+       AND (${deliveryColumn} IS NULL OR ${deliveryColumn} NOT IN (0,1,2))`,
   ))[0]
   assert(Number(deliveryValidation.n) === 0, `Invalid delivery values: ${deliveryValidation.n}`)
 
