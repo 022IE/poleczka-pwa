@@ -1,6 +1,6 @@
 {
-  "state": "editing",
-  "label": "Wprowadzanie poprawek",
-  "task": "Typografia — zmniejszenie wszystkich czcionek o 25%, kalendarz i Status integracji o 15%",
-  "updatedAt": "2026-09-18T08:21:30Z"
+  "state": "awaiting_publish",
+  "label": "Oczekiwanie na publikację",
+  "task": "Typografia skorygowana: globalnie -25%, kalendarz i Status integracji -15% względem poprzedniego stanu",
+  "updatedAt": "2026-09-18T08:24:30Z"
 }
