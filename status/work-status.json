@@ -1,6 +1,6 @@
 {
-  "state": "editing",
-  "label": "Wprowadzanie poprawek",
-  "task": "Dashboard — korekta reguły szacowanego zysku według średniego kosztu sztuki z dostawy",
-  "updatedAt": "2026-09-18T09:36:00Z"
+  "state": "awaiting_publish",
+  "label": "Oczekiwanie na publikację",
+  "task": "Dashboard — szacowany zysk zgodny z regułą średniego kosztu sztuki z dostawy",
+  "updatedAt": "2026-09-18T09:38:00Z"
 }
