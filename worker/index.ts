@@ -1194,6 +1194,21 @@ type DashboardLineRow = {
   category: string
 }
 
+type DashboardProfitSummary = {
+  currentProfit: number
+  currentCoveredSales: number
+  currentCoveredUnits: number
+  currentTotalUnits: number
+  previousProfit: number
+  previousCoveredSales: number
+  previousCoveredUnits: number
+}
+
+type DashboardSellThroughSummary = {
+  receivedUnits: number
+  soldUnits: number
+}
+
 type DashboardRange = {
   start: string
   end: string
@@ -1380,7 +1395,7 @@ async function dashboardData(url: URL, env: Env) {
   const baseStart = [previousQuarter.start, previousWeekStart, last30Start].sort()[0]
   const baseEndExclusive = warsawMidnightUtcIso(addDaysYmd(today, 1))
 
-  const [receiptResult, lineResult, comparisonReceiptResult] = await Promise.all([
+  const [receiptResult, lineResult, comparisonReceiptResult, profitResult, sellThroughResult] = await Promise.all([
     env.DB.prepare(`
       SELECT
         receipt_number AS receiptNumber,
@@ -1426,6 +1441,93 @@ async function dashboardData(url: URL, env: Env) {
       warsawMidnightUtcIso(comparisonStart),
       warsawMidnightUtcIso(addDaysYmd(comparisonEnd, 1)),
     ).all<DashboardReceiptRow>(),
+
+    env.DB.prepare(`
+      SELECT
+        COALESCE(SUM(CASE
+          WHEN r.receipt_date >= ? AND r.receipt_date < ?
+           AND d.delivery_number IS NOT NULL AND d.quantity > 0
+          THEN COALESCE(l.total_money, 0) - (COALESCE(l.quantity, 0) * d.total_cost / d.quantity)
+          ELSE 0
+        END), 0) AS currentProfit,
+        COALESCE(SUM(CASE
+          WHEN r.receipt_date >= ? AND r.receipt_date < ?
+           AND d.delivery_number IS NOT NULL AND d.quantity > 0
+          THEN COALESCE(l.total_money, 0)
+          ELSE 0
+        END), 0) AS currentCoveredSales,
+        COALESCE(SUM(CASE
+          WHEN r.receipt_date >= ? AND r.receipt_date < ?
+           AND d.delivery_number IS NOT NULL AND d.quantity > 0
+          THEN COALESCE(l.quantity, 0)
+          ELSE 0
+        END), 0) AS currentCoveredUnits,
+        COALESCE(SUM(CASE
+          WHEN r.receipt_date >= ? AND r.receipt_date < ?
+          THEN COALESCE(l.quantity, 0)
+          ELSE 0
+        END), 0) AS currentTotalUnits,
+        COALESCE(SUM(CASE
+          WHEN r.receipt_date >= ? AND r.receipt_date < ?
+           AND d.delivery_number IS NOT NULL AND d.quantity > 0
+          THEN COALESCE(l.total_money, 0) - (COALESCE(l.quantity, 0) * d.total_cost / d.quantity)
+          ELSE 0
+        END), 0) AS previousProfit,
+        COALESCE(SUM(CASE
+          WHEN r.receipt_date >= ? AND r.receipt_date < ?
+           AND d.delivery_number IS NOT NULL AND d.quantity > 0
+          THEN COALESCE(l.total_money, 0)
+          ELSE 0
+        END), 0) AS previousCoveredSales,
+        COALESCE(SUM(CASE
+          WHEN r.receipt_date >= ? AND r.receipt_date < ?
+           AND d.delivery_number IS NOT NULL AND d.quantity > 0
+          THEN COALESCE(l.quantity, 0)
+          ELSE 0
+        END), 0) AS previousCoveredUnits
+      FROM receipt_lines l
+      JOIN receipts r ON r.receipt_number = l.receipt_number
+      LEFT JOIN deliveries d ON d.delivery_number = l.delivery_number
+      WHERE COALESCE(r.receipt_type, 'SALE') = 'SALE'
+        AND r.cancelled_at IS NULL
+        AND r.receipt_date >= ?
+        AND r.receipt_date < ?
+    `).bind(
+      warsawMidnightUtcIso(currentQuarter.start),
+      warsawMidnightUtcIso(addDaysYmd(today, 1)),
+      warsawMidnightUtcIso(currentQuarter.start),
+      warsawMidnightUtcIso(addDaysYmd(today, 1)),
+      warsawMidnightUtcIso(currentQuarter.start),
+      warsawMidnightUtcIso(addDaysYmd(today, 1)),
+      warsawMidnightUtcIso(currentQuarter.start),
+      warsawMidnightUtcIso(addDaysYmd(today, 1)),
+      warsawMidnightUtcIso(previousQuarter.start),
+      warsawMidnightUtcIso(addDaysYmd(previousQuarter.end, 1)),
+      warsawMidnightUtcIso(previousQuarter.start),
+      warsawMidnightUtcIso(addDaysYmd(previousQuarter.end, 1)),
+      warsawMidnightUtcIso(previousQuarter.start),
+      warsawMidnightUtcIso(addDaysYmd(previousQuarter.end, 1)),
+      warsawMidnightUtcIso(previousQuarter.start),
+      warsawMidnightUtcIso(addDaysYmd(today, 1)),
+    ).first<DashboardProfitSummary>(),
+
+    env.DB.prepare(`
+      WITH sold AS (
+        SELECT
+          l.delivery_number,
+          COALESCE(SUM(l.quantity), 0) AS sold
+        FROM receipt_lines l
+        JOIN receipts r ON r.receipt_number = l.receipt_number
+        WHERE COALESCE(r.receipt_type, 'SALE') = 'SALE'
+          AND r.cancelled_at IS NULL
+        GROUP BY l.delivery_number
+      )
+      SELECT
+        COALESCE(SUM(CASE WHEN d.delivery_number >= 0 THEN d.quantity ELSE 0 END), 0) AS receivedUnits,
+        COALESCE(SUM(CASE WHEN d.delivery_number >= 0 THEN COALESCE(s.sold, 0) ELSE 0 END), 0) AS soldUnits
+      FROM deliveries d
+      LEFT JOIN sold s ON s.delivery_number = d.delivery_number
+    `).first<DashboardSellThroughSummary>(),
   ])
 
   const receipts = receiptResult.results || []
@@ -1444,6 +1546,24 @@ async function dashboardData(url: URL, env: Env) {
   const previousWeekReceipts = countReceipts(receipts, previousWeekStart, previousWeekEnd)
   const averageReceipt = currentWeekReceipts ? money(currentWeekSales / currentWeekReceipts) : 0
   const previousAverageReceipt = previousWeekReceipts ? money(previousWeekSales / previousWeekReceipts) : 0
+
+  const currentProfit = money(profitResult?.currentProfit)
+  const previousProfit = money(profitResult?.previousProfit)
+  const currentCoveredSales = Number(profitResult?.currentCoveredSales || 0)
+  const currentCoveredUnits = Number(profitResult?.currentCoveredUnits || 0)
+  const currentTotalUnits = Number(profitResult?.currentTotalUnits || 0)
+  const previousCoveredUnits = Number(profitResult?.previousCoveredUnits || 0)
+  const costCoverage = currentTotalUnits > 0
+    ? Math.round((currentCoveredUnits / currentTotalUnits) * 1000) / 10
+    : 0
+  const profitMargin = currentCoveredSales > 0
+    ? Math.round((currentProfit / currentCoveredSales) * 1000) / 10
+    : null
+  const receivedUnits = Number(sellThroughResult?.receivedUnits || 0)
+  const soldDeliveryUnits = Number(sellThroughResult?.soldUnits || 0)
+  const sellThrough = receivedUnits > 0
+    ? Math.round((soldDeliveryUnits / receivedUnits) * 1000) / 10
+    : null
 
   const dailyMap = new Map<string, number>()
   for (let offset = 0; offset < 30; offset += 1) {
@@ -1537,20 +1657,21 @@ async function dashboardData(url: URL, env: Env) {
       todaySalesChange: metricChange(todaySales, yesterdaySales),
       quarterSales,
       quarterSalesChange: metricChange(quarterSales, previousQuarterSales),
-      // Zysk nie korzysta z receipt_lines.cost/cost_total.
-      // Obowiązująca reguła: koszt sztuki = cena całej dostawy / liczba sztuk w dostawie.
-      // Powiązanie sprzedaży z dostawą jest kanonicznie przez receipt_lines.delivery_number. Sam KPI pozostaje wyłączony do wdrożenia uzgodnionej agregacji dashboardu.
-      estimatedProfit: null,
-      estimatedProfitChange: null,
-      profitMargin: null,
-      costCoverage: 0,
+      // Koszt sztuki = cena całej dostawy / liczba sztuk w dostawie.
+      // Zysk bazuje na kanonicznym receipt_lines.delivery_number i nie używa receipt_lines.cost/cost_total.
+      estimatedProfit: currentCoveredUnits > 0 ? currentProfit : null,
+      estimatedProfitChange: currentCoveredUnits > 0 && previousCoveredUnits > 0
+        ? metricChange(currentProfit, previousProfit)
+        : null,
+      profitMargin,
+      costCoverage,
       todayUnits,
       todayUnitsChange: metricChange(todayUnits, yesterdayUnits),
       averageReceipt,
       averageReceiptChange: metricChange(averageReceipt, previousAverageReceipt),
-      sellThrough: null,
+      sellThrough,
       sellThroughChange: null,
-      sellThroughAvailable: false,
+      sellThroughAvailable: receivedUnits > 0,
     },
     sales30: {
       days: daily,
