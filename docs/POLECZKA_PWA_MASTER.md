@@ -709,13 +709,13 @@ Na obecnym etapie:
 
 ## 32. Czytelność interfejsu — powiększona typografia
 
-Od 18.09.2026 w wersji developerskiej obowiązuje testowo powiększona typografia całego PWA.
+Od 18.09.2026 w wersji developerskiej obowiązuje testowo powiększona typografia całego PWA o około 25%.
 
 Założenie:
-- wszystkie jawnie zdefiniowane rozmiary tekstu w interfejsie zostały zwiększone o około 50%,
+- wszystkie jawnie zdefiniowane rozmiary tekstu w interfejsie zostały zwiększone o około 25%,
 - zachowana zostaje dotychczasowa hierarchia nagłówków, opisów, tabel i KPI,
 - nie skalujemy automatycznie całego layoutu, kart ani wykresów,
 - sztywne wartości `line-height` podnosimy razem z tekstem, aby uniknąć ściskania wierszy,
-- po ocenie na realnym ekranie dopuszczamy korektę skali w dół lub w górę.
+- po ocenie wariantu +50% skala została zmniejszona do +25%, ponieważ większa wartość rozjeżdżała układ.
 
 Cel: poprawić czytelność PWA bez konieczności wpatrywania się w drobny tekst.

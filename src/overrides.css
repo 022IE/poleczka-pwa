@@ -62,13 +62,13 @@ body {
 }
 
 .brand-block strong {
-  font-size: 40.5px;
+  font-size: 33.75px;
   line-height: 1;
   margin: 4px 0 6px;
 }
 
 .brand-block > span {
-  font-size: 12px;
+  font-size: 10px;
   line-height: 1.4;
 }
 
@@ -80,12 +80,12 @@ body {
   gap: 10px;
   padding: 8px 11px;
   border-radius: 10px;
-  font-size: 19.5px;
+  font-size: 16.25px;
 }
 
 .sidebar nav a > span {
   width: 20px;
-  font-size: 27px;
+  font-size: 22.5px;
 }
 
 /* Aktywny link ma być widoczny od pierwszego renderu, nie dopiero po kliknięciu. */
@@ -103,21 +103,21 @@ body {
 }
 
 .sidebar-quote > span {
-  font-size: 40.5px;
+  font-size: 33.75px;
 }
 
 .sidebar-quote p {
-  font-size: 19.5px;
+  font-size: 16.25px;
   line-height: 1.35;
   margin: 4px 0;
 }
 
 .sidebar-quote b {
-  font-size: 27px;
+  font-size: 22.5px;
 }
 
 .sidebar-thanks {
-  font-size: 15px;
+  font-size: 12.5px;
   line-height: 1.3;
   padding-top: 4px;
 }
@@ -148,47 +148,47 @@ body {
 }
 
 /* Czytelniejsza typografia bez zmiany układu kart i wykresów. */
-.dashboard-header h1 { font-size: 43.5px; }
-.dashboard-header p { font-size: 24px; }
-.date-block div { font-size: 19.5px; }
-.sync-pill strong { font-size: 19.5px; }
-.sync-pill small { font-size: 16.5px; }
+.dashboard-header h1 { font-size: 36.25px; }
+.dashboard-header p { font-size: 20px; }
+.date-block div { font-size: 16.25px; }
+.sync-pill strong { font-size: 16.25px; }
+.sync-pill small { font-size: 13.75px; }
 
-.limit-intro h2 { font-size: 30px; }
-.limit-intro p { font-size: 22.5px; }
-.limit-main > strong { font-size: 25.5px; }
-.limit-value { font-size: 27px; }
-.limit-value b { font-size: 33px; }
-.limit-left span { font-size: 19.5px; }
-.limit-left > b { font-size: 33px; }
+.limit-intro h2 { font-size: 25px; }
+.limit-intro p { font-size: 18.75px; }
+.limit-main > strong { font-size: 21.25px; }
+.limit-value { font-size: 22.5px; }
+.limit-value b { font-size: 27.5px; }
+.limit-left span { font-size: 16.25px; }
+.limit-left > b { font-size: 27.5px; }
 
-.kpi-copy > span { font-size: 19.5px; }
-.kpi-copy strong { font-size: 31.5px; }
-.kpi-copy b { font-size: 22.5px; }
-.kpi-copy small { font-size: 16.5px; }
+.kpi-copy > span { font-size: 16.25px; }
+.kpi-copy strong { font-size: 26.25px; }
+.kpi-copy b { font-size: 18.75px; }
+.kpi-copy small { font-size: 13.75px; }
 
-.panel-head h2 { font-size: 30px; }
-.panel-head select { font-size: 18px; }
+.panel-head h2 { font-size: 25px; }
+.panel-head select { font-size: 15px; }
 .y-labels,
 .x-labels,
-.week-days { font-size: 15px; }
-.chart-summary span { font-size: 15px; }
-.chart-summary b { font-size: 19.5px; }
-.legend { font-size: 16.5px; }
+.week-days { font-size: 12.5px; }
+.chart-summary span { font-size: 12.5px; }
+.chart-summary b { font-size: 16.25px; }
+.legend { font-size: 13.75px; }
 
 .category-list p,
-.category-list p b { font-size: 16.5px; }
+.category-list p b { font-size: 13.75px; }
 .heat-y,
-.heat-x { font-size: 15px; }
-.heat-legend { font-size: 13.5px; }
+.heat-x { font-size: 12.5px; }
+.heat-legend { font-size: 11.25px; }
 
-.company-mode span { font-size: 16.5px; }
-.company-mode b { font-size: 21px; }
-.company-mode small { font-size: 15px; }
+.company-mode span { font-size: 13.75px; }
+.company-mode b { font-size: 17.5px; }
+.company-mode small { font-size: 12.5px; }
 
-.quick-card b { font-size: 18px; }
-.quick-card small { font-size: 15px; }
-.dashboard-footer { font-size: 15px; }
+.quick-card b { font-size: 15px; }
+.quick-card small { font-size: 12.5px; }
+.dashboard-footer { font-size: 12.5px; }
 
 /* Górny rząd wykresów: środkowa szczelina dokładnie w osi przerwy między 3. i 4. KPI. */
 .charts-row.primary {
@@ -236,7 +236,7 @@ body {
 }
 
 .donut b {
-  font-size: 24px;
+  font-size: 20px;
 }
 
 /* Lista kategorii: wycentrowany blok w wolnej przestrzeni obok wykresu. */
