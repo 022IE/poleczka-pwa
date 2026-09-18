@@ -1527,9 +1527,79 @@ type IntegrationService = {
   detail: string
 }
 
+type TelegramHealthPayload = {
+  ok: boolean
+  configured: boolean
+  service: 'telegram'
+  botUsername: string | null
+  checkedAt: string
+  error?: string
+}
+
+async function telegramBotHealth(env: Env): Promise<TelegramHealthPayload> {
+  const botToken = env.TELEGRAM_BOT_TOKEN?.trim()
+
+  if (!botToken) {
+    return {
+      ok: false,
+      configured: false,
+      service: 'telegram',
+      botUsername: null,
+      checkedAt: nowIso(),
+      error: 'TELEGRAM_BOT_TOKEN is not configured',
+    }
+  }
+
+  try {
+    const response = await fetch(`https://api.telegram.org/bot${botToken}/getMe`, {
+      headers: { 'User-Agent': 'poleczka-pwa-telegram-health' },
+      cf: { cacheTtl: 0, cacheEverything: false },
+    })
+    const payload = await response.json() as {
+      ok?: boolean
+      result?: { username?: string | null }
+      description?: string
+    }
+
+    if (!response.ok || payload.ok !== true) {
+      return {
+        ok: false,
+        configured: true,
+        service: 'telegram',
+        botUsername: null,
+        checkedAt: nowIso(),
+        error: payload.description || `Telegram Bot API HTTP ${response.status}`,
+      }
+    }
+
+    return {
+      ok: true,
+      configured: true,
+      service: 'telegram',
+      botUsername: payload.result?.username || null,
+      checkedAt: nowIso(),
+    }
+  } catch {
+    return {
+      ok: false,
+      configured: true,
+      service: 'telegram',
+      botUsername: null,
+      checkedAt: nowIso(),
+      error: 'Brak odpowiedzi z Telegram Bot API',
+    }
+  }
+}
+
+function telegramHealthResponse(payload: TelegramHealthPayload) {
+  return Response.json(payload, {
+    status: payload.ok ? 200 : 503,
+    headers: { 'Cache-Control': 'no-store' },
+  })
+}
+
 async function telegramIntegrationStatus(env: Env): Promise<IntegrationService> {
   const healthUrl = env.TELEGRAM_HEALTH_URL?.trim()
-  const botToken = env.TELEGRAM_BOT_TOKEN?.trim()
 
   try {
     if (healthUrl) {
@@ -1537,28 +1607,36 @@ async function telegramIntegrationStatus(env: Env): Promise<IntegrationService> 
         headers: { 'User-Agent': 'poleczka-pwa-integration-status' },
         cf: { cacheTtl: 0, cacheEverything: false },
       })
+      const payload = await response.json().catch(() => null) as { ok?: boolean; botUsername?: string | null } | null
+      const healthy = response.ok && payload?.ok !== false
 
-      return response.ok
-        ? { id: 'telegram', label: 'Telegram', state: 'online', detail: 'Bot / Worker odpowiada' }
+      return healthy
+        ? {
+            id: 'telegram',
+            label: 'Telegram',
+            state: 'online',
+            detail: payload?.botUsername ? `Bot @${payload.botUsername} odpowiada` : 'Health check Telegram odpowiada',
+          }
         : { id: 'telegram', label: 'Telegram', state: 'offline', detail: `Health check HTTP ${response.status}` }
     }
-
-    if (botToken) {
-      const response = await fetch(`https://api.telegram.org/bot${botToken}/getMe`, {
-        headers: { 'User-Agent': 'poleczka-pwa-integration-status' },
-        cf: { cacheTtl: 0, cacheEverything: false },
-      })
-      const payload = await response.json() as { ok?: boolean }
-
-      return response.ok && payload.ok
-        ? { id: 'telegram', label: 'Telegram', state: 'online', detail: 'Telegram Bot API odpowiada' }
-        : { id: 'telegram', label: 'Telegram', state: 'offline', detail: 'Telegram Bot API nie potwierdziło bota' }
-    }
   } catch {
-    return { id: 'telegram', label: 'Telegram', state: 'offline', detail: 'Brak odpowiedzi z usługi Telegram' }
+    return { id: 'telegram', label: 'Telegram', state: 'offline', detail: 'Brak odpowiedzi z health checku Telegram' }
   }
 
-  return { id: 'telegram', label: 'Telegram', state: 'unknown', detail: 'Brak skonfigurowanego health checku' }
+  const health = await telegramBotHealth(env)
+
+  if (!health.configured) {
+    return { id: 'telegram', label: 'Telegram', state: 'unknown', detail: 'Brak sekretu TELEGRAM_BOT_TOKEN' }
+  }
+
+  return health.ok
+    ? {
+        id: 'telegram',
+        label: 'Telegram',
+        state: 'online',
+        detail: health.botUsername ? `Bot @${health.botUsername} odpowiada` : 'Telegram Bot API odpowiada',
+      }
+    : { id: 'telegram', label: 'Telegram', state: 'offline', detail: health.error || 'Health check Telegram nieudany' }
 }
 
 async function integrationStatus(env: Env) {
@@ -1715,6 +1793,10 @@ export class PipelineHub {
 export default {
   async fetch(request: Request, env: Env): Promise<Response> {
     const url = new URL(request.url)
+
+    if (url.pathname === '/api/telegram-health') {
+      return telegramHealthResponse(await telegramBotHealth(env))
+    }
 
     if (url.pathname === '/api/integration-status') {
       return integrationStatus(env)
