@@ -401,6 +401,433 @@ function applyEvent(current: PipelineSnapshot, event: PipelineEvent): PipelineSn
   return snapshot
 }
 
+
+type SalesQuery = {
+  from: string | null
+  to: string | null
+  payment: string | null
+  category: string | null
+  item: string | null
+  search: string | null
+}
+
+const SALES_TIME_ZONE = 'Europe/Warsaw'
+
+function salesJson(payload: unknown, status = 200) {
+  return Response.json(payload, {
+    status,
+    headers: { 'Cache-Control': 'no-store' },
+  })
+}
+
+function validYmd(value: string | null) {
+  return Boolean(value && /^\d{4}-\d{2}-\d{2}$/.test(value))
+}
+
+function addDaysYmd(value: string, days: number) {
+  const [year, month, day] = value.split('-').map(Number)
+  const date = new Date(Date.UTC(year, month - 1, day + days))
+  return date.toISOString().slice(0, 10)
+}
+
+function timeZoneOffsetMs(date: Date, timeZone: string) {
+  const parts = new Intl.DateTimeFormat('en-CA', {
+    timeZone,
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+    hourCycle: 'h23',
+  }).formatToParts(date)
+
+  const pick = (type: Intl.DateTimeFormatPartTypes) => Number(parts.find((part) => part.type === type)?.value || 0)
+  const asUtc = Date.UTC(
+    pick('year'),
+    pick('month') - 1,
+    pick('day'),
+    pick('hour'),
+    pick('minute'),
+    pick('second'),
+  )
+  return asUtc - date.getTime()
+}
+
+function warsawMidnightUtcIso(value: string) {
+  const [year, month, day] = value.split('-').map(Number)
+  const localWallTimeAsUtc = Date.UTC(year, month - 1, day, 0, 0, 0)
+  let instant = new Date(localWallTimeAsUtc)
+
+  for (let index = 0; index < 2; index += 1) {
+    const offset = timeZoneOffsetMs(instant, SALES_TIME_ZONE)
+    instant = new Date(localWallTimeAsUtc - offset)
+  }
+
+  return instant.toISOString()
+}
+
+function parseSalesQuery(url: URL): SalesQuery {
+  const value = (name: string) => url.searchParams.get(name)?.trim() || null
+  const from = value('from')
+  const to = value('to')
+
+  return {
+    from: validYmd(from) ? from : null,
+    to: validYmd(to) ? to : null,
+    payment: value('payment'),
+    category: value('category'),
+    item: value('item'),
+    search: value('search'),
+  }
+}
+
+function escapeLike(value: string) {
+  return value.replace(/\\/g, '\\\\').replace(/%/g, '\\%').replace(/_/g, '\\_')
+}
+
+function buildReceiptWhere(filters: SalesQuery) {
+  const clauses = [
+    "COALESCE(r.receipt_type, 'SALE') = 'SALE'",
+    'r.cancelled_at IS NULL',
+  ]
+  const params: Array<string | number> = []
+
+  if (filters.from) {
+    clauses.push('r.receipt_date >= ?')
+    params.push(warsawMidnightUtcIso(filters.from))
+  }
+
+  if (filters.to) {
+    clauses.push('r.receipt_date < ?')
+    params.push(warsawMidnightUtcIso(addDaysYmd(filters.to, 1)))
+  }
+
+  if (filters.payment) {
+    clauses.push(`EXISTS (
+      SELECT 1 FROM receipt_payments pf
+      WHERE pf.receipt_number = r.receipt_number
+        AND COALESCE(NULLIF(pf.payment_type_id, ''), NULLIF(pf.type, ''), pf.name) = ?
+    )`)
+    params.push(filters.payment)
+  }
+
+  if (filters.category) {
+    clauses.push(`EXISTS (
+      SELECT 1
+      FROM receipt_lines lfc
+      LEFT JOIN items ifc ON ifc.item_id = lfc.item_id
+      WHERE lfc.receipt_number = r.receipt_number
+        AND ifc.category_id = ?
+    )`)
+    params.push(filters.category)
+  }
+
+  if (filters.item) {
+    clauses.push(`EXISTS (
+      SELECT 1
+      FROM receipt_lines lfi
+      WHERE lfi.receipt_number = r.receipt_number
+        AND lfi.item_id = ?
+    )`)
+    params.push(filters.item)
+  }
+
+  if (filters.search) {
+    const pattern = `%${escapeLike(filters.search)}%`
+    clauses.push(`(
+      r.receipt_number LIKE ? ESCAPE '\\'
+      OR EXISTS (
+        SELECT 1
+        FROM receipt_lines lfs
+        LEFT JOIN items ifs ON ifs.item_id = lfs.item_id
+        WHERE lfs.receipt_number = r.receipt_number
+          AND (
+            COALESCE(ifs.item_name, lfs.item_name, '') LIKE ? ESCAPE '\\'
+            OR COALESCE(lfs.line_note, '') LIKE ? ESCAPE '\\'
+          )
+      )
+    )`)
+    params.push(pattern, pattern, pattern)
+  }
+
+  return { sql: clauses.join('\n AND '), params }
+}
+
+function buildSummaryWhere(filters: SalesQuery) {
+  const clauses = [
+    "COALESCE(r.receipt_type, 'SALE') = 'SALE'",
+    'r.cancelled_at IS NULL',
+  ]
+  const params: Array<string | number> = []
+
+  if (filters.from) {
+    clauses.push('r.receipt_date >= ?')
+    params.push(warsawMidnightUtcIso(filters.from))
+  }
+
+  if (filters.to) {
+    clauses.push('r.receipt_date < ?')
+    params.push(warsawMidnightUtcIso(addDaysYmd(filters.to, 1)))
+  }
+
+  if (filters.payment) {
+    clauses.push(`EXISTS (
+      SELECT 1 FROM receipt_payments ps
+      WHERE ps.receipt_number = r.receipt_number
+        AND COALESCE(NULLIF(ps.payment_type_id, ''), NULLIF(ps.type, ''), ps.name) = ?
+    )`)
+    params.push(filters.payment)
+  }
+
+  if (filters.category) {
+    clauses.push('i.category_id = ?')
+    params.push(filters.category)
+  }
+
+  if (filters.item) {
+    clauses.push('l.item_id = ?')
+    params.push(filters.item)
+  }
+
+  if (filters.search) {
+    const pattern = `%${escapeLike(filters.search)}%`
+    clauses.push(`(
+      r.receipt_number LIKE ? ESCAPE '\\'
+      OR COALESCE(i.item_name, l.item_name, '') LIKE ? ESCAPE '\\'
+      OR COALESCE(l.line_note, '') LIKE ? ESCAPE '\\'
+    )`)
+    params.push(pattern, pattern, pattern)
+  }
+
+  return { sql: clauses.join('\n AND '), params }
+}
+
+function money(value: unknown) {
+  const number = Number(value || 0)
+  return Math.round((number + Number.EPSILON) * 100) / 100
+}
+
+async function salesCategories(env: Env) {
+  const result = await env.DB.prepare(`
+    SELECT category_id AS id, name
+    FROM categories
+    WHERE deleted_at IS NULL
+      AND TRIM(COALESCE(name, '')) <> ''
+    ORDER BY name COLLATE NOCASE
+  `).all<{ id: string; name: string }>()
+
+  return salesJson({ ok: true, items: result.results || [] })
+}
+
+async function salesItems(url: URL, env: Env) {
+  const category = url.searchParams.get('category')?.trim()
+  const where = category ? 'AND category_id = ?' : ''
+  const statement = env.DB.prepare(`
+    SELECT item_id AS id, item_name AS name, category_id AS categoryId
+    FROM items
+    WHERE deleted_at IS NULL
+      AND TRIM(COALESCE(item_name, '')) <> ''
+      ${where}
+    ORDER BY item_name COLLATE NOCASE
+  `)
+  const result = category
+    ? await statement.bind(category).all<{ id: string; name: string; categoryId: string | null }>()
+    : await statement.all<{ id: string; name: string; categoryId: string | null }>()
+
+  return salesJson({ ok: true, items: result.results || [] })
+}
+
+async function salesPaymentTypes(env: Env) {
+  const result = await env.DB.prepare(`
+    SELECT
+      COALESCE(NULLIF(payment_type_id, ''), NULLIF(type, ''), name) AS id,
+      MAX(name) AS name,
+      MAX(type) AS type
+    FROM receipt_payments
+    WHERE TRIM(COALESCE(name, '')) <> ''
+    GROUP BY COALESCE(NULLIF(payment_type_id, ''), NULLIF(type, ''), name)
+    ORDER BY name COLLATE NOCASE
+  `).all<{ id: string; name: string; type: string | null }>()
+
+  return salesJson({ ok: true, items: result.results || [] })
+}
+
+async function salesSummary(url: URL, env: Env) {
+  const filters = parseSalesQuery(url)
+  const where = buildSummaryWhere(filters)
+  const row = await env.DB.prepare(`
+    SELECT
+      COUNT(DISTINCT r.receipt_number) AS receipts,
+      COALESCE(SUM(l.quantity), 0) AS units,
+      COALESCE(SUM(l.gross_total_money), 0) AS gross,
+      COALESCE(SUM(l.total_discount), 0) AS discount,
+      COALESCE(SUM(l.total_money), 0) AS net
+    FROM receipts r
+    JOIN receipt_lines l ON l.receipt_number = r.receipt_number
+    LEFT JOIN items i ON i.item_id = l.item_id
+    WHERE ${where.sql}
+  `).bind(...where.params).first<{
+    receipts: number
+    units: number
+    gross: number
+    discount: number
+    net: number
+  }>()
+
+  const receipts = Number(row?.receipts || 0)
+  const net = money(row?.net)
+
+  return salesJson({
+    ok: true,
+    receipts,
+    units: Number(row?.units || 0),
+    gross: money(row?.gross),
+    discount: money(row?.discount),
+    net,
+    averageReceipt: receipts ? money(net / receipts) : 0,
+  })
+}
+
+async function salesReceipts(url: URL, env: Env) {
+  const filters = parseSalesQuery(url)
+  const where = buildReceiptWhere(filters)
+  const page = Math.max(1, Number.parseInt(url.searchParams.get('page') || '1', 10) || 1)
+  const requestedPageSize = Number.parseInt(url.searchParams.get('pageSize') || '25', 10) || 25
+  const pageSize = [25, 50, 100].includes(requestedPageSize) ? requestedPageSize : 25
+  const sort = url.searchParams.get('sort') || 'date'
+  const order = url.searchParams.get('order') === 'asc' ? 'ASC' : 'DESC'
+  const sortSql: Record<string, string> = {
+    date: 'r.receipt_date',
+    gross: '(COALESCE(r.total_money, 0) + COALESCE(r.total_discount, 0))',
+    discount: 'COALESCE(r.total_discount, 0)',
+    net: 'COALESCE(r.total_money, 0)',
+    units: 'COALESCE(lt.units, 0)',
+  }
+  const orderBy = sortSql[sort] || sortSql.date
+
+  const countRow = await env.DB.prepare(`
+    SELECT COUNT(*) AS total
+    FROM receipts r
+    WHERE ${where.sql}
+  `).bind(...where.params).first<{ total: number }>()
+
+  const total = Number(countRow?.total || 0)
+  const totalPages = Math.max(1, Math.ceil(total / pageSize))
+  const safePage = Math.min(page, totalPages)
+  const offset = (safePage - 1) * pageSize
+
+  const result = await env.DB.prepare(`
+    WITH line_totals AS (
+      SELECT
+        receipt_number,
+        COUNT(*) AS positions,
+        COALESCE(SUM(quantity), 0) AS units
+      FROM receipt_lines
+      GROUP BY receipt_number
+    )
+    SELECT
+      r.receipt_number AS receiptNumber,
+      r.receipt_date AS date,
+      COALESCE(lt.positions, 0) AS positions,
+      COALESCE(lt.units, 0) AS units,
+      ROUND(COALESCE(r.total_money, 0) + COALESCE(r.total_discount, 0), 2) AS gross,
+      ROUND(COALESCE(r.total_discount, 0), 2) AS discount,
+      ROUND(COALESCE(r.total_money, 0), 2) AS net,
+      COALESCE((
+        SELECT GROUP_CONCAT(pp.name, ' + ')
+        FROM receipt_payments pp
+        WHERE pp.receipt_number = r.receipt_number
+      ), '—') AS payment
+    FROM receipts r
+    LEFT JOIN line_totals lt ON lt.receipt_number = r.receipt_number
+    WHERE ${where.sql}
+    ORDER BY ${orderBy} ${order}, r.receipt_number DESC
+    LIMIT ? OFFSET ?
+  `).bind(...where.params, pageSize, offset).all<{
+    receiptNumber: string
+    date: string
+    positions: number
+    units: number
+    gross: number
+    discount: number
+    net: number
+    payment: string
+  }>()
+
+  return salesJson({
+    ok: true,
+    page: safePage,
+    pageSize,
+    total,
+    totalPages,
+    items: result.results || [],
+  })
+}
+
+async function salesReceiptLines(receiptNumber: string, env: Env) {
+  const receipt = await env.DB.prepare(`
+    SELECT receipt_number
+    FROM receipts
+    WHERE receipt_number = ?
+    LIMIT 1
+  `).bind(receiptNumber).first<{ receipt_number: string }>()
+
+  if (!receipt) return salesJson({ ok: false, error: 'Receipt not found' }, 404)
+
+  const result = await env.DB.prepare(`
+    SELECT
+      l.line_id AS lineId,
+      l.item_id AS itemId,
+      l.variant_id AS variantId,
+      COALESCE(i.item_name, l.item_name, '—') AS itemName,
+      COALESCE(c.name, '—') AS category,
+      COALESCE(l.quantity, 0) AS quantity,
+      COALESCE(l.price, 0) AS price,
+      COALESCE(l.total_discount, 0) AS discount,
+      COALESCE(l.total_money, 0) AS net,
+      CASE
+        WHEN TRIM(COALESCE(l.line_note, '')) = '' THEN '-1'
+        ELSE TRIM(l.line_note)
+      END AS deliveryNo
+    FROM receipt_lines l
+    LEFT JOIN items i ON i.item_id = l.item_id
+    LEFT JOIN categories c ON c.category_id = i.category_id
+    WHERE l.receipt_number = ?
+    ORDER BY l.rowid
+  `).bind(receiptNumber).all<{
+    lineId: string
+    itemId: string | null
+    variantId: string | null
+    itemName: string
+    category: string
+    quantity: number
+    price: number
+    discount: number
+    net: number
+    deliveryNo: string
+  }>()
+
+  return salesJson({ ok: true, items: result.results || [] })
+}
+
+async function handleSalesApi(request: Request, url: URL, env: Env): Promise<Response | null> {
+  if (request.method !== 'GET') return null
+
+  if (url.pathname === '/api/dictionaries/categories') return salesCategories(env)
+  if (url.pathname === '/api/dictionaries/items') return salesItems(url, env)
+  if (url.pathname === '/api/dictionaries/payment-types') return salesPaymentTypes(env)
+  if (url.pathname === '/api/sales/summary') return salesSummary(url, env)
+  if (url.pathname === '/api/sales/receipts') return salesReceipts(url, env)
+
+  const lineMatch = url.pathname.match(/^\/api\/sales\/receipts\/([^/]+)\/lines$/)
+  if (lineMatch) {
+    return salesReceiptLines(decodeURIComponent(lineMatch[1]), env)
+  }
+
+  return null
+}
+
 export class PipelineHub {
   constructor(private ctx: DurableObjectState) {}
 
@@ -464,6 +891,19 @@ export default {
         deployedBranch: BUILD_BRANCH,
         deployedAt: BUILD_TIME,
       }, { headers: { 'Cache-Control': 'no-store' } })
+    }
+
+
+    if (url.pathname.startsWith('/api/sales/') || url.pathname.startsWith('/api/dictionaries/')) {
+      try {
+        const response = await handleSalesApi(request, url, env)
+        if (response) return response
+      } catch (error) {
+        return salesJson({
+          ok: false,
+          error: error instanceof Error ? error.message : 'Sales API failed',
+        }, 500)
+      }
     }
 
     if (url.pathname === '/api/pipeline/ws') {
