@@ -237,7 +237,9 @@ Formularz **Dodaj dostawę** zapisuje:
 
 Na końcu każdego wiersza znajduje się przycisk `•••`.
 
-Menu zawiera:
+Po kliknięciu nie otwieramy pływającego dropdownu. Zgodnie ze wspólnym standardem PWA pod całym wierszem pojawia się poziomy panel akcji, taki sam jak w module SPRZEDAŻ.
+
+Panel zawiera:
 - **Szczegóły** — rozwija dany wiersz i pokazuje agregację sprzedanych artykułów,
 - **Edytuj dostawę** — pozwala zmienić datę, dostawcę, ilość oraz koszt zakupu dostawy,
 - **Usuń dostawę** — usuwa wyłącznie dostawę, która nie jest powiązana z żadną pozycją sprzedaży.
