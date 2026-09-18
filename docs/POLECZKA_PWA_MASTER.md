@@ -821,7 +821,8 @@ Obowiązuje:
 - pole wyszukiwania w tym samym wzorcu co w SPRZEDAŻY,
 - tabela jako osobna karta pod paskiem filtrów,
 - jeżeli tabela ma sensowne kolumny do porządkowania, nagłówki otrzymują kontrolki sortowania `↑ / ↓ / ↕`,
-- elementy rozwijane używają spójnego wzorca `+ / −` oraz, gdy potrzebne, akcji „Rozwiń wszystko / Zwiń wszystko”.
+- elementy rozwijane używają spójnego wzorca `+ / −` oraz, gdy potrzebne, akcji „Rozwiń wszystko / Zwiń wszystko”,
+- menu kontekstowe wiersza uruchamiane przyciskiem `•••` nie używa pływającego dropdownu; pod całym wierszem otwiera się poziomy panel akcji wyrównany do prawej, zgodny ze wzorcem modułu SPRZEDAŻ.
 
 Nowe moduły należy projektować od początku według tego standardu. Odstępstwa powinny wynikać z funkcji danego modułu, a nie z przypadkowo innej typografii lub układu kontrolek.
 
