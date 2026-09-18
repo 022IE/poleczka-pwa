@@ -3,6 +3,8 @@ import { BUILD_BRANCH, BUILD_COMMIT_SHA, BUILD_TIME } from './buildInfo'
 export interface Env {
   DB: D1Database
   PIPELINE_HUB: DurableObjectNamespace
+  TELEGRAM_HEALTH_URL?: string
+  TELEGRAM_BOT_TOKEN?: string
 }
 
 type StageState = 'waiting' | 'running' | 'ready' | 'failed' | 'blocked' | 'unknown'
@@ -828,6 +830,151 @@ async function handleSalesApi(request: Request, url: URL, env: Env): Promise<Res
   return null
 }
 
+type IntegrationState = 'online' | 'warning' | 'offline' | 'unknown'
+
+type IntegrationService = {
+  id: 'api' | 'd1' | 'loyverse' | 'telegram' | 'online'
+  label: string
+  state: IntegrationState
+  detail: string
+}
+
+async function telegramIntegrationStatus(env: Env): Promise<IntegrationService> {
+  const healthUrl = env.TELEGRAM_HEALTH_URL?.trim()
+  const botToken = env.TELEGRAM_BOT_TOKEN?.trim()
+
+  try {
+    if (healthUrl) {
+      const response = await fetch(healthUrl, {
+        headers: { 'User-Agent': 'poleczka-pwa-integration-status' },
+        cf: { cacheTtl: 0, cacheEverything: false },
+      })
+
+      return response.ok
+        ? { id: 'telegram', label: 'Telegram', state: 'online', detail: 'Bot / Worker odpowiada' }
+        : { id: 'telegram', label: 'Telegram', state: 'offline', detail: `Health check HTTP ${response.status}` }
+    }
+
+    if (botToken) {
+      const response = await fetch(`https://api.telegram.org/bot${botToken}/getMe`, {
+        headers: { 'User-Agent': 'poleczka-pwa-integration-status' },
+        cf: { cacheTtl: 0, cacheEverything: false },
+      })
+      const payload = await response.json() as { ok?: boolean }
+
+      return response.ok && payload.ok
+        ? { id: 'telegram', label: 'Telegram', state: 'online', detail: 'Telegram Bot API odpowiada' }
+        : { id: 'telegram', label: 'Telegram', state: 'offline', detail: 'Telegram Bot API nie potwierdziło bota' }
+    }
+  } catch {
+    return { id: 'telegram', label: 'Telegram', state: 'offline', detail: 'Brak odpowiedzi z usługi Telegram' }
+  }
+
+  return { id: 'telegram', label: 'Telegram', state: 'unknown', detail: 'Brak skonfigurowanego health checku' }
+}
+
+async function integrationStatus(env: Env) {
+  const services: IntegrationService[] = [
+    { id: 'api', label: 'API', state: 'online', detail: 'Worker PWA odpowiada' },
+  ]
+
+  let dbReachable = false
+
+  try {
+    const probe = await env.DB.prepare('SELECT 1 AS ok').first<{ ok: number }>()
+    dbReachable = Number(probe?.ok || 0) === 1
+  } catch {
+    dbReachable = false
+  }
+
+  services.push({
+    id: 'd1',
+    label: 'D1',
+    state: dbReachable ? 'online' : 'offline',
+    detail: dbReachable ? 'Baza odpowiada na zapytania' : 'Brak odpowiedzi z D1',
+  })
+
+  if (dbReachable) {
+    try {
+      const [latest, pending] = await Promise.all([
+        env.DB.prepare(`
+          SELECT received_at AS receivedAt, processed_at AS processedAt, last_error AS lastError
+          FROM webhook_events
+          WHERE event_type = 'receipts.update'
+          ORDER BY received_at DESC
+          LIMIT 1
+        `).first<{ receivedAt: string | null; processedAt: string | null; lastError: string | null }>(),
+        env.DB.prepare(`
+          SELECT COUNT(*) AS count
+          FROM webhook_events
+          WHERE processed_at IS NULL
+        `).first<{ count: number }>(),
+      ])
+
+      const pendingCount = Number(pending?.count || 0)
+      const hasError = Boolean(latest?.lastError)
+
+      services.push({
+        id: 'loyverse',
+        label: 'Loyverse',
+        state: hasError ? 'offline' : pendingCount > 0 ? 'warning' : latest?.processedAt ? 'online' : 'unknown',
+        detail: hasError
+          ? `Ostatni błąd: ${latest?.lastError}`
+          : pendingCount > 0
+            ? `${pendingCount} zdarzeń oczekuje na przetworzenie`
+            : latest?.processedAt
+              ? `Ostatnie zdarzenie przetworzone: ${latest.processedAt}`
+              : 'Brak zdarzeń webhooka do oceny',
+      })
+    } catch {
+      services.push({ id: 'loyverse', label: 'Loyverse', state: 'unknown', detail: 'Nie udało się odczytać historii webhooka' })
+    }
+  } else {
+    services.push({ id: 'loyverse', label: 'Loyverse', state: 'unknown', detail: 'Status niedostępny bez połączenia z D1' })
+  }
+
+  services.push(await telegramIntegrationStatus(env))
+
+  try {
+    const pipeline = await getStoredSnapshot(env)
+    services.push({
+      id: 'online',
+      label: 'PWA',
+      state: pipeline?.latestOnline
+        ? 'online'
+        : pipeline?.state === 'failed'
+          ? 'offline'
+          : pipeline?.state === 'building'
+            ? 'warning'
+            : pipeline?.deployedSha
+              ? 'warning'
+              : 'unknown',
+      detail: pipeline?.latestOnline
+        ? 'Najnowsza wersja jest online'
+        : pipeline?.state === 'failed'
+          ? 'Ostatnia publikacja zakończyła się błędem'
+          : pipeline?.state === 'building'
+            ? 'Trwa publikacja nowej wersji'
+            : pipeline?.deployedSha
+              ? 'Online działa poprzednia wersja'
+              : 'Brak potwierdzonego stanu publikacji',
+    })
+  } catch {
+    services.push({ id: 'online', label: 'PWA', state: 'unknown', detail: 'Nie udało się odczytać stanu publikacji' })
+  }
+
+  const hasOffline = services.some((service) => service.state === 'offline')
+  const hasWarning = services.some((service) => service.state === 'warning' || service.state === 'unknown')
+  const state: IntegrationState = hasOffline ? 'offline' : hasWarning ? 'warning' : 'online'
+
+  return Response.json({
+    ok: true,
+    state,
+    checkedAt: nowIso(),
+    services,
+  }, { headers: { 'Cache-Control': 'no-store' } })
+}
+
 export class PipelineHub {
   constructor(private ctx: DurableObjectState) {}
 
@@ -880,6 +1027,10 @@ export class PipelineHub {
 export default {
   async fetch(request: Request, env: Env): Promise<Response> {
     const url = new URL(request.url)
+
+    if (url.pathname === '/api/integration-status') {
+      return integrationStatus(env)
+    }
 
     if (url.pathname === '/api/health') {
       let dbReachable = false
