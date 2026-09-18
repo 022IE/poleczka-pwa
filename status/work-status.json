@@ -1,6 +1,6 @@
 {
-  "state": "awaiting_publish",
-  "label": "Oczekiwanie na publikację",
-  "task": "DOSTAWY — koszt zakupu, menu wiersza, edycja, usuwanie i szczegóły zakończone",
-  "updatedAt": "2026-09-18T12:23:23.594Z"
+  "state": "editing",
+  "label": "Wprowadzanie poprawek",
+  "task": "Konfiguracja repo — ujednolicenie nazwy aktywnego Workera Cloudflare poleczka-pwa",
+  "updatedAt": "2026-09-18T12:34:30Z"
 }
