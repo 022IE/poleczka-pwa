@@ -2,11 +2,6 @@ name: D1 Import 2026-09-09
 # retry with line_note + delivery_number compatibility
 
 on:
-  push:
-    branches:
-      - dev
-    paths:
-      - '.github/workflows/d1-import-2026-09-09.yml'
   workflow_dispatch:
 
 permissions:
