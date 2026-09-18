@@ -882,10 +882,20 @@ export default {
     const url = new URL(request.url)
 
     if (url.pathname === '/api/health') {
+      let dbReachable = false
+
+      try {
+        const probe = await env.DB.prepare('SELECT 1 AS ok').first<{ ok: number }>()
+        dbReachable = Number(probe?.ok || 0) === 1
+      } catch {
+        dbReachable = false
+      }
+
       return Response.json({
         ok: true,
         service: 'poleczka-pwa',
         database: Boolean(env.DB),
+        dbReachable,
         pipeline: Boolean(env.PIPELINE_HUB),
         deployedSha: BUILD_COMMIT_SHA,
         deployedBranch: BUILD_BRANCH,
