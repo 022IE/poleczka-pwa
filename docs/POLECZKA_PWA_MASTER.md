@@ -435,7 +435,18 @@ Moduł **Synchronizacja** dotyczy przepływu danych ze źródeł zewnętrznych d
 - statusu ostatnich operacji,
 - komunikatów o błędach i zdarzeniach oczekujących.
 
-Kafelek w prawym górnym rogu nie oznacza synchronizacji lokalnej. Pokazuje rzeczywisty status połączenia PWA z D1 (**D1 online / D1 offline**) oraz czas ostatniego sprawdzenia.
+Kafelek w prawym górnym rogu nie oznacza synchronizacji lokalnej. Nosi nazwę **Status integracji** i pokazuje zbiorczy stan mechanizmów online oraz czas ostatniego sprawdzenia.
+
+Docelowo / w miarę dostępności monitoruje:
+- Worker API PWA,
+- połączenie z D1,
+- przetwarzanie webhooków Loyverse,
+- Telegram / bot powiadomień,
+- stan publikacji PWA.
+
+Każda usługa ma własny stan. Brak konfiguracji monitoringu konkretnej usługi ma być pokazany jako stan nieznany / wymagający konfiguracji, a nie jako fałszywe „online”.
+
+Telegram może być sprawdzany przez skonfigurowany endpoint health (`TELEGRAM_HEALTH_URL`) albo serwerowy sekret bota (`TELEGRAM_BOT_TOKEN`). Sekrety nie trafiają do frontendu.
 
 Należy zachować:
 - webhooki,
