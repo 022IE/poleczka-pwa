@@ -45,3 +45,10 @@ jobs:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
         run: |
           npx --yes wrangler@latest d1 execute poleczka-dev --remote --command "SELECT TRIM(l.line_note) AS delivery,l.item_name,l.sku,COUNT(*) AS uses,ROUND(MIN(COALESCE(l.total_money,l.price)),2) AS min_price,ROUND(MAX(COALESCE(l.total_money,l.price)),2) AS max_price,ROUND(AVG(COALESCE(l.total_money,l.price)),2) AS avg_price FROM receipt_lines l WHERE TRIM(l.line_note) IN ('0','1','2','3','5') GROUP BY delivery,l.item_name,l.sku ORDER BY delivery,uses DESC,l.item_name;"
+
+      - name: Delivery price grid
+        env:
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+        run: |
+          npx --yes wrangler@latest d1 execute poleczka-dev --remote --command "SELECT TRIM(l.line_note) AS delivery,ROUND(COALESCE(l.total_money,l.price),2) AS sale_price,l.item_name,l.sku,COUNT(*) AS uses FROM receipt_lines l WHERE TRIM(l.line_note) IN ('1','2','3','5') AND COALESCE(l.total_money,l.price) BETWEEN 3 AND 100 GROUP BY delivery,sale_price,l.item_name,l.sku ORDER BY delivery,sale_price,uses DESC,l.item_name;"
