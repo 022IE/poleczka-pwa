@@ -206,6 +206,7 @@ Tabela główna pokazuje:
 - Lp.,
 - datę,
 - dostawcę,
+- koszt zakupu dostawy,
 - ilość,
 - cenę/szt.,
 - sprzedane,
@@ -228,3 +229,22 @@ Formularz **Dodaj dostawę** zapisuje:
 
 `delivery_number` dla nowej zwykłej dostawy jest nadawany automatycznie jako kolejny dodatni numer.
 
+
+
+---
+
+## 11. Menu wiersza dostawy
+
+Na końcu każdego wiersza znajduje się przycisk `•••`.
+
+Menu zawiera:
+- **Szczegóły** — rozwija dany wiersz i pokazuje agregację sprzedanych artykułów,
+- **Edytuj dostawę** — pozwala zmienić datę, dostawcę, ilość oraz koszt zakupu dostawy,
+- **Usuń dostawę** — usuwa wyłącznie dostawę, która nie jest powiązana z żadną pozycją sprzedaży.
+
+Zabezpieczenia:
+- dostawy techniczne `-1` i `0` nie mogą być usuwane,
+- dostawa z istniejącym powiązaniem w `receipt_lines.delivery_number` nie może zostać usunięta,
+- usunięcie zwykłej, nieużywanej dostawy wymaga potwierdzenia użytkownika.
+
+Kolumna **Koszt zakupu** pokazuje `deliveries.total_cost` i znajduje się bezpośrednio przed kolumną **Ilość**.
