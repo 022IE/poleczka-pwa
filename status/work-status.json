@@ -1,6 +1,6 @@
 {
   "state": "editing",
   "label": "Wprowadzanie poprawek",
-  "task": "DOSTAWY — tabela deliveries w D1, migracja line_note → delivery_number i aktualizacja zależnych mechanizmów",
-  "updatedAt": "2026-09-18T10:20:18.404Z"
+  "task": "DOSTAWY — tabela deliveries w D1, migracja line_note → delivery_number i aktualizacja zależnych mechanizmów | równolegle: D1 — rekonstrukcja sprzedaży 09.09.2026",
+  "updatedAt": "2026-09-18T10:27:00Z"
 }
