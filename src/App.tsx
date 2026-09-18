@@ -354,7 +354,7 @@ function Dashboard() {
 
       <section className="charts-row primary">
         <article className="panel sales-panel">
-          <div className="panel-head"><h2><span>▥</span> Sprzedaż w czasie</h2><select value="30" readOnly><option value="30">Ostatnie 30 dni</option></select></div>
+          <div className="panel-head"><h2><span>▥</span> Sprzedaż w czasie</h2><select defaultValue="30"><option value="30">Ostatnie 30 dni</option></select></div>
           <div className="bar-chart">
             <div className="y-labels">{yLabels.map((value, index) => <span key={index}>{numberFormatter.format(value)}</span>)}</div>
             <div className="bars">
@@ -410,7 +410,7 @@ function Dashboard() {
 
       <section className="charts-row secondary">
         <article className="panel category-panel">
-          <div className="panel-head"><h2><span>◔</span> Sprzedaż wg kategorii</h2><select value="quarter" readOnly><option value="quarter">{dashboardData?.quarter.label || 'Bieżący kwartał'}</option></select></div>
+          <div className="panel-head"><h2><span>◔</span> Sprzedaż wg kategorii</h2><select defaultValue="quarter"><option value="quarter">{dashboardData?.quarter.label || 'Bieżący kwartał'}</option></select></div>
           <div className="category-body">
             <div className="donut" style={{ background: categoryGradient(categoryItems) }}><div><b>{formatMoney(dashboardData?.categories.total)}</b><span>łącznie</span></div></div>
             <div className="category-list">
