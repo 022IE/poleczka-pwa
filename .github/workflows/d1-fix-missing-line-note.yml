@@ -1,11 +1,6 @@
 name: D1 Fix Missing line_note
 
 on:
-  push:
-    branches:
-      - dev
-    paths:
-      - '.github/workflows/d1-fix-missing-line-note.yml'
   workflow_dispatch:
 
 permissions:
