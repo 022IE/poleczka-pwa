@@ -362,6 +362,17 @@ function SalesPage() {
 
   const sortArrow = (column: string) => sort === column ? (order === 'desc' ? '↓' : '↑') : '↕'
 
+  const fetchReceiptLines = async (receiptNumber: string) => {
+    try {
+      const response = await fetch(`/api/sales/receipts/${encodeURIComponent(receiptNumber)}/lines`)
+      if (!response.ok) throw new Error('Lines failed')
+      const payload = await response.json() as LinesResponse
+      return payload.items || []
+    } catch {
+      return []
+    }
+  }
+
   const toggleReceipt = async (receiptNumber: string) => {
     if (expanded.has(receiptNumber)) {
       setExpanded((current) => {
@@ -376,20 +387,61 @@ function SalesPage() {
     if (linesByReceipt[receiptNumber] || lineLoading.has(receiptNumber)) return
 
     setLineLoading((current) => new Set(current).add(receiptNumber))
-    try {
-      const response = await fetch(`/api/sales/receipts/${encodeURIComponent(receiptNumber)}/lines`)
-      if (!response.ok) throw new Error('Lines failed')
-      const payload = await response.json() as LinesResponse
-      setLinesByReceipt((current) => ({ ...current, [receiptNumber]: payload.items || [] }))
-    } catch {
-      setLinesByReceipt((current) => ({ ...current, [receiptNumber]: [] }))
-    } finally {
-      setLineLoading((current) => {
+    const lines = await fetchReceiptLines(receiptNumber)
+    setLinesByReceipt((current) => ({ ...current, [receiptNumber]: lines }))
+    setLineLoading((current) => {
+      const next = new Set(current)
+      next.delete(receiptNumber)
+      return next
+    })
+  }
+
+  const visibleReceiptNumbers = receipts.map((receipt) => receipt.receiptNumber)
+  const allVisibleExpanded = visibleReceiptNumbers.length > 0
+    && visibleReceiptNumbers.every((receiptNumber) => expanded.has(receiptNumber))
+
+  const toggleAllReceipts = async () => {
+    if (!visibleReceiptNumbers.length) return
+
+    if (allVisibleExpanded) {
+      setExpanded((current) => {
         const next = new Set(current)
-        next.delete(receiptNumber)
+        visibleReceiptNumbers.forEach((receiptNumber) => next.delete(receiptNumber))
         return next
       })
+      return
     }
+
+    setExpanded((current) => {
+      const next = new Set(current)
+      visibleReceiptNumbers.forEach((receiptNumber) => next.add(receiptNumber))
+      return next
+    })
+
+    const missing = visibleReceiptNumbers.filter(
+      (receiptNumber) => !linesByReceipt[receiptNumber] && !lineLoading.has(receiptNumber),
+    )
+    if (!missing.length) return
+
+    setLineLoading((current) => {
+      const next = new Set(current)
+      missing.forEach((receiptNumber) => next.add(receiptNumber))
+      return next
+    })
+
+    const loaded = await Promise.all(
+      missing.map(async (receiptNumber) => [receiptNumber, await fetchReceiptLines(receiptNumber)] as const),
+    )
+
+    setLinesByReceipt((current) => ({
+      ...current,
+      ...Object.fromEntries(loaded),
+    }))
+    setLineLoading((current) => {
+      const next = new Set(current)
+      missing.forEach((receiptNumber) => next.delete(receiptNumber))
+      return next
+    })
   }
 
   const pageNumbers = useMemo(() => {
@@ -499,7 +551,17 @@ function SalesPage() {
         <div className="sales-table-scroll">
           <div className="sales-table" role="table" aria-label="Paragony">
             <div className="sales-table-head sales-table-grid" role="row">
-              <span />
+              <button
+                type="button"
+                className="sales-expand-all"
+                disabled={loading || receipts.length === 0}
+                aria-label={allVisibleExpanded ? 'Zwiń wszystkie paragony na stronie' : 'Rozwiń wszystkie paragony na stronie'}
+                title={allVisibleExpanded ? 'Zwiń wszystkie' : 'Rozwiń wszystkie'}
+                aria-pressed={allVisibleExpanded}
+                onClick={() => void toggleAllReceipts()}
+              >
+                {allVisibleExpanded ? '⊟' : '⊞'}
+              </button>
               <span>Paragon</span>
               <button type="button" className="sales-sort" onClick={() => toggleSort('date')}>Data <b>{sortArrow('date')}</b></button>
               <span>Pozycji</span>
