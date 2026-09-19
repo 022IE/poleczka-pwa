@@ -26,6 +26,7 @@ type Delivery = {
   sales: number
   profit: number
   active: boolean
+  salesDocumentsCount: number
 }
 
 type DeliveryItem = {
@@ -850,7 +851,9 @@ export default function DeliveriesPage() {
               </div>
 
               <div className="delivery-delete-warning">
-                Dostawę można usunąć tylko wtedy, gdy nie jest powiązana z żadną pozycją sprzedaży.
+                {deleteCandidate.salesDocumentsCount > 0
+                  ? 'Dla tej dostawy występują już dokumenty sprzedaży. Dostawy nie można usunąć.'
+                  : 'Ta dostawa nie ma jeszcze dokumentów sprzedaży i może zostać usunięta.'}
               </div>
 
               {deleteError && <div className="delivery-form-error">{deleteError}</div>}
@@ -870,7 +873,7 @@ export default function DeliveriesPage() {
                 <button
                   type="button"
                   className="danger-primary"
-                  disabled={deleteSaving}
+                  disabled={deleteSaving || deleteCandidate.salesDocumentsCount > 0}
                   onClick={() => void confirmDeleteDelivery()}
                 >
                   {deleteSaving ? 'Usuwanie…' : 'Usuń dostawę'}
