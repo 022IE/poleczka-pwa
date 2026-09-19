@@ -364,7 +364,10 @@ function Dashboard() {
                   key={day.date}
                   style={{ height: `${maxSalesDay > 0 ? Math.max(day.value > 0 ? 3 : 0, (day.value / maxSalesDay) * 100) : 0}%` }}
                   className={day.date === dashboardData?.sales30.bestDay.date ? 'active' : ''}
-                  title={`${formatChartDay(day.date)}: ${formatMoney(day.value)}`}
+                  data-tooltip={`${formatChartDay(day.date)} · ${formatMoney(day.value)}`}
+                  aria-label={`${formatChartDay(day.date)}: ${formatMoney(day.value)}`}
+                  role="img"
+                  tabIndex={0}
                 />
               ))}
             </div>
