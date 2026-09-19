@@ -900,7 +900,7 @@ Obowiązuje:
 - na desktopie boczne menu jest lekko poszerzone, a moduły wykorzystują szerzej dostępną przestrzeń roboczą zamiast pozostawiać duże boczne marginesy; wspólny kontener danych ma elastycznie rozciągać KPI, filtry, wykresy i tabele,
 - dla tabletów w poziomie obowiązuje osobny układ pośredni: węższy sidebar niż na dużym desktopie, zwarty nagłówek, 3-kolumnowe KPI zamiast ściskania 6 kart w jednym rzędzie, dwukolumnowe filtry i elastyczne przechodzenie wykresów do mniejszej liczby kolumn; widok mobilny nie powinien włączać się przedwcześnie,
 - ten sam układ nagłówka strony,
-- blok daty / kalendarza, Status integracji i avatar wyrównane do prawej krawędzi nagłówka,
+- blok daty / kalendarza, Status integracji i avatar wyrównane do prawej krawędzi nagłówka; blok daty pokazuje także duży, działający zegar 24-godzinny aktualizowany co sekundę w strefie `Europe/Warsaw`,
 - KPI w tej samej skali wizualnej,
 - osobny pasek filtrów pod KPI, zamiast wciskania filtrów do nagłówka tabeli,
 - pola filtrów o tych samych wysokościach, promieniach, ikonach i odstępach,
