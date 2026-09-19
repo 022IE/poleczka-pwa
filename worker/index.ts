@@ -1260,11 +1260,25 @@ async function updateDeliveryActive(request: Request, deliveryNumber: number, en
   })
 }
 
+
+async function getNextDeliveryNumber(env: Env) {
+  const row = await env.DB.prepare(`
+    SELECT COALESCE(MAX(CASE WHEN delivery_number > 0 THEN delivery_number END), 0) + 1 AS nextDeliveryNumber
+    FROM deliveries
+  `).first<{ nextDeliveryNumber: number }>()
+
+  return salesJson({
+    ok: true,
+    nextDeliveryNumber: Number(row?.nextDeliveryNumber || 1),
+  })
+}
+
 async function handleDeliveriesApi(request: Request, url: URL, env: Env): Promise<Response | null> {
   if (url.pathname === '/api/deliveries' && request.method === 'GET') return deliveryRows(url, env)
   if (url.pathname === '/api/deliveries' && request.method === 'POST') return createDelivery(request, env)
   if (url.pathname === '/api/deliveries/summary' && request.method === 'GET') return deliverySummary(url, env)
   if (url.pathname === '/api/deliveries/suppliers' && request.method === 'GET') return deliverySuppliers(env)
+  if (url.pathname === '/api/deliveries/next-number' && request.method === 'GET') return getNextDeliveryNumber(env)
 
   const itemMatch = url.pathname.match(/^\/api\/deliveries\/(-?\d+)\/items$/)
   if (itemMatch && request.method === 'GET') return deliveryItems(Number(itemMatch[1]), env)

@@ -138,6 +138,7 @@ export default function DeliveriesPage() {
   const [newQuantity, setNewQuantity] = useState('')
   const [newCost, setNewCost] = useState('')
   const [newActive, setNewActive] = useState(true)
+  const [nextDeliveryNumber, setNextDeliveryNumber] = useState<number | null>(null)
 
   const [rowMenu, setRowMenu] = useState<number | null>(null)
   const [editDelivery, setEditDelivery] = useState<Delivery | null>(null)
@@ -152,6 +153,22 @@ export default function DeliveriesPage() {
     const timer = window.setTimeout(() => setDebouncedQuery(query.trim()), 250)
     return () => window.clearTimeout(timer)
   }, [query])
+
+  useEffect(() => {
+    if (!addOpen) return
+    const controller = new AbortController()
+    setNextDeliveryNumber(null)
+    fetch('/api/deliveries/next-number', { signal: controller.signal, cache: 'no-store' })
+      .then(async (response) => {
+        if (!response.ok) throw new Error('Next delivery number failed')
+        const payload = await response.json() as { ok: boolean; nextDeliveryNumber: number }
+        setNextDeliveryNumber(payload.nextDeliveryNumber)
+      })
+      .catch((loadError) => {
+        if ((loadError as Error).name !== 'AbortError') setNextDeliveryNumber(null)
+      })
+    return () => controller.abort()
+  }, [addOpen])
 
   useEffect(() => {
     const controller = new AbortController()
@@ -259,10 +276,6 @@ export default function DeliveriesPage() {
       return (Number(leftValue) - Number(rightValue)) * direction
     })
   }, [deliveries, sort, order])
-
-  const nextDeliveryNumber = useMemo(() => (
-    Math.max(0, ...deliveries.map((delivery) => delivery.deliveryNumber).filter((number) => number > 0)) + 1
-  ), [deliveries])
 
   const newUnitCost = useMemo(() => {
     const quantity = Number(newQuantity.replace(',', '.'))
@@ -736,7 +749,7 @@ export default function DeliveriesPage() {
               <div className="delivery-form-status-row">
                 <div className="delivery-form-number">
                   <span>Lp. dostawy</span>
-                  <strong>{nextDeliveryNumber}</strong>
+                  <strong>{nextDeliveryNumber ?? '…'}</strong>
                   <small>Nadawany automatycznie</small>
                 </div>
                 <label className="delivery-active-toggle">
