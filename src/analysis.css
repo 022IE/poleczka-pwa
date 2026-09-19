@@ -29,6 +29,8 @@
 .leon-compact-decision.is-defer{color:#8c6428;background:#f5ead6}
 .leon-compact-decision.is-reject{color:#8b414a;background:#f7e5e5}
 .leon-compact-decision.is-reject::after{content:'';position:absolute;width:17px;height:2px;border-radius:999px;background:currentColor;transform:rotate(-42deg)}
+.leon-recommendations-compact .leon-advice{position:relative;padding-bottom:32px}
+.leon-recommendations-compact .leon-compact-decision{position:absolute;right:10px;bottom:9px}
 .leon-advice p{margin:5px 0 0;color:#6a706b;font-size:12px;line-height:1.4}
 .leon-recommendations-state{padding:16px;border-radius:11px;background:#f6f3ed;color:#6e716d;font-size:13px}
 .leon-recommendations-state.is-error{background:#fff2f2;color:#8b414a}
