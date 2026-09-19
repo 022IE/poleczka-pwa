@@ -1,9 +1,9 @@
 # PÓŁECZKA IWONKI — MODUŁ ANALIZY
 
 **Moduł:** 04 — ANALIZY  
-**Status:** specyfikacja bieżąca v0.1  
+**Status:** specyfikacja bieżąca v0.2  
 **Dokument nadrzędny:** `POLECZKA_PWA_MASTER.md`  
-**Aktualizacja:** 16.09.2026
+**Aktualizacja:** 19.09.2026
 
 ---
 
@@ -146,3 +146,58 @@ Zachowanie:
 - rozwiązanie nie zmienia wysokości ani wizualnej skali słupków.
 
 Celem jest możliwość szybkiego odczytania dokładnej wartości bez analizowania osi Y.
+
+
+---
+
+# 11. „Leon mówi…” — rekomendacje
+
+## Widok na stronie głównej
+
+Dashboard pokazuje szeroki kafel **„Leon mówi…”** pomiędzy górnym panelem aplikacji a panelami Vinted / DNR.
+
+Kafel:
+- pokazuje maksymalnie 3 krótkie rady,
+- jest szybkim rzutem oka, a nie pełną analizą,
+- po kliknięciu prowadzi do `/analizy`.
+
+## Widok w module ANALIZY
+
+Każda rekomendacja pokazuje:
+- tytuł / decyzję,
+- krótkie podsumowanie,
+- **Dlaczego** — dane, które wywołały sugestię,
+- **Co robić** — konkretną akcję.
+
+## Źródło i logika v0.2
+
+Endpoint: `/api/analysis/recommendations`.
+
+Źródło danych: D1.
+
+Pierwszy silnik jest celowo deterministyczny. Korzysta m.in. z:
+- sprzedaży z ostatnich 7 dni vs poprzednich 7 dni,
+- dynamiki kategorii,
+- wieku dostawy,
+- liczby sztuk pozostałych,
+- % zbytu,
+- przyspieszenia / zatrzymania rotacji dostawy.
+
+Przykładowe typy rad:
+- „Sprawdź dostawę …” — dostawa stoi mimo pozostałego towaru,
+- „Nie przeceniaj dostawy …” — rotacja przyspiesza,
+- „Wyeksponuj: …” — rosnąca kategoria,
+- „Odśwież ekspozycję” — wyraźny spadek sprzedaży tydzień do tygodnia.
+
+Alerty techniczne i problemy z danymi nie są mieszane z rekomendacjami biznesowymi.
+
+## Kierunek dalszego rozwoju
+
+Do dołożenia:
+- zapis decyzji `Zrób / Odłóż / Odrzuć`,
+- historia skutków decyzji,
+- kandydaci do promocji z symulacją,
+- radar anomalii,
+- Pareto 80/20,
+- analiza przedziałów cenowych per typ artykułu,
+- podpowiadacz wyceny nowych rzeczy.

@@ -1,0 +1,57 @@
+.leon-recommendations{
+  border:1px solid #e7dfd2;
+  border-radius:16px;
+  background:linear-gradient(120deg,rgba(255,255,255,.96),rgba(247,242,232,.92));
+  box-shadow:0 6px 20px rgba(71,60,45,.07);
+  color:#2f342f;
+}
+.leon-recommendations-compact{display:block;margin:0 0 13px;padding:13px 15px;transition:transform .15s ease,box-shadow .15s ease,border-color .15s ease}
+.leon-recommendations-compact:hover{transform:translateY(-1px);box-shadow:0 9px 24px rgba(71,60,45,.1);border-color:#d9cbb6}
+.leon-recommendations-head{display:flex;align-items:end;justify-content:space-between;gap:18px;margin-bottom:10px}
+.leon-recommendations-head>div{display:grid;gap:1px}
+.leon-recommendations-head>div>span{font-size:10px;font-weight:800;letter-spacing:.12em;color:#9a7431}
+.leon-recommendations-head h2{margin:0;font-family:Georgia,serif;font-size:20px;font-weight:500;color:#3f403d}
+.leon-recommendations-head>strong{font-size:11px;color:#7d673f;white-space:nowrap}
+.leon-recommendations-head>small{font-size:11px;color:#787b76}
+.leon-advice-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px}
+.leon-advice{min-width:0;border:1px solid rgba(226,220,210,.9);border-radius:12px;background:rgba(255,255,255,.72);padding:10px 11px;display:flex;gap:10px}
+.leon-advice-number{width:27px;height:27px;flex:0 0 27px;border-radius:50%;display:grid;place-items:center;background:#eee7da;color:#87682f;font-family:Georgia,serif;font-weight:700}
+.leon-advice-positive .leon-advice-number{background:#e5eee3;color:#467055}
+.leon-advice-warning .leon-advice-number{background:#f4e9d7;color:#966e2f}
+.leon-advice-copy{min-width:0;flex:1}
+.leon-advice-title-row{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.leon-advice-title-row b{font-size:12.5px;line-height:1.25}
+.leon-advice-title-row em{flex:0 0 auto;border-radius:999px;background:#f3efe7;padding:3px 6px;color:#897251;font-size:8px;font-style:normal;font-weight:800;letter-spacing:.06em}
+.leon-advice p{margin:4px 0 0;color:#6a706b;font-size:10.5px;line-height:1.35}
+.leon-recommendations-state{padding:16px;border-radius:11px;background:#f6f3ed;color:#6e716d;font-size:12px}
+.leon-recommendations-state.is-error{background:#fff2f2;color:#8b414a}
+.analysis-wrap{padding:148px 18px 24px;max-width:1500px;margin:0 auto}
+.analysis-wrap>.leon-recommendations{margin-top:0}
+.leon-recommendations-full{padding:18px}
+.leon-recommendations-full .leon-recommendations-head{margin-bottom:14px}
+.leon-recommendations-full .leon-recommendations-head h2{font-size:26px}
+.leon-advice-list{display:grid;gap:11px}
+.leon-recommendations-full .leon-advice{padding:15px 16px;gap:13px;background:#fff}
+.leon-recommendations-full .leon-advice-number{width:34px;height:34px;flex-basis:34px;font-size:15px}
+.leon-recommendations-full .leon-advice-title-row b{font-size:16px}
+.leon-recommendations-full .leon-advice-title-row em{font-size:9px;padding:4px 8px}
+.leon-recommendations-full .leon-advice p{font-size:13px;margin-top:5px}
+.leon-advice-detail,.leon-advice-action{display:grid;grid-template-columns:76px 1fr;gap:8px;margin-top:10px;padding-top:9px;border-top:1px solid #eeeae3}
+.leon-advice-detail span,.leon-advice-action span{font-size:10px;font-weight:800;letter-spacing:.06em;color:#9a7431;text-transform:uppercase}
+.leon-advice-detail strong,.leon-advice-action strong{font-size:12px;line-height:1.45;font-weight:600;color:#555c56}
+.analysis-roadmap{margin-top:12px;border:1px solid #ebe8e2;border-radius:16px;background:rgba(255,255,255,.78);padding:16px 18px}
+.analysis-roadmap span{font-size:9px;font-weight:800;letter-spacing:.12em;color:#9a7431}
+.analysis-roadmap h2{font-family:Georgia,serif;font-size:18px;margin:3px 0 5px}
+.analysis-roadmap p{margin:0;color:#727771;font-size:12px;line-height:1.5}
+@media(max-width:1050px){.leon-advice-grid{grid-template-columns:1fr}}
+@media(max-width:820px){
+  .analysis-wrap{padding:13px 10px 20px}
+  .leon-recommendations-compact{padding:12px}
+  .leon-recommendations-head{align-items:flex-start}
+  .leon-recommendations-head>strong{white-space:normal;text-align:right}
+}
+@media(max-width:560px){
+  .leon-recommendations-head{display:grid}
+  .leon-recommendations-head>strong{text-align:left}
+  .leon-advice-detail,.leon-advice-action{grid-template-columns:1fr}
+}

@@ -4,6 +4,8 @@ import BuildStatus from './components/BuildStatus'
 import DataStatus from './components/DataStatus'
 import SalesPage from './SalesPage'
 import DeliveriesPage from './DeliveriesPage'
+import AnalysisPage from './AnalysisPage'
+import LeonRecommendations from './components/LeonRecommendations'
 
 // Widget publikacji jest narzędziem developerskim. W wersji finalnej ustawiamy false.
 const SHOW_DEV_PIPELINE = false
@@ -308,6 +310,8 @@ function Dashboard() {
 
       {dashboardError && <div className="dashboard-data-note is-error">Dane z D1 są chwilowo niedostępne: {dashboardError}</div>}
 
+      <LeonRecommendations compact />
+
       <section className="limit-card dashboard-summary-card">
         <div className="limit-dashboard-block">
           <div className="summary-title-row">
@@ -474,7 +478,7 @@ function App() {
         <Route path="/artykuly" element={<Placeholder title="Artykuły" text="Zarządzanie asortymentem i danymi artykułów."/>}/>
         <Route path="/kategorie" element={<Placeholder title="Kategorie" text="Kategorie wykorzystywane w sprzedaży, filtrach i analizach."/>}/>
         <Route path="/koszty" element={<Placeholder title="Koszty" text="Koszty oraz dokumenty powiązane z Google Drive."/>}/>
-        <Route path="/analizy" element={<Placeholder title="Analizy" text="Porównania okresów, heatmapy, histogramy i analizy dostaw."/>}/>
+        <Route path="/analizy" element={<AnalysisPage/>}/>
         <Route path="/synchronizacja" element={<Placeholder title="Synchronizacja" text="Przepływ Loyverse / Vinted → D1, importy, kolejki i historia zdarzeń."/>}/>
         <Route path="/narzedzia" element={<Placeholder title="Narzędzia" text="Przydatne funkcje i narzędzia pomocnicze."/>}/>
         <Route path="/ustawienia" element={<Placeholder title="Ustawienia" text="Firma, limit działalności, integracje, słowniki i wygląd."/>}/>

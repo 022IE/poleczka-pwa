@@ -1819,6 +1819,337 @@ async function dashboardData(url: URL, env: Env) {
   })
 }
 
+type AnalysisRecommendation = {
+  id: string
+  tone: 'positive' | 'warning' | 'neutral'
+  badge: string
+  title: string
+  summary: string
+  reason: string
+  action: string
+  priority: number
+}
+
+type RecommendationCategoryRow = {
+  category: string
+  currentSales: number
+  previousSales: number
+  currentUnits: number
+  previousUnits: number
+}
+
+type RecommendationDeliveryRow = {
+  deliveryNumber: number
+  deliveryDate: string | null
+  supplierName: string | null
+  quantity: number
+  soldTotal: number
+  soldCurrent: number
+  soldPrevious: number
+  lastSaleAt: string | null
+}
+
+type RecommendationSalesRow = {
+  currentSales: number
+  previousSales: number
+  currentReceipts: number
+  previousReceipts: number
+}
+
+function recommendationAgeDays(deliveryDate: string | null, today: string) {
+  const ymd = deliveryDate?.slice(0, 10) || ''
+  if (!validYmd(ymd)) return null
+  return Math.max(0, diffDaysInclusive(ymd, today) - 1)
+}
+
+function recommendationPercent(value: number) {
+  return Math.round(value * 10) / 10
+}
+
+async function analysisRecommendations(env: Env) {
+  const today = warsawYmd()
+  const currentStart = addDaysYmd(today, -6)
+  const previousStart = addDaysYmd(today, -13)
+  const previousEnd = addDaysYmd(today, -7)
+  const currentStartIso = warsawMidnightUtcIso(currentStart)
+  const previousStartIso = warsawMidnightUtcIso(previousStart)
+  const todayEndIso = warsawMidnightUtcIso(addDaysYmd(today, 1))
+
+  const [salesRow, categoryResult, deliveryResult] = await Promise.all([
+    env.DB.prepare(`
+      SELECT
+        COALESCE(SUM(CASE WHEN receipt_date >= ? THEN total_money ELSE 0 END), 0) AS currentSales,
+        COALESCE(SUM(CASE WHEN receipt_date >= ? AND receipt_date < ? THEN total_money ELSE 0 END), 0) AS previousSales,
+        COUNT(CASE WHEN receipt_date >= ? THEN 1 END) AS currentReceipts,
+        COUNT(CASE WHEN receipt_date >= ? AND receipt_date < ? THEN 1 END) AS previousReceipts
+      FROM receipts
+      WHERE COALESCE(receipt_type, 'SALE') = 'SALE'
+        AND cancelled_at IS NULL
+        AND receipt_date >= ?
+        AND receipt_date < ?
+    `).bind(
+      currentStartIso,
+      previousStartIso,
+      currentStartIso,
+      currentStartIso,
+      previousStartIso,
+      currentStartIso,
+      previousStartIso,
+      todayEndIso,
+    ).first<RecommendationSalesRow>(),
+
+    env.DB.prepare(`
+      SELECT
+        COALESCE(NULLIF(TRIM(c.name), ''), 'Bez kategorii') AS category,
+        COALESCE(SUM(CASE WHEN r.receipt_date >= ? THEN l.total_money ELSE 0 END), 0) AS currentSales,
+        COALESCE(SUM(CASE WHEN r.receipt_date >= ? AND r.receipt_date < ? THEN l.total_money ELSE 0 END), 0) AS previousSales,
+        COALESCE(SUM(CASE WHEN r.receipt_date >= ? THEN l.quantity ELSE 0 END), 0) AS currentUnits,
+        COALESCE(SUM(CASE WHEN r.receipt_date >= ? AND r.receipt_date < ? THEN l.quantity ELSE 0 END), 0) AS previousUnits
+      FROM receipt_lines l
+      JOIN receipts r ON r.receipt_number = l.receipt_number
+      LEFT JOIN items i ON i.item_id = l.item_id
+      LEFT JOIN categories c ON c.category_id = i.category_id
+      WHERE COALESCE(r.receipt_type, 'SALE') = 'SALE'
+        AND r.cancelled_at IS NULL
+        AND r.receipt_date >= ?
+        AND r.receipt_date < ?
+      GROUP BY COALESCE(NULLIF(TRIM(c.name), ''), 'Bez kategorii')
+    `).bind(
+      currentStartIso,
+      previousStartIso,
+      currentStartIso,
+      currentStartIso,
+      previousStartIso,
+      currentStartIso,
+      previousStartIso,
+      todayEndIso,
+    ).all<RecommendationCategoryRow>(),
+
+    env.DB.prepare(`
+      WITH sold AS (
+        SELECT
+          l.delivery_number,
+          COALESCE(SUM(l.quantity), 0) AS soldTotal,
+          COALESCE(SUM(CASE WHEN r.receipt_date >= ? THEN l.quantity ELSE 0 END), 0) AS soldCurrent,
+          COALESCE(SUM(CASE WHEN r.receipt_date >= ? AND r.receipt_date < ? THEN l.quantity ELSE 0 END), 0) AS soldPrevious,
+          MAX(r.receipt_date) AS lastSaleAt
+        FROM receipt_lines l
+        JOIN receipts r ON r.receipt_number = l.receipt_number
+        WHERE COALESCE(r.receipt_type, 'SALE') = 'SALE'
+          AND r.cancelled_at IS NULL
+        GROUP BY l.delivery_number
+      )
+      SELECT
+        d.delivery_number AS deliveryNumber,
+        d.delivery_date AS deliveryDate,
+        d.supplier_name AS supplierName,
+        COALESCE(d.quantity, 0) AS quantity,
+        COALESCE(s.soldTotal, 0) AS soldTotal,
+        COALESCE(s.soldCurrent, 0) AS soldCurrent,
+        COALESCE(s.soldPrevious, 0) AS soldPrevious,
+        s.lastSaleAt AS lastSaleAt
+      FROM deliveries d
+      LEFT JOIN sold s ON s.delivery_number = d.delivery_number
+      WHERE d.delivery_number > 0
+        AND COALESCE(d.active, TRUE) = TRUE
+        AND COALESCE(d.quantity, 0) > 0
+    `).bind(
+      currentStartIso,
+      previousStartIso,
+      currentStartIso,
+    ).all<RecommendationDeliveryRow>(),
+  ])
+
+  const categories = (categoryResult.results || []).map((row) => ({
+    ...row,
+    currentSales: Number(row.currentSales || 0),
+    previousSales: Number(row.previousSales || 0),
+    currentUnits: Number(row.currentUnits || 0),
+    previousUnits: Number(row.previousUnits || 0),
+  }))
+
+  const deliveries = (deliveryResult.results || []).map((row) => {
+    const quantity = Number(row.quantity || 0)
+    const soldTotal = Number(row.soldTotal || 0)
+    const soldCurrent = Number(row.soldCurrent || 0)
+    const soldPrevious = Number(row.soldPrevious || 0)
+    return {
+      ...row,
+      deliveryNumber: Number(row.deliveryNumber),
+      quantity,
+      soldTotal,
+      soldCurrent,
+      soldPrevious,
+      remaining: Math.max(0, quantity - soldTotal),
+      sellThrough: quantity > 0 ? recommendationPercent((soldTotal / quantity) * 100) : 0,
+      ageDays: recommendationAgeDays(row.deliveryDate, today),
+    }
+  })
+
+  const candidates: AnalysisRecommendation[] = []
+
+  const stalled = deliveries
+    .filter((row) => row.remaining >= 3 && (row.ageDays ?? 0) >= 10 && row.soldCurrent === 0)
+    .sort((a, b) => ((b.ageDays ?? 0) - (a.ageDays ?? 0)) || (a.sellThrough - b.sellThrough))[0]
+
+  if (stalled) {
+    candidates.push({
+      id: `delivery-stalled-${stalled.deliveryNumber}`,
+      tone: 'warning',
+      badge: 'DOSTAWA',
+      title: `Sprawdź dostawę ${stalled.deliveryNumber}`,
+      summary: `Przez ostatnie 7 dni nie sprzedała się ani jedna sztuka, a zostało ${stalled.remaining}.`,
+      reason: `Dostawa ma ${stalled.ageDays} dni i ${stalled.sellThrough}% zbytu. To sygnał do zmiany ekspozycji, zanim ruszymy z ceną.`,
+      action: 'Najpierw zmień ekspozycję lub położenie rzeczy. Jeśli nadal nie ruszy, wtedy wrócimy do symulacji promocji.',
+      priority: 96,
+    })
+  }
+
+  const accelerating = deliveries
+    .filter((row) =>
+      row.remaining >= 2
+      && row.soldCurrent >= 2
+      && row.soldCurrent > row.soldPrevious
+      && row.soldCurrent >= Math.max(2, row.soldPrevious * 1.5),
+    )
+    .sort((a, b) => (b.soldCurrent - b.soldPrevious) - (a.soldCurrent - a.soldPrevious))[0]
+
+  if (accelerating) {
+    const pace = accelerating.soldPrevious > 0
+      ? recommendationPercent(((accelerating.soldCurrent - accelerating.soldPrevious) / accelerating.soldPrevious) * 100)
+      : null
+    candidates.push({
+      id: `delivery-accelerating-${accelerating.deliveryNumber}`,
+      tone: 'positive',
+      badge: 'MARŻA',
+      title: `Nie przeceniaj dostawy ${accelerating.deliveryNumber}`,
+      summary: `W ostatnich 7 dniach sprzedało się ${accelerating.soldCurrent} szt. wobec ${accelerating.soldPrevious} wcześniej.`,
+      reason: `${pace === null ? 'Tempo ruszyło z zera' : `Tempo wzrosło o ${pace}%`}; zbyt wynosi ${accelerating.sellThrough}%, a na stanie zostało ${accelerating.remaining} szt.`,
+      action: 'Utrzymaj obecną cenę i ekspozycję. Przyspieszającej dostawy nie ma sensu teraz oddawać taniej.',
+      priority: 92,
+    })
+  }
+
+  const growingCategory = categories
+    .filter((row) =>
+      row.category !== 'Bez kategorii'
+      && row.currentUnits >= 2
+      && row.currentSales > row.previousSales
+      && row.currentSales >= Math.max(100, row.previousSales * 1.2),
+    )
+    .sort((a, b) => (b.currentSales - b.previousSales) - (a.currentSales - a.previousSales))[0]
+
+  if (growingCategory) {
+    const change = metricChange(growingCategory.currentSales, growingCategory.previousSales)
+    candidates.push({
+      id: `category-growing-${growingCategory.category}`,
+      tone: 'positive',
+      badge: 'EKSPOZYCJA',
+      title: `Wyeksponuj: ${growingCategory.category}`,
+      summary: `Ta kategoria zrobiła ${money(growingCategory.currentSales)} zł w 7 dni i wyraźnie przyspiesza.`,
+      reason: `Sprzedaż wcześniej: ${money(growingCategory.previousSales)} zł. Teraz: ${money(growingCategory.currentSales)} zł${change === null ? '' : ` (${change > 0 ? '+' : ''}${change}%)`}.`,
+      action: 'Daj tej kategorii mocne miejsce na sali i nie chowaj jej za słabszymi rzeczami.',
+      priority: 86,
+    })
+  }
+
+  const currentSales = money(salesRow?.currentSales)
+  const previousSales = money(salesRow?.previousSales)
+  const salesChange = metricChange(currentSales, previousSales)
+
+  if (salesChange !== null && salesChange <= -15) {
+    candidates.push({
+      id: 'sales-slowdown',
+      tone: 'warning',
+      badge: 'SPRZEDAŻ',
+      title: 'Odśwież ekspozycję',
+      summary: `Sprzedaż z ostatnich 7 dni jest o ${Math.abs(salesChange)}% niższa niż tydzień wcześniej.`,
+      reason: `${money(currentSales)} zł teraz wobec ${money(previousSales)} zł w poprzednich 7 dniach.`,
+      action: 'Najpierw porusz ekspozycją i mocnymi kategoriami. Nie przeceniaj całego sklepu tylko dlatego, że tydzień był słabszy.',
+      priority: 90,
+    })
+  } else if (salesChange !== null && salesChange >= 15) {
+    candidates.push({
+      id: 'sales-momentum',
+      tone: 'positive',
+      badge: 'SPRZEDAŻ',
+      title: 'Utrzymaj kierunek',
+      summary: `Sprzedaż z ostatnich 7 dni wzrosła o ${salesChange}% tydzień do tygodnia.`,
+      reason: `${money(currentSales)} zł teraz wobec ${money(previousSales)} zł wcześniej.`,
+      action: 'Nie rób gwałtownych zmian cen. Wykorzystaj to, co już działa, i obserwuj które dostawy ciągną wynik.',
+      priority: 72,
+    })
+  }
+
+  if (!growingCategory) {
+    const topCategory = [...categories]
+      .filter((row) => row.category !== 'Bez kategorii' && row.currentSales > 0)
+      .sort((a, b) => b.currentSales - a.currentSales)[0]
+
+    if (topCategory) {
+      candidates.push({
+        id: `category-top-${topCategory.category}`,
+        tone: 'neutral',
+        badge: 'EKSPOZYCJA',
+        title: `Trzymaj wysoko: ${topCategory.category}`,
+        summary: `To najmocniejsza kategoria ostatnich 7 dni: ${money(topCategory.currentSales)} zł sprzedaży.`,
+        reason: `Sprzedała ${topCategory.currentUnits} szt. w bieżącym tygodniowym oknie.`,
+        action: 'Zostaw ją w dobrym miejscu i wykorzystuj jako punkt odniesienia przy układaniu sali.',
+        priority: 66,
+      })
+    }
+  }
+
+  if (!accelerating) {
+    const healthyDelivery = deliveries
+      .filter((row) => row.remaining > 0 && row.soldTotal > 0)
+      .sort((a, b) => b.sellThrough - a.sellThrough)[0]
+
+    if (healthyDelivery) {
+      candidates.push({
+        id: `delivery-healthy-${healthyDelivery.deliveryNumber}`,
+        tone: 'neutral',
+        badge: 'DOSTAWA',
+        title: `Pilnuj dostawy ${healthyDelivery.deliveryNumber}`,
+        summary: `Ma ${healthyDelivery.sellThrough}% zbytu i nadal ${healthyDelivery.remaining} szt. do sprzedania.`,
+        reason: `Sprzedano łącznie ${healthyDelivery.soldTotal} z ${healthyDelivery.quantity} sztuk.`,
+        action: 'Nie chowaj jej zbyt wcześnie. To dobry kandydat do dalszej ekspozycji bez automatycznej przeceny.',
+        priority: 62,
+      })
+    }
+  }
+
+  if (candidates.length < 3) {
+    candidates.push({
+      id: 'baseline-observe',
+      tone: 'neutral',
+      badge: 'OBSERWACJA',
+      title: 'Dziś bez nerwowych ruchów',
+      summary: 'Dane nie pokazują teraz mocnego sygnału wymagającego gwałtownej zmiany.',
+      reason: `Analiza porównuje ${currentStart}–${today} z ${previousStart}–${previousEnd}.`,
+      action: 'Obserwuj sprzedaż i ekspozycję. Kolejne sygnały pojawią się automatycznie, gdy dane wyraźnie odjadą od normy.',
+      priority: 20,
+    })
+  }
+
+  const unique = Array.from(new Map(candidates.map((item) => [item.id, item])).values())
+    .sort((a, b) => b.priority - a.priority)
+    .slice(0, 3)
+
+  return salesJson({
+    ok: true,
+    generatedAt: nowIso(),
+    period: {
+      currentStart,
+      currentEnd: today,
+      previousStart,
+      previousEnd,
+    },
+    items: unique,
+  })
+}
+
+
 async function handleSalesApi(request: Request, url: URL, env: Env): Promise<Response | null> {
   const skMatch = url.pathname.match(/^\/api\/sales\/receipts\/([^/]+)\/sk$/)
   if (skMatch && request.method === 'PATCH') {
@@ -2149,6 +2480,18 @@ export default {
       }, { headers: { 'Cache-Control': 'no-store' } })
     }
 
+
+
+    if (url.pathname === '/api/analysis/recommendations' && request.method === 'GET') {
+      try {
+        return analysisRecommendations(env)
+      } catch (error) {
+        return salesJson({
+          ok: false,
+          error: error instanceof Error ? error.message : 'Analysis recommendations API failed',
+        }, 500)
+      }
+    }
 
     if (url.pathname === '/api/dashboard' && request.method === 'GET') {
       try {

@@ -177,6 +177,21 @@ Bieżące reguły dashboardu:
 - kwota kwartalnego limitu DNR jest konfiguracją aplikacji, a nie daną sprzedażową; do czasu uruchomienia ustawień może być przekazana przez konfigurację Workera `DNR_QUARTER_LIMIT`.
 
 
+
+### „Leon mówi…” — szybkie rekomendacje
+
+Na stronie głównej, pomiędzy górnym panelem aplikacji a panelami Vinted / DNR, znajduje się szeroki kafel **„Leon mówi…”**.
+
+Zasady:
+- kafel pokazuje maksymalnie **3 krótkie rekomendacje na dziś**,
+- kliknięcie kafla prowadzi do modułu `/analizy`,
+- pełny widok rekomendacji pokazuje również **dlaczego** dana rada powstała i **co konkretnie zrobić**,
+- rekomendacje są liczone z aktualnych danych D1 przez endpoint `/api/analysis/recommendations`,
+- pierwsza wersja silnika jest deterministyczna i bazuje na porównaniu ostatnich 7 dni z poprzednimi 7 dniami, tempie sprzedaży kategorii oraz wieku, zbycie i dynamice dostaw,
+- „Leon mówi…” służy do decyzji biznesowych; techniczne błędy i braki danych pozostają osobnym mechanizmem alertów.
+
+Docelowo rekomendacje będą powiązane z historią decyzji i oceną ich efektów.
+
 ### Szybki dostęp
 
 Na dashboardzie znajduje się kafelek `Vinted`, prowadzący do modułu `/vinted`.
@@ -383,6 +398,25 @@ Szczegóły modułu są również zapisane w `docs/MODUL_ANALIZY.md`.
 - sprzedaż wg kategorii.
 
 Rabaty w analizach pochodzą z danych sprzedażowych POS/Loyverse.
+
+
+### Rekomendacje biznesowe w module ANALIZY
+
+Moduł ANALIZY jest docelowym miejscem rozwijania rekomendacji z kafla **„Leon mówi…”**.
+
+Bieżące minimum:
+- trzy najważniejsze rekomendacje z D1,
+- krótka rada,
+- uzasadnienie na podstawie danych,
+- konkretna sugerowana akcja.
+
+Planowane kolejne warstwy:
+- historia decyzji i ich efektów,
+- kandydaci do promocji i symulacja przecen,
+- radar anomalii,
+- Pareto 80/20,
+- analiza przedziałów cenowych per typ artykułu,
+- podpowiadacz wyceny.
 
 ### Porównanie okresów — obowiązujące założenie
 
