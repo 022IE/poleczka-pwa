@@ -1,6 +1,6 @@
 {
-  "state": "awaiting_publish",
-  "label": "Oczekiwanie na publikację",
-  "task": "07 — Analizy: trwałe alarmy D1, modal reakcji i testowy alert gotowe do publikacji",
-  "updatedAt": "2026-09-19T12:02:15.697Z"
+  "state": "editing",
+  "label": "Wprowadzanie poprawek",
+  "task": "07 — Analizy: wycentrowanie modala alarmów i badge kategorii jak u Leona",
+  "updatedAt": "2026-09-19T12:07:04.926Z"
 }
