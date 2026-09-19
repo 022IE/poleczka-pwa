@@ -2688,7 +2688,7 @@ type AnomalyReaction = 'important' | 'ignore'
 type AnomalyItem = {
   id: string
   severity: AnomalySeverity
-  category: 'SPRZEDAŻ' | 'RABATY' | 'DOSTAWY' | 'DANE'
+  category: 'SPRZEDAŻ' | 'PARAGON' | 'RABATY' | 'DOSTAWY' | 'DANE'
   title: string
   summary: string
   detail: string
@@ -2872,7 +2872,7 @@ async function calculateAnomalyItems(env: Env) {
         items.push({
           id: 'average-receipt-drop',
           severity: averageChange <= -45 ? 'critical' : 'warning',
-          category: 'SPRZEDAŻ',
+          category: 'PARAGON',
           title: 'Średni paragon mocno spadł',
           summary: `Średni paragon jest niższy o ${Math.abs(anomalyPercent(averageChange))}% względem poprzednich 7 pełnych dni.`,
           detail: `${money(currentAverage)} zł wobec ${money(previousAverage)} zł.`,

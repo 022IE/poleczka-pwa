@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import { createPortal } from 'react-dom'
 
 type AnomalySeverity = 'warning' | 'critical'
 type AnomalyReaction = 'important' | 'ignore'
@@ -154,7 +155,7 @@ export default function AnomalyRadar() {
         {hasAlert && <span className="anomaly-radar-count">{data?.count}</span>}
       </button>
 
-      {open && (
+      {open && createPortal(
         <div className="anomaly-radar-modal-backdrop" onMouseDown={(event) => {
           if (event.target === event.currentTarget) setOpen(false)
         }}>
@@ -182,11 +183,11 @@ export default function AnomalyRadar() {
                 <div className="anomaly-radar-list">
                   {data?.items.map((item) => (
                     <article className={`anomaly-radar-item is-${item.severity}`} key={item.alertId || item.id}>
-                      <div className="anomaly-radar-item-head">
+                      <div className="anomaly-radar-item-meta">
                         <em>{item.category}</em>
                         {item.source === 'test' && <span>TEST</span>}
-                        <b>{item.title}</b>
                       </div>
+                      <b className="anomaly-radar-item-title">{item.title}</b>
                       <p>{item.summary}</p>
                       <small>{item.detail}</small>
                       {item.alertId ? (
@@ -223,7 +224,8 @@ export default function AnomalyRadar() {
               </small>
             )}
           </section>
-        </div>
+        </div>,
+        document.body,
       )}
     </div>
   )

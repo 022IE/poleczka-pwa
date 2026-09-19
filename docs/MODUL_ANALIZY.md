@@ -1,7 +1,7 @@
 # PÓŁECZKA IWONKI — MODUŁ ANALIZY
 
 **Moduł:** 07 — ANALIZY  
-**Status:** specyfikacja bieżąca v0.8  
+**Status:** specyfikacja bieżąca v0.9  
 **Dokument nadrzędny:** `POLECZKA_PWA_MASTER.md`  
 **Aktualizacja:** 19.09.2026
 
@@ -411,6 +411,11 @@ Radar jest mechanizmem alarmowym, a nie kolejnym źródłem porad. Rekomendacje 
 
 
 ## Aktywne alarmy i reakcje
+
+Modal jest renderowany poza górnym paskiem aplikacji, bezpośrednio względem viewportu. Dzięki temu jest dynamicznie wyśrodkowany na desktopie i tablecie, nie dziedziczy ograniczeń stałego nagłówka i ma maksymalną wysokość zależną od aktualnego `dvh`.
+
+Każdy alarm ma badge kategorii zgodny wizualnie z kategoriami rekomendacji Leona. Kategorie v1 obejmują m.in. `SPRZEDAŻ`, `PARAGON`, `RABATY`, `DOSTAWY` i `DANE`; tytuł alarmu jest prezentowany pod badge’em.
+
 
 Każde nowe wykrycie staje się trwałym epizodem alarmu w tabeli `anomaly_alerts`.
 
