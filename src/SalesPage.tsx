@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import BuildStatus from './components/BuildStatus'
 import DataStatus from './components/DataStatus'
+import HeaderDateTime from './components/HeaderDateTime'
 
 const SHOW_DEV_PIPELINE = false
 
@@ -153,10 +154,6 @@ function PaymentBadge({ payment }: { payment: string }) {
 }
 
 function SalesHeader() {
-  const now = new Date()
-  const weekday = new Intl.DateTimeFormat('pl-PL', { weekday: 'long' }).format(now)
-  const date = new Intl.DateTimeFormat('pl-PL', { day: 'numeric', month: 'long', year: 'numeric' }).format(now)
-
   return (
     <header className="dashboard-header sales-header">
       <div className="header-title-block">
@@ -168,7 +165,7 @@ function SalesHeader() {
       </div>
       {SHOW_DEV_PIPELINE && <div className="header-build-slot"><BuildStatus /></div>}
       <div className="header-actions">
-        <div className="date-block"><span className="header-icon" aria-hidden="true">🗓️</span><div><b>{weekday}</b><span>{date}</span></div></div>
+        <HeaderDateTime />
         <div className="header-divider" />
         <button className="bell" aria-label="Powiadomienia">♟<span>3</span></button>
         <DataStatus />
