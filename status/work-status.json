@@ -1,6 +1,6 @@
 {
-  "state": "editing",
-  "label": "Wprowadzanie poprawek",
-  "task": "DOSTAWY — wyrównanie menu ... do prawej krawędzi tabeli",
-  "updatedAt": "2026-09-19T07:33:09.581Z"
+  "state": "awaiting_publish",
+  "label": "Oczekiwanie na publikację",
+  "task": "DOSTAWY — menu ... wyrównane do prawej krawędzi tabeli",
+  "updatedAt": "2026-09-19T07:33:58.270Z"
 }
