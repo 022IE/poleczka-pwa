@@ -77,6 +77,103 @@ function localYmd(date = new Date()) {
   return `${year}-${month}-${day}`
 }
 
+function normalizeSupplierText(value: string) {
+  return value
+    .toLocaleLowerCase('pl-PL')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .trim()
+}
+
+function SupplierAutocomplete({
+  value,
+  onChange,
+  suppliers,
+  placeholder,
+}: {
+  value: string
+  onChange: (value: string) => void
+  suppliers: string[]
+  placeholder: string
+}) {
+  const [open, setOpen] = useState(false)
+
+  const suggestions = useMemo(() => {
+    const query = normalizeSupplierText(value)
+    const unique = Array.from(new Set(suppliers.map((entry) => entry.trim()).filter(Boolean)))
+
+    if (!query) return unique.slice(0, 6)
+
+    return unique
+      .map((entry) => {
+        const normalized = normalizeSupplierText(entry)
+        const starts = normalized.startsWith(query)
+        const includes = normalized.includes(query)
+        return { entry, starts, includes }
+      })
+      .filter((item) => item.includes)
+      .sort((left, right) => {
+        if (left.starts !== right.starts) return left.starts ? -1 : 1
+        return left.entry.localeCompare(right.entry, 'pl-PL', { sensitivity: 'base' })
+      })
+      .slice(0, 6)
+      .map((item) => item.entry)
+  }, [value, suppliers])
+
+  const exactMatch = suppliers.some(
+    (entry) => normalizeSupplierText(entry) === normalizeSupplierText(value),
+  )
+
+  return (
+    <span className="supplier-autocomplete">
+      <input
+        required
+        value={value}
+        onChange={(event) => {
+          onChange(event.target.value)
+          setOpen(true)
+        }}
+        onFocus={() => setOpen(true)}
+        onBlur={() => window.setTimeout(() => setOpen(false), 120)}
+        placeholder={placeholder}
+        autoComplete="off"
+        aria-autocomplete="list"
+        aria-expanded={open}
+      />
+      {open && (suggestions.length > 0 || (value.trim() && !exactMatch)) && (
+        <span className="supplier-suggestions" role="listbox" aria-label="Podpowiedzi dostawców">
+          {suggestions.map((entry) => (
+            <button
+              type="button"
+              role="option"
+              key={entry}
+              onMouseDown={(event) => event.preventDefault()}
+              onClick={() => {
+                onChange(entry)
+                setOpen(false)
+              }}
+            >
+              <strong>{entry}</strong>
+              <small>Istniejący dostawca</small>
+            </button>
+          ))}
+          {value.trim() && !exactMatch && (
+            <button
+              type="button"
+              className="supplier-use-new"
+              onMouseDown={(event) => event.preventDefault()}
+              onClick={() => setOpen(false)}
+            >
+              <strong>Użyj nowej nazwy: „{value.trim()}”</strong>
+              <small>Nowy dostawca zostanie zapisany z dostawą</small>
+            </button>
+          )}
+        </span>
+      )}
+    </span>
+  )
+}
+
 function DeliveriesHeader() {
   const now = new Date()
   const weekday = new Intl.DateTimeFormat('pl-PL', { weekday: 'long' }).format(now)
@@ -718,7 +815,15 @@ export default function DeliveriesPage() {
             </div>
             <form onSubmit={saveEditedDelivery}>
               <label><span>Data dostawy</span><input type="date" required value={editDate} onChange={(event) => setEditDate(event.target.value)} /></label>
-              <label><span>Dostawca</span><input required list="delivery-suppliers-edit" value={editSupplier} onChange={(event) => setEditSupplier(event.target.value)} /><datalist id="delivery-suppliers-edit">{suppliers.map((entry) => <option value={entry} key={entry} />)}</datalist></label>
+              <label>
+                <span>Dostawca</span>
+                <SupplierAutocomplete
+                  value={editSupplier}
+                  onChange={setEditSupplier}
+                  suppliers={suppliers}
+                  placeholder="Wybierz lub wpisz dostawcę"
+                />
+              </label>
               <div className="delivery-form-pair">
                 <label><span>Ilość sztuk</span><input type="number" min="1" step="1" required value={editQuantity} onChange={(event) => setEditQuantity(event.target.value)} /></label>
                 <label><span>Koszt zakupu dostawy</span><input type="number" min="0" step="0.01" required value={editCost} onChange={(event) => setEditCost(event.target.value)} /></label>
@@ -770,15 +875,12 @@ export default function DeliveriesPage() {
                   </label>
                   <label>
                     <span>Dostawca</span>
-                    <input
-                      required
-                      list="delivery-suppliers"
+                    <SupplierAutocomplete
                       value={newSupplier}
-                      onChange={(event) => setNewSupplier(event.target.value)}
+                      onChange={setNewSupplier}
+                      suppliers={suppliers}
                       placeholder="Wybierz lub wpisz dostawcę"
-                      autoComplete="off"
                     />
-                    <datalist id="delivery-suppliers">{suppliers.map((entry) => <option value={entry} key={entry} />)}</datalist>
                   </label>
                 </div>
               </fieldset>
