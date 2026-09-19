@@ -2,14 +2,11 @@ import BuildStatus from './components/BuildStatus'
 import DataStatus from './components/DataStatus'
 import LeonRecommendations from './components/LeonRecommendations'
 import LeonRecommendationHistory from './components/LeonRecommendationHistory'
+import HeaderDateTime from './components/HeaderDateTime'
 
 const SHOW_DEV_PIPELINE = false
 
 function AnalysisHeader() {
-  const now = new Date()
-  const weekday = new Intl.DateTimeFormat('pl-PL', { weekday: 'long' }).format(now)
-  const date = new Intl.DateTimeFormat('pl-PL', { day: 'numeric', month: 'long', year: 'numeric' }).format(now)
-
   return (
     <header className="dashboard-header analysis-header">
       <div className="header-title-block">
@@ -21,7 +18,7 @@ function AnalysisHeader() {
       </div>
       {SHOW_DEV_PIPELINE && <div className="header-build-slot"><BuildStatus /></div>}
       <div className="header-actions">
-        <div className="date-block"><span className="header-icon">▣</span><div><b>{weekday}</b><span>{date}</span></div></div>
+        <HeaderDateTime />
         <div className="header-divider" />
         <button className="bell" aria-label="Powiadomienia">♟</button>
         <DataStatus />
