@@ -1016,3 +1016,23 @@ Zapis jest wykonywany optymistycznie; w przypadku błędu interfejs przywraca po
 Nowy paragon bez jawnie podanej wartości otrzymuje `sk = true` z domyślnej wartości D1.
 
 Pole S.K. jest własnym polem biznesowym PWA i nie może być uzależnione od danych zwracanych przez Loyverse.
+
+
+---
+
+# 39. Nazwa dostawcy przy numerze dostawy — 19.09.2026
+
+W rozwinięciu szczegółów paragonu kolumna **Lp. dostawy** pokazuje numer i nazwę dostawcy w jednej komórce.
+
+Format:
+
+- numer dostawy jest pogrubiony,
+- po numerze, w nawiasie, wyświetlana jest nazwa dostawcy,
+- przykład: **2** (Talia Brzesko).
+
+Źródła danych:
+- numer: `receipt_lines.delivery_number`,
+- nazwa dostawcy: `deliveries.supplier_name`,
+- powiązanie: `receipt_lines.delivery_number -> deliveries.delivery_number`.
+
+Nie tworzymy osobnej kolumny dla dostawcy w szczegółach paragonu.
