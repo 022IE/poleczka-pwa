@@ -251,12 +251,20 @@ CREATE TABLE deliveries (
   supplier_name TEXT NOT NULL,
   quantity INTEGER NOT NULL CHECK (quantity > 0),
   total_cost REAL NOT NULL CHECK (total_cost >= 0),
+  active BOOLEAN NOT NULL DEFAULT TRUE CHECK (active IN (0, 1)),
   created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
   updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 ```
 
 Pola są nazwane po angielsku zgodnie ze standardem D1 projektu.
+
+Pole `deliveries.active`:
+- typ logiczny: boolean,
+- D1/SQLite przechowuje wartość jako `0/1`,
+- wartość domyślna: `TRUE`,
+- jest zarządzane lokalnie przez PWA,
+- nie pochodzi z Loyverse.
 
 Dane startowe zaimportowane z arkusza:
 

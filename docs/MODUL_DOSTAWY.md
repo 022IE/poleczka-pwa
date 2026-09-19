@@ -3,7 +3,7 @@
 **Moduł:** DOSTAWY  
 **Status:** model danych wdrożony v0.1  
 **Dokument nadrzędny:** `POLECZKA_PWA_MASTER.md`  
-**Aktualizacja:** 18.09.2026
+**Aktualizacja:** 19.09.2026
 
 ---
 
@@ -24,6 +24,7 @@ CREATE TABLE deliveries (
   supplier_name TEXT NOT NULL,
   quantity INTEGER NOT NULL CHECK (quantity > 0),
   total_cost REAL NOT NULL CHECK (total_cost >= 0),
+  active BOOLEAN NOT NULL DEFAULT TRUE CHECK (active IN (0, 1)),
   created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
   updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
@@ -35,6 +36,7 @@ Znaczenie pól:
 - `supplier_name` — dostawca,
 - `quantity` — liczba sztuk przyjętych,
 - `total_cost` — łączny koszt dostawy,
+- `active` — status aktywności dostawy; domyślnie `TRUE`,
 - `created_at`, `updated_at` — znaczniki techniczne.
 
 Koszt jednostkowy nie jest przechowywany jako osobne źródło prawdy. Wyliczamy go jako:
@@ -206,6 +208,7 @@ Tabela główna pokazuje:
 - Lp.,
 - datę,
 - dostawcę,
+- aktywność jako checkbox readonly,
 - koszt zakupu dostawy,
 - ilość,
 - cenę/szt.,
@@ -242,6 +245,7 @@ Po kliknięciu nie otwieramy pływającego dropdownu. Zgodnie ze wspólnym stand
 Panel zawiera:
 - **Szczegóły** — rozwija dany wiersz i pokazuje agregację sprzedanych artykułów,
 - **Edytuj dostawę** — pozwala zmienić datę, dostawcę, ilość oraz koszt zakupu dostawy,
+- **Aktywuj / Deaktywuj** — przełącza pole `deliveries.active` i checkbox readonly w tabeli,
 - **Usuń dostawę** — usuwa wyłącznie dostawę, która nie jest powiązana z żadną pozycją sprzedaży.
 
 Zabezpieczenia:
@@ -250,3 +254,21 @@ Zabezpieczenia:
 - usunięcie zwykłej, nieużywanej dostawy wymaga potwierdzenia użytkownika.
 
 Kolumna **Koszt zakupu** pokazuje `deliveries.total_cost` i znajduje się bezpośrednio przed kolumną **Ilość**.
+
+
+---
+
+## 12. Pole `active` — 19.09.2026
+
+Tabela `deliveries` zawiera pole:
+
+`active BOOLEAN NOT NULL DEFAULT TRUE CHECK (active IN (0, 1))`
+
+Zasady:
+- nowa dostawa jest domyślnie aktywna,
+- checkbox w tabeli DOSTAWY jest tylko do odczytu,
+- zmianę wykonuje akcja **Aktywuj / Deaktywuj** z panelu `•••`,
+- KPI **Aktywne dostawy** liczy rekordy, dla których `active = TRUE`,
+- filtr **Aktywne** oznacza `active = TRUE`,
+- filtr **Nieaktywne** oznacza `active = FALSE`,
+- status aktywności jest niezależny od liczby sprzedanych sztuk i % zbytu.

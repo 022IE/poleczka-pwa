@@ -620,7 +620,13 @@ async function salesCategories(env: Env) {
     ORDER BY name COLLATE NOCASE
   `).all<{ id: string; name: string }>()
 
-  return salesJson({ ok: true, items: result.results || [] })
+  return salesJson({
+    ok: true,
+    items: (result.results || []).map((row) => ({
+      ...row,
+      active: Number(row.active) === 1,
+    })),
+  })
 }
 
 async function salesItems(url: URL, env: Env) {
@@ -871,7 +877,7 @@ function parseDeliveryQuery(url: URL): DeliveryQuery {
     from: validYmd(from) ? from : null,
     to: validYmd(to) ? to : null,
     supplier: value('supplier'),
-    status: status === 'active' || status === 'unsold' || status === 'sold-out' ? status : null,
+    status: status === 'active' || status === 'inactive' || status === 'unsold' || status === 'sold-out' ? status : null,
     category: value('category'),
     search: value('search'),
   }
@@ -894,7 +900,9 @@ function buildDeliveryWhere(filters: DeliveryQuery) {
     params.push(filters.supplier)
   }
   if (filters.status === 'active') {
-    clauses.push('COALESCE(s.sold, 0) < d.quantity')
+    clauses.push('d.active = TRUE')
+  } else if (filters.status === 'inactive') {
+    clauses.push('d.active = FALSE')
   } else if (filters.status === 'unsold') {
     clauses.push('COALESCE(s.sold, 0) <= 0')
   } else if (filters.status === 'sold-out') {
@@ -950,6 +958,7 @@ async function deliveryRows(url: URL, env: Env) {
       d.supplier_name AS supplierName,
       d.quantity AS quantity,
       d.total_cost AS totalCost,
+      d.active AS active,
       ROUND(d.total_cost / NULLIF(d.quantity, 0), 2) AS unitCost,
       COALESCE(s.sold, 0) AS sold,
       ROUND(COALESCE(s.sold, 0) * 100.0 / NULLIF(d.quantity, 0), 1) AS sellThrough,
@@ -966,6 +975,7 @@ async function deliveryRows(url: URL, env: Env) {
     supplierName: string
     quantity: number
     totalCost: number
+    active: number
     unitCost: number
     sold: number
     sellThrough: number
@@ -989,6 +999,7 @@ async function deliverySummary(url: URL, env: Env) {
         d.supplier_name,
         d.quantity,
         d.total_cost,
+        d.active,
         COALESCE(s.sold, 0) AS sold,
         COALESCE(s.sales, 0) AS sales,
         COALESCE(s.sales, 0) - (COALESCE(s.sold, 0) * d.total_cost / NULLIF(d.quantity, 0)) AS profit
@@ -997,7 +1008,7 @@ async function deliverySummary(url: URL, env: Env) {
       WHERE ${where.sql}
     )
     SELECT
-      COALESCE(SUM(CASE WHEN delivery_number >= 0 AND sold < quantity THEN 1 ELSE 0 END), 0) AS activeDeliveries,
+      COALESCE(SUM(CASE WHEN active = TRUE THEN 1 ELSE 0 END), 0) AS activeDeliveries,
       COALESCE(SUM(CASE WHEN delivery_number >= 0 THEN quantity ELSE 0 END), 0) AS receivedUnits,
       COALESCE(SUM(CASE WHEN delivery_number >= 0 THEN sold ELSE 0 END), 0) AS soldUnits,
       COALESCE(SUM(CASE WHEN delivery_number >= 0 THEN sales ELSE 0 END), 0) AS sales,
@@ -1019,6 +1030,7 @@ async function deliverySummary(url: URL, env: Env) {
         d.supplier_name,
         d.quantity,
         d.total_cost,
+        d.active,
         COALESCE(s.sold, 0) AS sold,
         COALESCE(s.sales, 0) AS sales,
         COALESCE(s.sales, 0) - (COALESCE(s.sold, 0) * d.total_cost / NULLIF(d.quantity, 0)) AS profit
@@ -1205,6 +1217,37 @@ async function deleteDeliveryRecord(deliveryNumber: number, env: Env) {
   return salesJson({ ok: true, deliveryNumber: deleted.deliveryNumber })
 }
 
+
+async function updateDeliveryActive(request: Request, deliveryNumber: number, env: Env) {
+  let body: { active?: unknown }
+  try {
+    body = await request.json() as typeof body
+  } catch {
+    return salesJson({ ok: false, error: 'Invalid JSON' }, 400)
+  }
+
+  if (typeof body.active !== 'boolean') {
+    return salesJson({ ok: false, error: 'Pole active musi być wartością boolean.' }, 400)
+  }
+
+  const row = await env.DB.prepare(`
+    UPDATE deliveries
+    SET active = ?, updated_at = CURRENT_TIMESTAMP
+    WHERE delivery_number = ?
+    RETURNING delivery_number AS deliveryNumber, active
+  `).bind(body.active ? 1 : 0, deliveryNumber).first<{ deliveryNumber: number; active: number }>()
+
+  if (!row) return salesJson({ ok: false, error: 'Dostawa nie istnieje.' }, 404)
+
+  return salesJson({
+    ok: true,
+    item: {
+      deliveryNumber: row.deliveryNumber,
+      active: Number(row.active) === 1,
+    },
+  })
+}
+
 async function handleDeliveriesApi(request: Request, url: URL, env: Env): Promise<Response | null> {
   if (url.pathname === '/api/deliveries' && request.method === 'GET') return deliveryRows(url, env)
   if (url.pathname === '/api/deliveries' && request.method === 'POST') return createDelivery(request, env)
@@ -1213,6 +1256,9 @@ async function handleDeliveriesApi(request: Request, url: URL, env: Env): Promis
 
   const itemMatch = url.pathname.match(/^\/api\/deliveries\/(-?\d+)\/items$/)
   if (itemMatch && request.method === 'GET') return deliveryItems(Number(itemMatch[1]), env)
+
+  const activeMatch = url.pathname.match(/^\/api\/deliveries\/(-?\d+)\/active$/)
+  if (activeMatch && request.method === 'PATCH') return updateDeliveryActive(request, Number(activeMatch[1]), env)
 
   const deliveryMatch = url.pathname.match(/^\/api\/deliveries\/(-?\d+)$/)
   if (deliveryMatch && request.method === 'PUT') return updateDelivery(request, Number(deliveryMatch[1]), env)

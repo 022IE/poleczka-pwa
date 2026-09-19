@@ -25,6 +25,7 @@ type Delivery = {
   returnRate: number
   sales: number
   profit: number
+  active: boolean
 }
 
 type DeliveryItem = {
@@ -357,6 +358,25 @@ export default function DeliveriesPage() {
     }
   }
 
+  const setDeliveryActive = async (delivery: Delivery, active: boolean) => {
+    setRowMenu(null)
+    try {
+      const response = await fetch(`/api/deliveries/${delivery.deliveryNumber}/active`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ active }),
+      })
+      const payload = await response.json() as { ok?: boolean; error?: string }
+      if (!response.ok || !payload.ok) throw new Error(payload.error || 'Nie udało się zmienić statusu dostawy.')
+      setDeliveries((current) => current.map((entry) => (
+        entry.deliveryNumber === delivery.deliveryNumber ? { ...entry, active } : entry
+      )))
+      setReloadKey((value) => value + 1)
+    } catch (activeError) {
+      setError(activeError instanceof Error ? activeError.message : 'Nie udało się zmienić statusu dostawy.')
+    }
+  }
+
   const deleteDelivery = async (delivery: Delivery) => {
     setRowMenu(null)
     if (delivery.deliveryNumber <= 0) {
@@ -495,6 +515,7 @@ export default function DeliveriesPage() {
             <select value={status} onChange={(event) => setStatus(event.target.value)}>
               <option value="">Wszystkie</option>
               <option value="active">Aktywne</option>
+              <option value="inactive">Nieaktywne</option>
               <option value="unsold">Bez sprzedaży</option>
               <option value="sold-out">Wyprzedane</option>
             </select>
@@ -558,6 +579,7 @@ export default function DeliveriesPage() {
               <button type="button" className="deliveries-sort" onClick={() => toggleSort('deliveryNumber')}>Lp. <b>{sortArrow('deliveryNumber')}</b></button>
               <button type="button" className="deliveries-sort" onClick={() => toggleSort('deliveryDate')}>Data <b>{sortArrow('deliveryDate')}</b></button>
               <button type="button" className="deliveries-sort" onClick={() => toggleSort('supplierName')}>Dostawca <b>{sortArrow('supplierName')}</b></button>
+              <button type="button" className="deliveries-sort deliveries-sort-center" onClick={() => toggleSort('active')}>Aktywna <b>{sortArrow('active')}</b></button>
               <button type="button" className="deliveries-sort" onClick={() => toggleSort('totalCost')}>Koszt zakupu <b>{sortArrow('totalCost')}</b></button>
               <button type="button" className="deliveries-sort" onClick={() => toggleSort('quantity')}>Ilość <b>{sortArrow('quantity')}</b></button>
               <button type="button" className="deliveries-sort" onClick={() => toggleSort('unitCost')}>Cena/szt. <b>{sortArrow('unitCost')}</b></button>
@@ -582,6 +604,15 @@ export default function DeliveriesPage() {
                     <strong>{delivery.deliveryNumber}</strong>
                     <span>{displayYmd(delivery.deliveryDate)}</span>
                     <span className="delivery-supplier">{delivery.supplierName}</span>
+                    <span className="delivery-active-cell">
+                      <input
+                        type="checkbox"
+                        checked={delivery.active}
+                        readOnly
+                        tabIndex={-1}
+                        aria-label={delivery.active ? 'Dostawa aktywna' : 'Dostawa nieaktywna'}
+                      />
+                    </span>
                     <span>{formatMoney(delivery.totalCost)}</span>
                     <span>{formatNumber(delivery.quantity)}</span>
                     <span>{formatMoney(delivery.unitCost)}</span>
@@ -605,6 +636,13 @@ export default function DeliveriesPage() {
                     <div className="delivery-row-actions" role="menu" aria-label={`Akcje dostawy ${delivery.deliveryNumber}`}>
                       <button type="button" role="menuitem" onClick={() => void showDetails(delivery.deliveryNumber)}>Szczegóły</button>
                       <button type="button" role="menuitem" onClick={() => openEditDelivery(delivery)}>Edytuj dostawę</button>
+                      <button
+                        type="button"
+                        role="menuitem"
+                        onClick={() => void setDeliveryActive(delivery, !delivery.active)}
+                      >
+                        {delivery.active ? 'Deaktywuj' : 'Aktywuj'}
+                      </button>
                       <button
                         type="button"
                         role="menuitem"

@@ -63,10 +63,15 @@ async function ensureDeliveriesTable() {
         supplier_name TEXT NOT NULL,
         quantity INTEGER NOT NULL CHECK (quantity > 0),
         total_cost REAL NOT NULL CHECK (total_cost >= 0),
+        active BOOLEAN NOT NULL DEFAULT TRUE CHECK (active IN (0, 1)),
         created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
         updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
       )
     `)
+  }
+
+  if (!(await columnExists('deliveries', 'active'))) {
+    await query('ALTER TABLE deliveries ADD COLUMN active BOOLEAN NOT NULL DEFAULT TRUE CHECK (active IN (0, 1))')
   }
 
   for (const row of deliveries) {
@@ -151,7 +156,7 @@ async function backfill() {
 }
 
 async function verify() {
-  const seeded = await query('SELECT delivery_number, delivery_date, supplier_name, quantity, total_cost FROM deliveries ORDER BY delivery_number')
+  const seeded = await query('SELECT delivery_number, delivery_date, supplier_name, quantity, total_cost, active FROM deliveries ORDER BY delivery_number')
   if (seeded.length < deliveries.length) throw new Error('Delivery seed is incomplete')
 
   for (const expected of deliveries) {
@@ -160,6 +165,9 @@ async function verify() {
     const actual = [Number(row.delivery_number), String(row.delivery_date), String(row.supplier_name), Number(row.quantity), Number(row.total_cost)]
     if (JSON.stringify(actual) !== JSON.stringify(expected)) throw new Error(`Delivery ${expected[0]} differs from spreadsheet seed`)
   }
+
+  const [badActive] = await query('SELECT COUNT(*) AS n FROM deliveries WHERE active IS NULL OR active NOT IN (0, 1)')
+  if (Number(badActive?.n || 0) !== 0) throw new Error('Invalid deliveries.active values found')
 
   const [nulls] = await query('SELECT COUNT(*) AS n FROM receipt_lines WHERE delivery_number IS NULL')
   if (Number(nulls?.n || 0) !== 0) throw new Error('Some receipt_lines still have NULL delivery_number')
@@ -201,7 +209,8 @@ async function verify() {
   `)
 
   console.log('DELIVERIES_MIGRATION_OK')
-  console.log(JSON.stringify({ deliveries: seeded, unresolvedRawLineNotes: Number(unresolved?.n || 0), distribution }, null, 2))
+  const [activeSummary] = await query('SELECT COUNT(*) AS total, SUM(CASE WHEN active = TRUE THEN 1 ELSE 0 END) AS active FROM deliveries')
+  console.log(JSON.stringify({ deliveries: seeded, activeSummary, unresolvedRawLineNotes: Number(unresolved?.n || 0), distribution }, null, 2))
 }
 
 async function auditLiveWorker() {

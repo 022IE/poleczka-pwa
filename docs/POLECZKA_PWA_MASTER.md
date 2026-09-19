@@ -280,7 +280,7 @@ Reguła kosztu i zysku:
 ## 9. Moduł DOSTAWY
 
 ### Górne wskaźniki
-- aktywne dostawy,
+- aktywne dostawy — liczba rekordów z `deliveries.active = TRUE`,
 - sztuk przyjęto,
 - % zbytu,
 - sprzedaż z dostaw,
@@ -560,6 +560,7 @@ Aktualnie działający model w środowisku developerskim dotyczy bazy **`poleczk
 - supplier_name,
 - quantity,
 - total_cost,
+- active,
 - created_at,
 - updated_at.
 
