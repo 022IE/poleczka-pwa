@@ -1,6 +1,6 @@
 {
-  "state": "awaiting_publish",
-  "label": "Oczekiwanie na publikację",
-  "task": "DOSTAWY — dodano weight_kg w D1 oraz pola Waga (kg) w dodawaniu i edycji",
-  "updatedAt": "2026-09-19T12:07:42.585Z"
+  "state": "editing",
+  "label": "Wprowadzanie poprawek",
+  "task": "07 — Analizy: wycentrowanie modala alarmów i badge kategorii jak u Leona",
+  "updatedAt": "2026-09-19T12:08:29.897Z"
 }
