@@ -322,4 +322,7 @@ Moduł pokazuje własny modal potwierdzenia zgodny wizualnie z PWA, zawierający
 - informację o blokadzie usuwania dostawy powiązanej ze sprzedażą,
 - przyciski **Anuluj** i **Usuń dostawę**.
 
-Błąd z API, np. próba usunięcia dostawy mającej przypisane pozycje sprzedaży, jest pokazywany wewnątrz tego samego modala.
+Modal od razu korzysta z liczby dokumentów sprzedaży powiązanych z dostawą:
+- jeśli dokumenty istnieją, pokazuje komunikat **„Dla tej dostawy występują już dokumenty sprzedaży. Dostawy nie można usunąć.”**,
+- przycisk **Usuń dostawę** jest wtedy nieaktywny,
+- backendowe zabezpieczenie usuwania pozostaje dodatkową warstwą ochrony.
