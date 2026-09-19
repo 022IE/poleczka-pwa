@@ -49,6 +49,12 @@ const DECISIONS: Array<{ value: LeonDecision; label: string }> = [
   { value: 'reject', label: 'Odrzuć' },
 ]
 
+function compactDecisionStatus(decision: LeonDecision) {
+  if (decision === 'do') return { symbol: '☑', label: 'Decyzja: Zrób' }
+  if (decision === 'defer') return { symbol: '⏳', label: 'Decyzja: Odłóż' }
+  return { symbol: '☒', label: 'Decyzja: Odrzuć' }
+}
+
 function RecommendationBody({
   item,
   index,
@@ -70,7 +76,21 @@ function RecommendationBody({
       <div className="leon-advice-copy">
         <div className="leon-advice-title-row">
           <b>{item.title}</b>
-          <em>{item.badge}</em>
+          <div className="leon-advice-meta">
+            <em>{item.badge}</em>
+            {compact && item.decision && (() => {
+              const status = compactDecisionStatus(item.decision)
+              return (
+                <span
+                  className={`leon-compact-decision is-${item.decision}`}
+                  aria-label={status.label}
+                  title={status.label}
+                >
+                  {status.symbol}
+                </span>
+              )
+            })()}
+          </div>
         </div>
         <p>{item.summary}</p>
         {!compact && (

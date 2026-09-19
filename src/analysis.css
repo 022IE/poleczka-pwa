@@ -20,9 +20,14 @@
 .leon-advice-positive .leon-advice-number{background:#e5eee3;color:#467055}
 .leon-advice-warning .leon-advice-number{background:#f4e9d7;color:#966e2f}
 .leon-advice-copy{min-width:0;flex:1}
-.leon-advice-title-row{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.leon-advice-title-row{display:flex;align-items:flex-start;justify-content:space-between;gap:8px}
 .leon-advice-title-row b{font-size:14.5px;line-height:1.25}
-.leon-advice-title-row em{flex:0 0 auto;border-radius:999px;background:#f3efe7;padding:4px 7px;color:#897251;font-size:9px;font-style:normal;font-weight:800;letter-spacing:.06em}
+.leon-advice-meta{flex:0 0 auto;display:grid;justify-items:end;gap:4px}
+.leon-advice-title-row em{border-radius:999px;background:#f3efe7;padding:4px 7px;color:#897251;font-size:9px;font-style:normal;font-weight:800;letter-spacing:.06em}
+.leon-compact-decision{display:grid;place-items:center;min-width:22px;height:20px;border-radius:7px;font-size:15px;line-height:1;font-weight:800}
+.leon-compact-decision.is-do{color:#3d694a;background:#e4eee3}
+.leon-compact-decision.is-defer{color:#8c6428;background:#f5ead6}
+.leon-compact-decision.is-reject{color:#8b414a;background:#f7e5e5}
 .leon-advice p{margin:5px 0 0;color:#6a706b;font-size:12px;line-height:1.4}
 .leon-recommendations-state{padding:16px;border-radius:11px;background:#f6f3ed;color:#6e716d;font-size:13px}
 .leon-recommendations-state.is-error{background:#fff2f2;color:#8b414a}
