@@ -1,6 +1,6 @@
 {
-  "state": "awaiting_publish",
-  "label": "Oczekiwanie na publikację",
-  "task": "Strona główna — dodano status decyzji Leona pod typem rekomendacji",
-  "updatedAt": "2026-09-19T11:27:47.075Z"
+  "state": "editing",
+  "label": "Wprowadzanie poprawek",
+  "task": "Strona główna — ikona Odrzuć jako przekreślony checkbox",
+  "updatedAt": "2026-09-19T11:28:45.014Z"
 }
