@@ -1,6 +1,6 @@
 {
-  "state": "editing",
-  "label": "Wprowadzanie poprawek",
-  "task": "LEON MÓWI — usunięcie podpisu „Codzienne rekomendacje” i powiększenie typografii",
-  "updatedAt": "2026-09-19T09:06:59.080Z"
+  "state": "awaiting_publish",
+  "label": "Oczekiwanie na publikację",
+  "task": "LEON MÓWI — usunięto podpis „Codzienne rekomendacje” i powiększono typografię",
+  "updatedAt": "2026-09-19T09:07:37.493Z"
 }
