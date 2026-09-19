@@ -964,7 +964,12 @@ async function deliveryRows(url: URL, env: Env) {
       ROUND(COALESCE(s.sold, 0) * 100.0 / NULLIF(d.quantity, 0), 1) AS sellThrough,
       ROUND(COALESCE(s.sales, 0) * 100.0 / NULLIF(d.total_cost, 0), 1) AS returnRate,
       ROUND(COALESCE(s.sales, 0), 2) AS sales,
-      ROUND(COALESCE(s.sales, 0) - (COALESCE(s.sold, 0) * d.total_cost / NULLIF(d.quantity, 0)), 2) AS profit
+      ROUND(COALESCE(s.sales, 0) - (COALESCE(s.sold, 0) * d.total_cost / NULLIF(d.quantity, 0)), 2) AS profit,
+      (
+        SELECT COUNT(DISTINCT ldocs.receipt_number)
+        FROM receipt_lines ldocs
+        WHERE ldocs.delivery_number = d.delivery_number
+      ) AS salesDocumentsCount
     FROM deliveries d
     LEFT JOIN sales s ON s.delivery_number = d.delivery_number
     WHERE ${where.sql}
@@ -982,6 +987,7 @@ async function deliveryRows(url: URL, env: Env) {
     returnRate: number
     sales: number
     profit: number
+    salesDocumentsCount: number
   }>()
 
   return salesJson({
