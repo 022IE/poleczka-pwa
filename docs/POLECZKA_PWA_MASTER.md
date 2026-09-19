@@ -186,13 +186,17 @@ Zasady:
 - kafel pokazuje maksymalnie **3 krótkie rekomendacje na dziś**,
 - kliknięcie kafla prowadzi do modułu `/analizy`,
 - pełny widok rekomendacji pokazuje również **dlaczego** dana rada powstała i **co konkretnie zrobić**,
-- rekomendacje są liczone z aktualnych danych D1 przez endpoint `/api/analysis/recommendations`,
-- pierwsza wersja silnika jest deterministyczna i bazuje na porównaniu ostatnich 7 dni z poprzednimi 7 dniami, tempie sprzedaży kategorii oraz wieku, zbycie i dynamice dostaw,
+- rekomendacje są generowane z aktualnych danych D1 przez deterministyczny silnik,
+- obowiązującym kierunkiem jest dzienny snapshot: tekst i maksymalnie 3 rekomendacje są przygotowywane automatycznie dla daty `Europe/Warsaw` i przez cały dzień pozostają niezmienne,
+- `/api/analysis/recommendations` ma standardowo odczytywać gotowy snapshot z D1 zamiast liczyć rekomendacje przy każdym wejściu,
+- silnik bazuje na porównaniu ostatnich 7 dni z poprzednimi 7 dniami, tempie sprzedaży kategorii oraz wieku, zbycie i dynamice dostaw,
 - „Leon mówi…” służy do decyzji biznesowych; techniczne błędy i braki danych pozostają osobnym mechanizmem alertów.
 
 Docelowo rekomendacje będą powiązane z historią decyzji i oceną ich efektów.
 
 Dodatkowo pod nagłówkiem **„Leon mówi…”** wyświetlane jest jedno krótkie zdanie od Leona, celowo niezwiązane z biznesową częścią dashboardu. Pula obejmuje **100 luźnych tekstów** zapisanych w D1. Tekst jest stały przez cały dzień i rotuje bez powtórki w 100-dniowym cyklu.
+
+Daily Leon ma być przygotowywany automatycznie przez Cloudflare Worker. Worker uruchamia `scheduled()` raz na godzinę, ale tworzy snapshot tylko wtedy, gdy dla bieżącej daty `Europe/Warsaw` nie istnieje jeszcze kompletny zestaw. Pozwala to poprawnie obsłużyć zmianę czasu lato / zima. Endpoint zachowuje fallback i w razie braku dzisiejszego snapshotu może utworzyć go przy pierwszym odczycie.
 
 ### Szybki dostęp
 
@@ -410,7 +414,11 @@ Bieżące minimum:
 - trzy najważniejsze rekomendacje z D1,
 - krótka rada,
 - uzasadnienie na podstawie danych,
-- konkretna sugerowana akcja.
+- konkretna sugerowana akcja,
+- dzienny snapshot rekomendacji i tekstu Leona,
+- automatyczne przygotowanie dnia przez Worker,
+- historia dziennych rekomendacji,
+- fallback API tworzący snapshot, jeżeli harmonogram go nie przygotował.
 
 Planowane kolejne warstwy:
 - historia decyzji i ich efektów,
@@ -611,7 +619,22 @@ Aktualnie działający model w środowisku developerskim dotyczy bazy **`poleczk
 - message_id,
 - selected_at.
 
-Powyższe tabele obsługują dzienny tekst pod nagłówkiem **„Leon mówi…”**. Historia zapewnia stały tekst przez cały dzień oraz brak powtórek w pełnym 100-dniowym cyklu przy 100 aktywnych wiadomościach.
+### `leon_daily_recommendations` — planowana
+- for_date,
+- position,
+- recommendation_id,
+- tone,
+- badge,
+- title,
+- summary,
+- reason,
+- action,
+- priority,
+- generated_at.
+
+`leon_messages` i `leon_message_history` obsługują dzienny tekst pod nagłówkiem **„Leon mówi…”**. Historia zapewnia stały tekst przez cały dzień oraz brak powtórek w pełnym 100-dniowym cyklu przy 100 aktywnych wiadomościach.
+
+`leon_daily_recommendations` ma przechowywać maksymalnie trzy rekomendacje na dzień i jednocześnie budować historię porad Leona. Klucz dzienny musi blokować dwa wpisy na tej samej pozycji tego samego dnia.
 
 `line_note` pozostaje polem surowym. Polem używanym przez aplikację do relacji z dostawą jest `delivery_number`.
 
@@ -694,9 +717,9 @@ Docelowo:
 - `01 — SPRZEDAŻ`
 - `02 — DOSTAWY`
 - `03 — KOSZTY`
-- `04 — ANALIZY`
 - `06 — USTAWIENIA`
-- `07 — STRONA GŁÓWNA`
+- `07 — ANALIZY`
+- `STRONA GŁÓWNA` — dashboard aplikacji, bez osobnego numeru modułu
 - `08 — INTEGRACJE / D1 / LOYVERSE`
 - `09 — VINTED`
 
