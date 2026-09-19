@@ -130,3 +130,19 @@ Filtry mają działać wspólnie z parametrami porównania okresów, jeśli dana
 # 9. Zasada dokumentacyjna
 
 Powyższe ustawienie porównania okresów jest obowiązującym założeniem projektu i zastępuje wcześniejsze przykłady o stałej liczbie tygodni lub konfiguracji typu `7 dni × 10 okresów`.
+
+
+---
+
+# 10. Tooltip wartości na wykresie „Sprzedaż w czasie”
+
+Na dashboardzie wykres **Sprzedaż w czasie** pokazuje natychmiastowy hint dla każdego słupka.
+
+Zachowanie:
+- po najechaniu kursorem na słupek wyświetla się tooltip,
+- tooltip pokazuje datę oraz dokładną wartość sprzedaży w PLN,
+- przykład: `18 wrz · 342,00 zł`,
+- ten sam opis jest dostępny przez fokus klawiatury,
+- rozwiązanie nie zmienia wysokości ani wizualnej skali słupków.
+
+Celem jest możliwość szybkiego odczytania dokładnej wartości bez analizowania osi Y.
