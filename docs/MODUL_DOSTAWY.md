@@ -215,6 +215,7 @@ Tabela główna pokazuje:
 - sprzedane,
 - % zbytu,
 - % zwrotu,
+- średnią marżę,
 - sprzedaż,
 - zysk.
 
@@ -222,7 +223,18 @@ Definicje:
 - `unit_cost = total_cost / quantity`,
 - `sell_through = sold / quantity × 100%`,
 - `return_rate = sales / total_cost × 100%`,
-- `profit = sales - sold × unit_cost`.
+- `sold_cost = sold × unit_cost`,
+- `average_margin = (sales - sold_cost) / sold_cost × 100%`,
+- `profit = sales - sold_cost`.
+
+Kolorowanie **Śr. marży**:
+- poniżej `50%` — czerwone,
+- od `50%` do poniżej `120%` — zwykła czcionka,
+- od `120%` do `200%` — żółto-bursztynowe,
+- powyżej `200%` — zielone,
+- brak sprzedaży lub kosztu sprzedanych sztuk — `—`.
+
+Kolory dodatnich i ujemnych wskaźników w tabeli są celowo bardziej nasycone niż wcześniej, żeby były czytelniejsze na jasnym tle.
 
 Formularz **Dodaj dostawę** zapisuje:
 - datę,

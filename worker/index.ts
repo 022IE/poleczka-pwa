@@ -963,6 +963,18 @@ async function deliveryRows(url: URL, env: Env) {
       COALESCE(s.sold, 0) AS sold,
       ROUND(COALESCE(s.sold, 0) * 100.0 / NULLIF(d.quantity, 0), 1) AS sellThrough,
       ROUND(COALESCE(s.sales, 0) * 100.0 / NULLIF(d.total_cost, 0), 1) AS returnRate,
+      CASE
+        WHEN COALESCE(s.sold, 0) > 0 AND d.total_cost > 0 THEN
+          ROUND(
+            (
+              COALESCE(s.sales, 0)
+              - (COALESCE(s.sold, 0) * d.total_cost / NULLIF(d.quantity, 0))
+            ) * 100.0
+            / NULLIF(COALESCE(s.sold, 0) * d.total_cost / NULLIF(d.quantity, 0), 0),
+            1
+          )
+        ELSE NULL
+      END AS averageMargin,
       ROUND(COALESCE(s.sales, 0), 2) AS sales,
       ROUND(COALESCE(s.sales, 0) - (COALESCE(s.sold, 0) * d.total_cost / NULLIF(d.quantity, 0)), 2) AS profit,
       (
@@ -985,6 +997,7 @@ async function deliveryRows(url: URL, env: Env) {
     sold: number
     sellThrough: number
     returnRate: number
+    averageMargin: number | null
     sales: number
     profit: number
     salesDocumentsCount: number

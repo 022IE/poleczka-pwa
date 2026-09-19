@@ -23,6 +23,7 @@ type Delivery = {
   sold: number
   sellThrough: number
   returnRate: number
+  averageMargin: number | null
   sales: number
   profit: number
   active: boolean
@@ -64,6 +65,14 @@ const percentFormatter = new Intl.NumberFormat('pl-PL', { minimumFractionDigits:
 function formatMoney(value: number) { return moneyFormatter.format(Number(value || 0)) }
 function formatNumber(value: number) { return numberFormatter.format(Number(value || 0)) }
 function formatPercent(value: number) { return `${percentFormatter.format(Number(value || 0))}%` }
+
+function marginClass(value: number | null) {
+  if (value === null || !Number.isFinite(value)) return ''
+  if (value < 50) return 'metric-negative'
+  if (value < 120) return ''
+  if (value <= 200) return 'metric-warning'
+  return 'metric-positive'
+}
 
 function displayYmd(value: string) {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) return value
@@ -727,6 +736,7 @@ export default function DeliveriesPage() {
               <button type="button" className="deliveries-sort" onClick={() => toggleSort('sold')}>Sprzedane <b>{sortArrow('sold')}</b></button>
               <button type="button" className="deliveries-sort" onClick={() => toggleSort('sellThrough')}>% zbytu <b>{sortArrow('sellThrough')}</b></button>
               <button type="button" className="deliveries-sort" onClick={() => toggleSort('returnRate')}>% zwrotu <b>{sortArrow('returnRate')}</b></button>
+              <button type="button" className="deliveries-sort" onClick={() => toggleSort('averageMargin')}>Śr. marża <b>{sortArrow('averageMargin')}</b></button>
               <button type="button" className="deliveries-sort" onClick={() => toggleSort('sales')}>Sprzedaż <b>{sortArrow('sales')}</b></button>
               <button type="button" className="deliveries-sort" onClick={() => toggleSort('profit')}>Zysk <b>{sortArrow('profit')}</b></button>
               <span className="deliveries-menu-dots">⋮</span>
@@ -760,6 +770,7 @@ export default function DeliveriesPage() {
                     <span>{formatNumber(delivery.sold)}</span>
                     <span>{formatPercent(delivery.sellThrough)}</span>
                     <span className={delivery.returnRate >= 100 ? 'metric-positive' : delivery.returnRate < 50 ? 'metric-negative' : ''}>{formatPercent(delivery.returnRate)}</span>
+                    <span className={marginClass(delivery.averageMargin)}>{delivery.averageMargin === null ? '—' : formatPercent(delivery.averageMargin)}</span>
                     <span>{formatMoney(delivery.sales)}</span>
                     <span className={delivery.profit >= 0 ? 'metric-positive' : 'metric-negative'}>{formatMoney(delivery.profit)}</span>
                     <button
