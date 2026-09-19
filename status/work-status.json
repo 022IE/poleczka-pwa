@@ -1,6 +1,6 @@
 {
-  "state": "editing",
-  "label": "Wprowadzanie poprawek",
-  "task": "Strona główna — przeniesienie statusów decyzji Leona do prawego dolnego rogu kafli",
-  "updatedAt": "2026-09-19T11:29:36.899Z"
+  "state": "awaiting_publish",
+  "label": "Oczekiwanie na publikację",
+  "task": "Strona główna — statusy decyzji Leona przeniesione do prawego dolnego rogu kafli; Odrzuć jako przekreślony checkbox",
+  "updatedAt": "2026-09-19T11:29:54.543Z"
 }
