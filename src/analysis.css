@@ -40,6 +40,30 @@
 .leon-advice-detail,.leon-advice-action{display:grid;grid-template-columns:76px 1fr;gap:8px;margin-top:10px;padding-top:9px;border-top:1px solid #eeeae3}
 .leon-advice-detail span,.leon-advice-action span{font-size:11px;font-weight:800;letter-spacing:.06em;color:#9a7431;text-transform:uppercase}
 .leon-advice-detail strong,.leon-advice-action strong{font-size:13.5px;line-height:1.45;font-weight:600;color:#555c56}
+
+.leon-history{margin-top:12px;border:1px solid #e7dfd2;border-radius:16px;background:rgba(255,255,255,.82);padding:18px}
+.leon-history-head{display:flex;align-items:end;justify-content:space-between;gap:16px;margin-bottom:12px}
+.leon-history-head span{font-size:9px;font-weight:800;letter-spacing:.12em;color:#9a7431}
+.leon-history-head h2{font-family:Georgia,serif;font-size:22px;font-weight:500;margin:3px 0 0;color:#3f403d}
+.leon-history-head small{font-size:12px;color:#787b76}
+.leon-history-list{display:grid;gap:8px}
+.leon-history-day{border:1px solid #ebe6dd;border-radius:12px;background:#fff;overflow:hidden}
+.leon-history-day summary{cursor:pointer;list-style:none;display:flex;align-items:center;justify-content:space-between;gap:14px;padding:12px 14px}
+.leon-history-day summary::-webkit-details-marker{display:none}
+.leon-history-day summary>div{display:grid;gap:2px}
+.leon-history-day summary b{font-size:14px;color:#444a45}
+.leon-history-day summary span{font-family:Georgia,serif;font-style:italic;font-size:12px;color:#8a7656}
+.leon-history-day summary>em{font-size:11px;font-style:normal;font-weight:700;color:#8c7652;background:#f5f0e7;border-radius:999px;padding:5px 8px;white-space:nowrap}
+.leon-history-items{display:grid;gap:8px;padding:0 12px 12px}
+.leon-history-item{border-top:1px solid #eee9e1;padding:11px 2px 2px}
+.leon-history-item-title{display:flex;align-items:center;gap:8px}
+.leon-history-item-title>span{width:24px;height:24px;border-radius:50%;display:grid;place-items:center;background:#eee7da;color:#87682f;font-size:11px;font-weight:800}
+.leon-history-item-title b{font-size:14px;flex:1}
+.leon-history-item-title em{font-size:9px;font-style:normal;font-weight:800;letter-spacing:.05em;color:#897251;background:#f3efe7;border-radius:999px;padding:4px 7px}
+.leon-history-item p{margin:6px 0;color:#6a706b;font-size:12.5px;line-height:1.45}
+.leon-history-item>div:not(.leon-history-item-title){margin-top:5px;color:#606660;font-size:12px;line-height:1.45}
+.leon-history-item strong{color:#87682f}
+
 .analysis-roadmap{margin-top:12px;border:1px solid #ebe8e2;border-radius:16px;background:rgba(255,255,255,.78);padding:16px 18px}
 .analysis-roadmap span{font-size:9px;font-weight:800;letter-spacing:.12em;color:#9a7431}
 .analysis-roadmap h2{font-family:Georgia,serif;font-size:18px;margin:3px 0 5px}

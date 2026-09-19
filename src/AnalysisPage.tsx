@@ -1,6 +1,7 @@
 import BuildStatus from './components/BuildStatus'
 import DataStatus from './components/DataStatus'
 import LeonRecommendations from './components/LeonRecommendations'
+import LeonRecommendationHistory from './components/LeonRecommendationHistory'
 
 const SHOW_DEV_PIPELINE = false
 
@@ -35,6 +36,7 @@ export default function AnalysisPage() {
     <div className="analysis-wrap">
       <AnalysisHeader />
       <LeonRecommendations />
+      <LeonRecommendationHistory />
       <section className="analysis-roadmap">
         <div>
           <span>NASTĘPNE WARSTWY</span>

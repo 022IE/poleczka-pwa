@@ -1937,16 +1937,13 @@ function recommendationPercent(value: number) {
   return Math.round(value * 10) / 10
 }
 
-async function analysisRecommendations(env: Env) {
-  const today = warsawYmd()
+async function calculateAnalysisRecommendations(env: Env, today = warsawYmd()) {
   const currentStart = addDaysYmd(today, -6)
   const previousStart = addDaysYmd(today, -13)
   const previousEnd = addDaysYmd(today, -7)
   const currentStartIso = warsawMidnightUtcIso(currentStart)
   const previousStartIso = warsawMidnightUtcIso(previousStart)
   const todayEndIso = warsawMidnightUtcIso(addDaysYmd(today, 1))
-
-  const personalNote = await leonMessageOfDay(env)
 
   const [salesRow, categoryResult, deliveryResult] = await Promise.all([
     env.DB.prepare(`
@@ -2209,10 +2206,9 @@ async function analysisRecommendations(env: Env) {
     .sort((a, b) => b.priority - a.priority)
     .slice(0, 3)
 
-  return salesJson({
+  return {
     ok: true,
     generatedAt: nowIso(),
-    personalNote,
     period: {
       currentStart,
       currentEnd: today,
@@ -2220,6 +2216,270 @@ async function analysisRecommendations(env: Env) {
       previousEnd,
     },
     items: unique,
+  }
+}
+
+type LeonDailyRecommendationRow = {
+  forDate: string
+  position: number
+  recommendationId: string
+  tone: 'positive' | 'warning' | 'neutral'
+  badge: string
+  title: string
+  summary: string
+  reason: string
+  action: string
+  priority: number
+  generatedAt: string
+  currentStart: string
+  currentEnd: string
+  previousStart: string
+  previousEnd: string
+}
+
+function leonDailyTableMissing(error: unknown) {
+  const message = error instanceof Error ? error.message : String(error || '')
+  return message.toLowerCase().includes('no such table: leon_daily_recommendations')
+}
+
+async function readLeonDailyRecommendationRows(env: Env, forDate: string) {
+  try {
+    const result = await env.DB.prepare(`
+      SELECT
+        for_date AS forDate,
+        position,
+        recommendation_id AS recommendationId,
+        tone,
+        badge,
+        title,
+        summary,
+        reason,
+        action,
+        priority,
+        generated_at AS generatedAt,
+        current_start AS currentStart,
+        current_end AS currentEnd,
+        previous_start AS previousStart,
+        previous_end AS previousEnd
+      FROM leon_daily_recommendations
+      WHERE for_date = ?
+      ORDER BY position
+    `).bind(forDate).all<LeonDailyRecommendationRow>()
+
+    return result.results || []
+  } catch (error) {
+    if (leonDailyTableMissing(error)) return null
+    throw error
+  }
+}
+
+function dailyRowsToRecommendations(rows: LeonDailyRecommendationRow[]): AnalysisRecommendation[] {
+  return rows.map((row) => ({
+    id: row.recommendationId,
+    tone: row.tone,
+    badge: row.badge,
+    title: row.title,
+    summary: row.summary,
+    reason: row.reason,
+    action: row.action,
+    priority: Number(row.priority || 0),
+  }))
+}
+
+async function prepareLeonDay(env: Env) {
+  const today = warsawYmd()
+  const personalNote = await leonMessageOfDay(env)
+  const stored = await readLeonDailyRecommendationRows(env, today)
+
+  if (stored && stored.length > 0) {
+    const first = stored[0]
+    return {
+      ok: true,
+      source: 'daily-snapshot',
+      generatedAt: first.generatedAt,
+      personalNote,
+      period: {
+        currentStart: first.currentStart,
+        currentEnd: first.currentEnd,
+        previousStart: first.previousStart,
+        previousEnd: first.previousEnd,
+      },
+      items: dailyRowsToRecommendations(stored),
+    }
+  }
+
+  const calculated = await calculateAnalysisRecommendations(env, today)
+  const generatedAt = nowIso()
+
+  const statements = calculated.items.map((item, index) =>
+    env.DB.prepare(`
+      INSERT OR IGNORE INTO leon_daily_recommendations (
+        for_date,
+        position,
+        recommendation_id,
+        tone,
+        badge,
+        title,
+        summary,
+        reason,
+        action,
+        priority,
+        generated_at,
+        current_start,
+        current_end,
+        previous_start,
+        previous_end
+      )
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `).bind(
+      today,
+      index + 1,
+      item.id,
+      item.tone,
+      item.badge,
+      item.title,
+      item.summary,
+      item.reason,
+      item.action,
+      item.priority,
+      generatedAt,
+      calculated.period.currentStart,
+      calculated.period.currentEnd,
+      calculated.period.previousStart,
+      calculated.period.previousEnd,
+    )
+  )
+
+  if (statements.length > 0) {
+    try {
+      await env.DB.batch(statements)
+    } catch (error) {
+      if (!leonDailyTableMissing(error)) throw error
+      return {
+        ok: true,
+        source: 'live-fallback',
+        generatedAt,
+        personalNote,
+        period: calculated.period,
+        items: calculated.items,
+      }
+    }
+  }
+
+  const saved = await readLeonDailyRecommendationRows(env, today)
+  if (saved && saved.length > 0) {
+    const first = saved[0]
+    return {
+      ok: true,
+      source: 'daily-snapshot',
+      generatedAt: first.generatedAt,
+      personalNote,
+      period: {
+        currentStart: first.currentStart,
+        currentEnd: first.currentEnd,
+        previousStart: first.previousStart,
+        previousEnd: first.previousEnd,
+      },
+      items: dailyRowsToRecommendations(saved),
+    }
+  }
+
+  return {
+    ok: true,
+    source: 'live-fallback',
+    generatedAt,
+    personalNote,
+    period: calculated.period,
+    items: calculated.items,
+  }
+}
+
+async function analysisRecommendations(env: Env) {
+  return salesJson(await prepareLeonDay(env))
+}
+
+type LeonHistoryRow = LeonDailyRecommendationRow & {
+  personalNoteId: number | null
+  personalNoteText: string | null
+}
+
+async function analysisRecommendationHistory(url: URL, env: Env) {
+  const requestedDays = Number.parseInt(url.searchParams.get('days') || '30', 10) || 30
+  const days = Math.min(90, Math.max(1, requestedDays))
+  const today = warsawYmd()
+  const from = addDaysYmd(today, -(days - 1))
+
+  let rows: LeonHistoryRow[] = []
+  try {
+    const result = await env.DB.prepare(`
+      SELECT
+        r.for_date AS forDate,
+        r.position,
+        r.recommendation_id AS recommendationId,
+        r.tone,
+        r.badge,
+        r.title,
+        r.summary,
+        r.reason,
+        r.action,
+        r.priority,
+        r.generated_at AS generatedAt,
+        r.current_start AS currentStart,
+        r.current_end AS currentEnd,
+        r.previous_start AS previousStart,
+        r.previous_end AS previousEnd,
+        m.id AS personalNoteId,
+        m.message AS personalNoteText
+      FROM leon_daily_recommendations r
+      LEFT JOIN leon_message_history h ON h.shown_on = r.for_date
+      LEFT JOIN leon_messages m ON m.id = h.message_id
+      WHERE r.for_date >= ?
+        AND r.for_date <= ?
+      ORDER BY r.for_date DESC, r.position ASC
+    `).bind(from, today).all<LeonHistoryRow>()
+    rows = result.results || []
+  } catch (error) {
+    if (!leonDailyTableMissing(error)) throw error
+  }
+
+  const daysMap = new Map<string, {
+    date: string
+    generatedAt: string
+    personalNote: { id: number; text: string } | null
+    items: AnalysisRecommendation[]
+  }>()
+
+  for (const row of rows) {
+    let day = daysMap.get(row.forDate)
+    if (!day) {
+      day = {
+        date: row.forDate,
+        generatedAt: row.generatedAt,
+        personalNote: row.personalNoteId && row.personalNoteText
+          ? { id: Number(row.personalNoteId), text: String(row.personalNoteText) }
+          : null,
+        items: [],
+      }
+      daysMap.set(row.forDate, day)
+    }
+
+    day.items.push({
+      id: row.recommendationId,
+      tone: row.tone,
+      badge: row.badge,
+      title: row.title,
+      summary: row.summary,
+      reason: row.reason,
+      action: row.action,
+      priority: Number(row.priority || 0),
+    })
+  }
+
+  return salesJson({
+    ok: true,
+    today,
+    days,
+    items: Array.from(daysMap.values()),
   })
 }
 
@@ -2556,6 +2816,17 @@ export default {
 
 
 
+    if (url.pathname === '/api/analysis/recommendations/history' && request.method === 'GET') {
+      try {
+        return analysisRecommendationHistory(url, env)
+      } catch (error) {
+        return salesJson({
+          ok: false,
+          error: error instanceof Error ? error.message : 'Analysis recommendation history API failed',
+        }, 500)
+      }
+    }
+
     if (url.pathname === '/api/analysis/recommendations' && request.method === 'GET') {
       try {
         return analysisRecommendations(env)
@@ -2668,5 +2939,9 @@ export default {
     }
 
     return Response.json({ ok: false, error: 'Not found' }, { status: 404 })
+  },
+
+  async scheduled(_controller: ScheduledController, env: Env, _ctx: ExecutionContext): Promise<void> {
+    await prepareLeonDay(env)
   },
 }

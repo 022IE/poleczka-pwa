@@ -21,6 +21,9 @@ class_name = "PipelineHub"
 tag = "pipeline-hub-v1"
 new_sqlite_classes = ["PipelineHub"]
 
+[triggers]
+crons = ["0 * * * *"]
+
 [vars]
 APP_NAME = "Półeczka Iwonki"
 APP_VERSION = "0.1.0"

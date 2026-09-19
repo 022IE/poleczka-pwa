@@ -48,3 +48,18 @@ Migracja `0002_leon_messages.sql` dodaje:
 - indeks historii po `message_id`.
 
 Tekst dnia jest trwały dla całego dnia i mechanizm rotacji nie dopuszcza ponownego użycia żadnego z 99 poprzednich tekstów. Przy 100 aktywnych tekstach oznacza to pełny cykl bez powtórki przez 100 dni.
+
+
+## Migracja Daily Leon — 19.09.2026
+
+Migracja `0003_leon_daily_recommendations.sql` dodaje tabelę `leon_daily_recommendations`.
+
+Tabela przechowuje dzienny snapshot maksymalnie trzech rekomendacji Leona wraz z:
+- pełną treścią rekomendacji,
+- priorytetem i tonem,
+- zakresem danych użytym do analizy,
+- datą i czasem wygenerowania.
+
+Klucz `(for_date, position)` oraz unikalność `(for_date, recommendation_id)` zapewniają idempotentny zapis jednego spójnego zestawu na dzień.
+
+Historia nie jest czyszczona przy generowaniu kolejnego dnia i stanowi źródło dla widoku historii w module ANALIZY.
