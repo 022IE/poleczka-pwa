@@ -1,6 +1,6 @@
 {
-  "state": "awaiting_publish",
-  "label": "Oczekiwanie na publikację",
-  "task": "UI globalne — zmniejszony odstęp pod górnym paskiem przed Leon mówi i kaflami modułów",
-  "updatedAt": "2026-09-19T09:55:10Z"
+  "state": "editing",
+  "label": "Wprowadzanie poprawek",
+  "task": "UI responsywne — dopasowanie dashboardu i modułów do tabletów w poziomie",
+  "updatedAt": "2026-09-19T10:46:00Z"
 }
