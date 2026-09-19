@@ -1,6 +1,6 @@
 {
-  "state": "editing",
-  "label": "Wprowadzanie poprawek",
-  "task": "DOSTAWY — powiększenie typografii okna usuwania o około 20%",
-  "updatedAt": "2026-09-19T08:08:59.209Z"
+  "state": "awaiting_publish",
+  "label": "Oczekiwanie na publikację",
+  "task": "DOSTAWY — typografia okna usuwania powiększona o około 20%",
+  "updatedAt": "2026-09-19T08:09:52.475Z"
 }
