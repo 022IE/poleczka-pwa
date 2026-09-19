@@ -73,7 +73,6 @@ export default function LeonRecommendations({ compact = false }: { compact?: boo
     <>
       <div className="leon-recommendations-head">
         <div>
-          <span>CODZIENNE REKOMENDACJE</span>
           <h2>Leon mówi…</h2>
         </div>
         {compact
