@@ -1,7 +1,7 @@
 # PÓŁECZKA IWONKI — MODUŁ ANALIZY
 
-**Moduł:** 04 — ANALIZY  
-**Status:** specyfikacja bieżąca v0.3  
+**Moduł:** 07 — ANALIZY  
+**Status:** specyfikacja bieżąca v0.4  
 **Dokument nadrzędny:** `POLECZKA_PWA_MASTER.md`  
 **Aktualizacja:** 19.09.2026
 
@@ -169,13 +169,13 @@ Każda rekomendacja pokazuje:
 - **Dlaczego** — dane, które wywołały sugestię,
 - **Co robić** — konkretną akcję.
 
-## Źródło i logika v0.2
+## Źródło i logika
 
 Endpoint: `/api/analysis/recommendations`.
 
 Źródło danych: D1.
 
-Pierwszy silnik jest celowo deterministyczny. Korzysta m.in. z:
+Silnik jest celowo deterministyczny. Korzysta m.in. z:
 - sprzedaży z ostatnich 7 dni vs poprzednich 7 dni,
 - dynamiki kategorii,
 - wieku dostawy,
@@ -214,10 +214,100 @@ Pod nagłówkiem **„Leon mówi…”** wyświetlane jest jedno krótkie, luźn
 - tabela `leon_message_history` zapisuje, który tekst został pokazany danego dnia.
 
 Reguły rotacji:
-- tekst jest wybierany raz na dzień według czasu `Europe/Warsaw`,
+- tekst jest przypisywany do dnia według czasu `Europe/Warsaw`,
 - odświeżanie strony nie zmienia tekstu w ciągu dnia,
 - wybór nie może użyć żadnego z 99 poprzednich tekstów,
 - przy 100 aktywnych wpisach pełna pula przechodzi bez powtórki przez 100 dni,
 - po pełnym cyklu tekst może wrócić.
 
 Na kaflu dashboardu nie pokazujemy już napisu **„Przejdź do analiz”**. Cały kafel pozostaje klikalny i prowadzi do modułu ANALIZY.
+
+---
+
+# 13. Daily Leon — automatyczne przygotowanie dnia
+
+## Cel
+
+Tekst dnia i trzy rekomendacje Leona mają być przygotowywane automatycznie na początku każdego dnia, a nie dopiero podczas pierwszego wejścia użytkownika na dashboard.
+
+Dzienny zestaw Leona jest snapshotem. Po jego utworzeniu przez cały dzień dashboard oraz moduł ANALIZY pokazują ten sam tekst i ten sam zestaw rekomendacji.
+
+## Jedna operacja dzienna
+
+Worker ma posiadać wspólną funkcję roboczą, np. `prepareLeonDay(env)`, która:
+
+1. wyznacza bieżącą datę w `Europe/Warsaw`,
+2. sprawdza, czy tekst dnia jest już zapisany w `leon_message_history`,
+3. jeśli go nie ma — wybiera nowy tekst zgodnie z regułą 100-dniowej rotacji,
+4. sprawdza, czy rekomendacje dla bieżącej daty są już zapisane,
+5. jeśli ich nie ma — liczy rekomendacje z aktualnych danych D1,
+6. zapisuje maksymalnie trzy rekomendacje jako dzienny snapshot,
+7. zapisuje czas wygenerowania zestawu.
+
+Operacja musi być **idempotentna**: wielokrotne uruchomienie tego samego dnia nie może losować nowego tekstu ani nadpisywać poprawnie utworzonego zestawu rekomendacji.
+
+## Tabela dziennych rekomendacji
+
+Do zapisania historii rekomendacji przewidujemy tabelę `leon_daily_recommendations`.
+
+Minimalny zakres danych:
+- `for_date` — data dnia w `Europe/Warsaw`,
+- `position` — pozycja 1–3,
+- `recommendation_id`,
+- `tone`,
+- `badge`,
+- `title`,
+- `summary`,
+- `reason`,
+- `action`,
+- `priority`,
+- `generated_at`.
+
+Klucz dzienny powinien uniemożliwiać zapis dwóch rekomendacji na tej samej pozycji dla tego samego dnia.
+
+Tabela ma pełnić również rolę historii rekomendacji. Nie kasujemy poprzednich dni po wygenerowaniu nowego snapshotu.
+
+## Harmonogram
+
+Cloudflare Worker otrzymuje obsługę `scheduled()`.
+
+Cron uruchamia Workera raz na godzinę. Sam Worker sprawdza datę w `Europe/Warsaw` i wykonuje przygotowanie tylko wtedy, gdy snapshot dla bieżącego dnia jeszcze nie istnieje.
+
+Takie rozwiązanie jest celowe:
+- harmonogram Cloudflare działa w UTC,
+- północ w Polsce zmienia położenie względem UTC przy zmianie czasu,
+- logika oparta na lokalnej dacie eliminuje konieczność ręcznego przełączania harmonogramu lato / zima.
+
+Docelowa konfiguracja:
+```toml
+[triggers]
+crons = ["0 * * * *"]
+```
+
+## Zachowanie API
+
+`GET /api/analysis/recommendations` nie powinien standardowo przeliczać rekomendacji przy każdym odczycie.
+
+Docelowy przebieg:
+1. odczyt dzisiejszego tekstu i dzisiejszych rekomendacji z D1,
+2. zwrot gotowego snapshotu do frontendu,
+3. brak zmiany zestawu po odświeżeniu strony.
+
+## Fallback bezpieczeństwa
+
+Endpoint zachowuje mechanizm awaryjny:
+
+- jeżeli dla bieżącej daty nie istnieje kompletny snapshot,
+- wywołuje `prepareLeonDay(env)`,
+- zapisuje brakujące dane,
+- następnie odczytuje i zwraca gotowy zestaw.
+
+Dzięki temu pojedyncze pominięcie Cron Triggera nie powoduje pustego kafla ani błędu w module ANALIZY.
+
+## Stan przejściowy
+
+Przed wdrożeniem Daily Leon:
+- rekomendacje są liczone przy każdym wywołaniu `/api/analysis/recommendations`,
+- tekst dnia jest losowany przy pierwszym wywołaniu danego dnia i następnie utrwalany w `leon_message_history`.
+
+Po wdrożeniu sekcji 13 ten mechanizm zostaje zastąpiony dziennym snapshotem przygotowywanym automatycznie.
