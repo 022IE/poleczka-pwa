@@ -310,3 +310,16 @@ Pole **Dostawca** w formularzu dodawania i edycji:
 - pozwala wybrać istniejącego dostawcę jednym kliknięciem,
 - pozostaje zwykłym polem tekstowym, więc można wpisać i zapisać całkiem nową nazwę,
 - nowy dostawca po zapisaniu dostawy automatycznie pojawi się w kolejnych podpowiedziach.
+
+
+### Potwierdzenie usuwania
+
+Usuwanie dostawy nie używa systemowego `window.confirm()`.
+Moduł pokazuje własny modal potwierdzenia zgodny wizualnie z PWA, zawierający:
+- numer i dostawcę,
+- datę, ilość i koszt zakupu,
+- ostrzeżenie o nieodwracalności operacji,
+- informację o blokadzie usuwania dostawy powiązanej ze sprzedażą,
+- przyciski **Anuluj** i **Usuń dostawę**.
+
+Błąd z API, np. próba usunięcia dostawy mającej przypisane pozycje sprzedaży, jest pokazywany wewnątrz tego samego modala.
