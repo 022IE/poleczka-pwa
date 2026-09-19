@@ -404,8 +404,9 @@ body {
 }
 
 
-/* Wyrównanie prawej części nagłówka dashboardu do prawej krawędzi ekranu. */
-.dashboard-wrap > .dashboard-header .header-actions {
+/* Wyrównanie prawej części nagłówka do prawej krawędzi ekranu. */
+.dashboard-wrap > .dashboard-header .header-actions,
+.analysis-wrap > .dashboard-header .header-actions {
   margin-left: auto;
   justify-content: flex-end;
 }
