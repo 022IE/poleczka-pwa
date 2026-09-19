@@ -45,6 +45,7 @@ type SaleLine = {
   discount: number
   net: number
   deliveryNo: string
+  supplierName: string
 }
 
 type ReceiptsResponse = {
@@ -729,7 +730,7 @@ function SalesPage() {
                                 <span>{formatMoney(line.price)}</span>
                                 <span>{formatMoney(line.discount)}</span>
                                 <strong>{formatMoney(line.net)}</strong>
-                                <span>{line.deliveryNo}</span>
+                                <span className="sales-delivery-ref"><strong>{line.deliveryNo}</strong> <span>({line.supplierName})</span></span>
                               </div>
                             )
                           })}
