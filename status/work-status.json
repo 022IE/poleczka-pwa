@@ -1,6 +1,6 @@
 {
-  "state": "editing",
-  "label": "Wprowadzanie poprawek",
-  "task": "DOSTAWY — blokada usuwania gdy istnieją dokumenty sprzedaży",
-  "updatedAt": "2026-09-19T08:06:18.242Z"
+  "state": "awaiting_publish",
+  "label": "Oczekiwanie na publikację",
+  "task": "DOSTAWY — blokada usuwania przy istniejących dokumentach sprzedaży zakończona",
+  "updatedAt": "2026-09-19T08:07:39.158Z"
 }
