@@ -828,10 +828,12 @@ async function salesReceiptLines(receiptNumber: string, env: Env) {
       COALESCE(l.price, 0) AS price,
       COALESCE(l.total_discount, 0) AS discount,
       COALESCE(l.total_money, 0) AS net,
-      CAST(COALESCE(l.delivery_number, -1) AS TEXT) AS deliveryNo
+      CAST(COALESCE(l.delivery_number, -1) AS TEXT) AS deliveryNo,
+      COALESCE(d.supplier_name, '—') AS supplierName
     FROM receipt_lines l
     LEFT JOIN items i ON i.item_id = l.item_id
     LEFT JOIN categories c ON c.category_id = i.category_id
+    LEFT JOIN deliveries d ON d.delivery_number = l.delivery_number
     WHERE l.receipt_number = ?
     ORDER BY l.rowid
   `).bind(receiptNumber).all<{
@@ -845,6 +847,7 @@ async function salesReceiptLines(receiptNumber: string, env: Env) {
     discount: number
     net: number
     deliveryNo: string
+    supplierName: string
   }>()
 
   return salesJson({ ok: true, items: result.results || [] })
