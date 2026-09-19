@@ -137,6 +137,7 @@ export default function DeliveriesPage() {
   const [newSupplier, setNewSupplier] = useState('')
   const [newQuantity, setNewQuantity] = useState('')
   const [newCost, setNewCost] = useState('')
+  const [newActive, setNewActive] = useState(true)
 
   const [rowMenu, setRowMenu] = useState<number | null>(null)
   const [editDelivery, setEditDelivery] = useState<Delivery | null>(null)
@@ -259,6 +260,17 @@ export default function DeliveriesPage() {
     })
   }, [deliveries, sort, order])
 
+  const nextDeliveryNumber = useMemo(() => (
+    Math.max(0, ...deliveries.map((delivery) => delivery.deliveryNumber).filter((number) => number > 0)) + 1
+  ), [deliveries])
+
+  const newUnitCost = useMemo(() => {
+    const quantity = Number(newQuantity.replace(',', '.'))
+    const totalCost = Number(newCost.replace(',', '.'))
+    if (!Number.isFinite(quantity) || quantity <= 0 || !Number.isFinite(totalCost) || totalCost < 0) return null
+    return totalCost / quantity
+  }, [newQuantity, newCost])
+
   const visibleNumbers = sortedDeliveries.map((delivery) => delivery.deliveryNumber)
   const allExpanded = visibleNumbers.length > 0 && visibleNumbers.every((number) => expanded.has(number))
 
@@ -345,6 +357,7 @@ export default function DeliveriesPage() {
           supplierName: editSupplier.trim(),
           quantity,
           totalCost,
+          active: newActive,
         }),
       })
       const payload = await response.json() as { ok?: boolean; error?: string }
@@ -434,6 +447,7 @@ export default function DeliveriesPage() {
       setNewSupplier('')
       setNewQuantity('')
       setNewCost('')
+      setNewActive(true)
       setReloadKey((value) => value + 1)
     } catch (saveError) {
       setAddError(saveError instanceof Error ? saveError.message : 'Nie udało się dodać dostawy.')
@@ -708,22 +722,97 @@ export default function DeliveriesPage() {
 
       {addOpen && (
         <div className="delivery-modal-backdrop" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget && !addSaving) setAddOpen(false) }}>
-          <section className="delivery-modal" role="dialog" aria-modal="true" aria-labelledby="add-delivery-title">
+          <section className="delivery-modal delivery-add-modal" role="dialog" aria-modal="true" aria-labelledby="add-delivery-title">
             <div className="delivery-modal-head">
-              <div><span>Nowa dostawa</span><h2 id="add-delivery-title">Dodaj dostawę</h2></div>
+              <div>
+                <span>Nowa dostawa</span>
+                <h2 id="add-delivery-title">Dodaj dostawę</h2>
+                <p>Wprowadź podstawowe dane zakupu. Numer dostawy zostanie nadany automatycznie przy zapisie.</p>
+              </div>
               <button type="button" onClick={() => setAddOpen(false)} disabled={addSaving} aria-label="Zamknij">×</button>
             </div>
+
             <form onSubmit={submitDelivery}>
-              <label><span>Data dostawy</span><input type="date" required value={newDate} onChange={(event) => setNewDate(event.target.value)} /></label>
-              <label><span>Dostawca</span><input required list="delivery-suppliers" value={newSupplier} onChange={(event) => setNewSupplier(event.target.value)} placeholder="Nazwa dostawcy" /><datalist id="delivery-suppliers">{suppliers.map((entry) => <option value={entry} key={entry} />)}</datalist></label>
-              <div className="delivery-form-pair">
-                <label><span>Ilość sztuk</span><input type="number" min="1" step="1" required value={newQuantity} onChange={(event) => setNewQuantity(event.target.value)} /></label>
-                <label><span>Łączny koszt</span><input type="number" min="0" step="0.01" required value={newCost} onChange={(event) => setNewCost(event.target.value)} /></label>
+              <div className="delivery-form-status-row">
+                <div className="delivery-form-number">
+                  <span>Lp. dostawy</span>
+                  <strong>{nextDeliveryNumber}</strong>
+                  <small>Nadawany automatycznie</small>
+                </div>
+                <label className="delivery-active-toggle">
+                  <span className="delivery-active-toggle-copy">
+                    <strong>Aktywna</strong>
+                    <small>Dostawa będzie uwzględniana jako aktywna.</small>
+                  </span>
+                  <input type="checkbox" checked={newActive} onChange={(event) => setNewActive(event.target.checked)} />
+                </label>
               </div>
+
+              <fieldset className="delivery-form-section">
+                <legend>Dane dostawy</legend>
+                <div className="delivery-form-grid">
+                  <label>
+                    <span>Data dostawy</span>
+                    <input type="date" required value={newDate} onChange={(event) => setNewDate(event.target.value)} />
+                  </label>
+                  <label>
+                    <span>Dostawca</span>
+                    <input
+                      required
+                      list="delivery-suppliers"
+                      value={newSupplier}
+                      onChange={(event) => setNewSupplier(event.target.value)}
+                      placeholder="Wybierz lub wpisz dostawcę"
+                      autoComplete="off"
+                    />
+                    <datalist id="delivery-suppliers">{suppliers.map((entry) => <option value={entry} key={entry} />)}</datalist>
+                  </label>
+                </div>
+              </fieldset>
+
+              <fieldset className="delivery-form-section">
+                <legend>Rozliczenie</legend>
+                <div className="delivery-form-grid delivery-form-grid-three">
+                  <label>
+                    <span>Ilość sztuk</span>
+                    <input type="number" min="1" step="1" inputMode="numeric" required value={newQuantity} onChange={(event) => setNewQuantity(event.target.value)} placeholder="0" />
+                  </label>
+                  <label>
+                    <span>Koszt zakupu dostawy</span>
+                    <span className="delivery-money-input">
+                      <input type="number" min="0" step="0.01" inputMode="decimal" required value={newCost} onChange={(event) => setNewCost(event.target.value)} placeholder="0,00" />
+                      <i>zł</i>
+                    </span>
+                  </label>
+                  <label>
+                    <span>Cena/szt.</span>
+                    <span className="delivery-readonly-value">{newUnitCost === null ? '—' : formatMoney(newUnitCost)}</span>
+                  </label>
+                </div>
+              </fieldset>
+
               {addError && <div className="delivery-form-error">{addError}</div>}
+
+              <div className="delivery-form-summary">
+                <span>
+                  <small>Dostawca</small>
+                  <strong>{newSupplier.trim() || '—'}</strong>
+                </span>
+                <span>
+                  <small>Ilość</small>
+                  <strong>{newQuantity || '—'}{newQuantity ? ' szt.' : ''}</strong>
+                </span>
+                <span>
+                  <small>Koszt zakupu</small>
+                  <strong>{newCost && Number.isFinite(Number(newCost.replace(',', '.'))) ? formatMoney(Number(newCost.replace(',', '.'))) : '—'}</strong>
+                </span>
+              </div>
+
               <div className="delivery-modal-actions">
                 <button type="button" className="secondary" disabled={addSaving} onClick={() => setAddOpen(false)}>Anuluj</button>
-                <button type="submit" className="primary" disabled={addSaving}>{addSaving ? 'Zapisywanie…' : 'Dodaj dostawę'}</button>
+                <button type="submit" className="primary" disabled={addSaving}>
+                  {addSaving ? 'Zapisywanie…' : '＋ Dodaj dostawę'}
+                </button>
               </div>
             </form>
           </section>

@@ -1111,7 +1111,7 @@ async function deliveryItems(deliveryNumber: number, env: Env) {
 }
 
 async function createDelivery(request: Request, env: Env) {
-  let body: { deliveryDate?: unknown; supplierName?: unknown; quantity?: unknown; totalCost?: unknown }
+  let body: { deliveryDate?: unknown; supplierName?: unknown; quantity?: unknown; totalCost?: unknown; active?: unknown }
   try {
     body = await request.json() as typeof body
   } catch {
@@ -1122,32 +1122,38 @@ async function createDelivery(request: Request, env: Env) {
   const supplierName = typeof body.supplierName === 'string' ? body.supplierName.trim() : ''
   const quantity = Number(body.quantity)
   const totalCost = Number(body.totalCost)
+  const active = typeof body.active === 'boolean' ? body.active : true
 
   if (!validYmd(deliveryDate) || !supplierName || !Number.isInteger(quantity) || quantity <= 0 || !Number.isFinite(totalCost) || totalCost < 0) {
     return salesJson({ ok: false, error: 'Invalid delivery data' }, 400)
   }
 
   const row = await env.DB.prepare(`
-    INSERT INTO deliveries (delivery_number, delivery_date, supplier_name, quantity, total_cost)
+    INSERT INTO deliveries (delivery_number, delivery_date, supplier_name, quantity, total_cost, active)
     SELECT
       COALESCE(MAX(CASE WHEN delivery_number > 0 THEN delivery_number END), 0) + 1,
-      ?, ?, ?, ?
+      ?, ?, ?, ?, ?
     FROM deliveries
     RETURNING
       delivery_number AS deliveryNumber,
       delivery_date AS deliveryDate,
       supplier_name AS supplierName,
       quantity,
-      total_cost AS totalCost
-  `).bind(deliveryDate, supplierName, quantity, money(totalCost)).first<{
+      total_cost AS totalCost,
+      active
+  `).bind(deliveryDate, supplierName, quantity, money(totalCost), active ? 1 : 0).first<{
     deliveryNumber: number
     deliveryDate: string
     supplierName: string
     quantity: number
     totalCost: number
+    active: number
   }>()
 
-  return salesJson({ ok: true, item: row }, 201)
+  return salesJson({
+    ok: true,
+    item: row ? { ...row, active: Number(row.active) === 1 } : row,
+  }, 201)
 }
 
 

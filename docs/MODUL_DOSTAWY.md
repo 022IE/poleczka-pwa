@@ -272,3 +272,31 @@ Zasady:
 - filtr **Aktywne** oznacza `active = TRUE`,
 - filtr **Nieaktywne** oznacza `active = FALSE`,
 - status aktywności jest niezależny od liczby sprzedanych sztuk i % zbytu.
+
+
+---
+
+## 13. Formularz dodawania dostawy — 19.09.2026
+
+Formularz **Dodaj dostawę** jest modalem modułu DOSTAWY i zawiera:
+
+### Nagłówek
+- przewidywany kolejny dodatni `delivery_number` jako informację readonly,
+- przełącznik **Aktywna**, domyślnie włączony.
+
+### Dane dostawy
+- data dostawy — domyślnie bieżąca data,
+- dostawca — pole tekstowe z podpowiedziami istniejących dostawców; można wpisać nową nazwę.
+
+### Rozliczenie
+- ilość sztuk,
+- koszt zakupu całej dostawy,
+- cena/szt. — wyliczana na żywo jako `total_cost / quantity`, readonly.
+
+### Podsumowanie
+Przed zapisem formularz pokazuje skrót: dostawca, ilość i koszt zakupu.
+
+Przy zapisie:
+- numer dostawy jest nadawany transakcyjnie po stronie D1 jako kolejny dodatni numer,
+- `active` jest zapisywane zgodnie z przełącznikiem,
+- po poprawnym zapisie formularz jest resetowany, a lista i KPI są odświeżane.
