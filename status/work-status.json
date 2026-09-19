@@ -1,6 +1,6 @@
 {
-  "state": "editing",
-  "label": "Wprowadzanie poprawek",
-  "task": "UI globalne — lekkie poszerzenie menu bocznego i szersze panele we wszystkich modułach",
-  "updatedAt": "2026-09-19T09:45:30Z"
+  "state": "awaiting_publish",
+  "label": "Oczekiwanie na publikację",
+  "task": "UI globalne — lekko szersze menu boczne i szersze panele we wszystkich modułach",
+  "updatedAt": "2026-09-19T09:49:30Z"
 }
