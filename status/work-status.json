@@ -1,6 +1,6 @@
 {
-  "state": "editing",
-  "label": "Wprowadzanie poprawek",
+  "state": "awaiting_publish",
+  "label": "Oczekiwanie na publikację",
   "task": "UI globalne — działający zegar pod datą w górnym pasku",
-  "updatedAt": "2026-09-19T11:41:20Z"
+  "updatedAt": "2026-09-19T11:44:00Z"
 }
