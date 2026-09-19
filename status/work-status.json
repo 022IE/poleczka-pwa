@@ -1,6 +1,6 @@
 {
-  "state": "awaiting_publish",
-  "label": "Oczekiwanie na publikację",
-  "task": "UI globalne — zegar w Analizach, wycentrowany dzień/data/zegar i wspólna zasada nagłówka/menu",
-  "updatedAt": "2026-09-19T11:47:10Z"
+  "state": "editing",
+  "label": "Wprowadzanie poprawek",
+  "task": "07 — Analizy: Radar anomalii w górnym pasku, zielony bez ostrzeżeń i czerwony pulsujący przy anomaliach",
+  "updatedAt": "2026-09-19T11:47:35.702Z"
 }
