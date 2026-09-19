@@ -1,7 +1,7 @@
 # PÓŁECZKA IWONKI — MODUŁ ANALIZY
 
 **Moduł:** 07 — ANALIZY  
-**Status:** specyfikacja bieżąca v0.7  
+**Status:** specyfikacja bieżąca v0.8  
 **Dokument nadrzędny:** `POLECZKA_PWA_MASTER.md`  
 **Aktualizacja:** 19.09.2026
 
@@ -374,7 +374,7 @@ Zmiana górnego paska jest globalna i obowiązuje na dashboardzie oraz we wszyst
 
 `GET /api/analysis/anomalies`
 
-Radar odświeża dane automatycznie co 60 sekund i nie zapisuje osobnej historii w D1 w pierwszej wersji.
+Radar odświeża dane automatycznie co 60 sekund. Alarmy i reakcje są trwale zapisywane w D1.
 
 ## Reguły v1
 
@@ -408,3 +408,31 @@ Wykrywane są:
    - brak sprzedaży przez 14 pełnych dni.
 
 Radar jest mechanizmem alarmowym, a nie kolejnym źródłem porad. Rekomendacje „Leon mówi…” nadal odpowiadają za decyzje i sugestie biznesowe, natomiast radar ma sygnalizować odstępstwa wymagające uwagi.
+
+
+## Aktywne alarmy i reakcje
+
+Każde nowe wykrycie staje się trwałym epizodem alarmu w tabeli `anomaly_alerts`.
+
+Nowy, nieobsłużony alarm:
+- ustawia radar na czerwony stan pulsujący,
+- zwiększa licznik na ikonie,
+- automatycznie otwiera modal **Aktywne alarmy**.
+
+Użytkownik ma dwie reakcje:
+- **OK, to ważne** → `important`,
+- **Zignoruj** → `ignore`.
+
+Po reakcji alarm przestaje być nowym aktywnym alarmem i nie otwiera ponownie modala, ale pozostaje w historii. Sama reakcja jest dodatkowo zapisywana w `anomaly_alert_reactions`.
+
+Dla realnego alarmu reakcja nie oznacza, że źródłowy problem zniknął. Radar nie tworzy drugiego epizodu tego samego problemu, dopóki warunek nadal trwa. Gdy problem zniknie, istniejący epizod dostaje `resolved_at`. Jeśli później ta sama anomalia wystąpi ponownie, powstaje nowy alarm.
+
+API:
+- `GET /api/analysis/anomalies` — synchronizacja bieżącego radaru i lista nowych aktywnych alarmów,
+- `PUT /api/analysis/anomalies/:alertId/reaction` — zapis reakcji,
+- `GET /api/analysis/anomalies/history?limit=50` — historia alarmów wraz z reakcjami.
+
+Test developerski:
+- po migracji `0005` workflow tworzy w `poleczka-dev` jeden alarm testowy,
+- testowy alarm ma źródło `test`,
+- po kliknięciu jednej z reakcji znika z aktywnych alarmów, ale pozostaje w historii D1.

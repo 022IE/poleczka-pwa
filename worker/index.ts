@@ -2637,6 +2637,8 @@ async function updateAnalysisRecommendationDecision(request: Request, env: Env) 
 
 
 type AnomalySeverity = 'warning' | 'critical'
+type AnomalyAlertState = 'active' | 'important' | 'ignored' | 'resolved'
+type AnomalyReaction = 'important' | 'ignore'
 
 type AnomalyItem = {
   id: string
@@ -2670,11 +2672,41 @@ type AnomalyStalledDeliveryRow = {
   soldRecent: number
 }
 
+type AnomalyAlertRow = {
+  alertId: string
+  fingerprint: string
+  anomalyId: string
+  severity: AnomalySeverity
+  category: string
+  title: string
+  summary: string
+  detail: string
+  source: string
+  state: AnomalyAlertState
+  firstDetectedAt: string
+  lastDetectedAt: string
+  resolvedAt: string | null
+}
+
+type AnomalyReactionRow = {
+  reactionId: number
+  alertId: string
+  reaction: AnomalyReaction
+  reactedAt: string
+}
+
 function anomalyPercent(value: number) {
   return Math.round(value * 10) / 10
 }
 
-async function analysisAnomalies(env: Env) {
+function anomalyAlertTableMissing(error: unknown) {
+  const message = error instanceof Error ? error.message : String(error || '')
+  const normalized = message.toLowerCase()
+  return normalized.includes('no such table: anomaly_alerts')
+    || normalized.includes('no such table: anomaly_alert_reactions')
+}
+
+async function calculateAnomalyItems(env: Env) {
   const today = warsawYmd()
   const currentStart = addDaysYmd(today, -7)
   const previousStart = addDaysYmd(today, -14)
@@ -2878,22 +2910,323 @@ async function analysisAnomalies(env: Env) {
     return a.severity === 'critical' ? -1 : 1
   })
 
-  return salesJson({
-    ok: true,
-    state: items.length > 0 ? 'alert' : 'ok',
-    count: items.length,
-    criticalCount: items.filter((item) => item.severity === 'critical').length,
-    generatedAt: nowIso(),
+  return {
+    items,
     period: {
       currentStart,
       currentEnd: addDaysYmd(today, -1),
       previousStart,
       previousEnd: addDaysYmd(currentStart, -1),
     },
-    items,
+  }
+}
+
+async function syncAnomalyAlerts(env: Env, items: AnomalyItem[]) {
+  const timestamp = nowIso()
+
+  try {
+    const unresolved = await env.DB.prepare(`
+      SELECT
+        alert_id AS alertId,
+        fingerprint,
+        anomaly_id AS anomalyId,
+        severity,
+        category,
+        title,
+        summary,
+        detail,
+        source,
+        state,
+        first_detected_at AS firstDetectedAt,
+        last_detected_at AS lastDetectedAt,
+        resolved_at AS resolvedAt
+      FROM anomaly_alerts
+      WHERE source = 'radar'
+        AND resolved_at IS NULL
+    `).all<AnomalyAlertRow>()
+
+    const byFingerprint = new Map((unresolved.results || []).map((row) => [row.fingerprint, row]))
+    const currentFingerprints = new Set(items.map((item) => item.id))
+
+    for (const item of items) {
+      const existing = byFingerprint.get(item.id)
+
+      if (existing) {
+        await env.DB.prepare(`
+          UPDATE anomaly_alerts
+          SET severity = ?,
+              category = ?,
+              title = ?,
+              summary = ?,
+              detail = ?,
+              last_detected_at = ?
+          WHERE alert_id = ?
+        `).bind(
+          item.severity,
+          item.category,
+          item.title,
+          item.summary,
+          item.detail,
+          timestamp,
+          existing.alertId,
+        ).run()
+      } else {
+        await env.DB.prepare(`
+          INSERT INTO anomaly_alerts (
+            alert_id,
+            fingerprint,
+            anomaly_id,
+            severity,
+            category,
+            title,
+            summary,
+            detail,
+            source,
+            state,
+            first_detected_at,
+            last_detected_at
+          )
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'radar', 'active', ?, ?)
+        `).bind(
+          crypto.randomUUID(),
+          item.id,
+          item.id,
+          item.severity,
+          item.category,
+          item.title,
+          item.summary,
+          item.detail,
+          timestamp,
+          timestamp,
+        ).run()
+      }
+    }
+
+    for (const row of unresolved.results || []) {
+      if (currentFingerprints.has(row.fingerprint)) continue
+
+      await env.DB.prepare(`
+        UPDATE anomaly_alerts
+        SET resolved_at = ?,
+            state = CASE WHEN state = 'active' THEN 'resolved' ELSE state END
+        WHERE alert_id = ?
+          AND resolved_at IS NULL
+      `).bind(timestamp, row.alertId).run()
+    }
+
+    return true
+  } catch (error) {
+    if (anomalyAlertTableMissing(error)) return false
+    throw error
+  }
+}
+
+async function readActiveAnomalyAlerts(env: Env) {
+  const result = await env.DB.prepare(`
+    SELECT
+      alert_id AS alertId,
+      fingerprint,
+      anomaly_id AS anomalyId,
+      severity,
+      category,
+      title,
+      summary,
+      detail,
+      source,
+      state,
+      first_detected_at AS firstDetectedAt,
+      last_detected_at AS lastDetectedAt,
+      resolved_at AS resolvedAt
+    FROM anomaly_alerts
+    WHERE state = 'active'
+      AND resolved_at IS NULL
+    ORDER BY CASE severity WHEN 'critical' THEN 0 ELSE 1 END,
+             first_detected_at ASC
+  `).all<AnomalyAlertRow>()
+
+  return result.results || []
+}
+
+function anomalyAlertToApi(row: AnomalyAlertRow) {
+  return {
+    alertId: row.alertId,
+    id: row.anomalyId,
+    severity: row.severity,
+    category: row.category,
+    title: row.title,
+    summary: row.summary,
+    detail: row.detail,
+    source: row.source,
+    firstDetectedAt: row.firstDetectedAt,
+  }
+}
+
+async function analysisAnomalies(env: Env) {
+  const calculated = await calculateAnomalyItems(env)
+  const persisted = await syncAnomalyAlerts(env, calculated.items)
+
+  if (!persisted) {
+    return salesJson({
+      ok: true,
+      state: calculated.items.length > 0 ? 'alert' : 'ok',
+      count: calculated.items.length,
+      criticalCount: calculated.items.filter((item) => item.severity === 'critical').length,
+      generatedAt: nowIso(),
+      period: calculated.period,
+      items: calculated.items.map((item) => ({ ...item, alertId: null, source: 'live-fallback', firstDetectedAt: null })),
+    })
+  }
+
+  const active = await readActiveAnomalyAlerts(env)
+  return salesJson({
+    ok: true,
+    state: active.length > 0 ? 'alert' : 'ok',
+    count: active.length,
+    criticalCount: active.filter((item) => item.severity === 'critical').length,
+    generatedAt: nowIso(),
+    period: calculated.period,
+    items: active.map(anomalyAlertToApi),
   })
 }
 
+async function updateAnomalyAlertReaction(request: Request, alertId: string, env: Env) {
+  let body: { reaction?: unknown }
+
+  try {
+    body = await request.json() as typeof body
+  } catch {
+    return salesJson({ ok: false, error: 'Nieprawidłowy JSON.' }, 400)
+  }
+
+  const reaction = body.reaction
+  if (reaction !== 'important' && reaction !== 'ignore') {
+    return salesJson({ ok: false, error: 'Nieprawidłowa reakcja na alarm.' }, 400)
+  }
+
+  let alert: AnomalyAlertRow | null = null
+  try {
+    alert = await env.DB.prepare(`
+      SELECT
+        alert_id AS alertId,
+        fingerprint,
+        anomaly_id AS anomalyId,
+        severity,
+        category,
+        title,
+        summary,
+        detail,
+        source,
+        state,
+        first_detected_at AS firstDetectedAt,
+        last_detected_at AS lastDetectedAt,
+        resolved_at AS resolvedAt
+      FROM anomaly_alerts
+      WHERE alert_id = ?
+      LIMIT 1
+    `).bind(alertId).first<AnomalyAlertRow>()
+  } catch (error) {
+    if (anomalyAlertTableMissing(error)) {
+      return salesJson({ ok: false, error: 'Historia alarmów jest jeszcze wdrażana.' }, 503)
+    }
+    throw error
+  }
+
+  if (!alert) return salesJson({ ok: false, error: 'Alarm nie istnieje.' }, 404)
+
+  if (alert.state !== 'active' || alert.resolvedAt) {
+    return salesJson({
+      ok: true,
+      alertId,
+      alreadyHandled: true,
+      state: alert.state,
+    })
+  }
+
+  const timestamp = nowIso()
+  const nextState: AnomalyAlertState = reaction === 'important' ? 'important' : 'ignored'
+
+  await env.DB.batch([
+    env.DB.prepare(`
+      INSERT INTO anomaly_alert_reactions (alert_id, reaction, reacted_at)
+      VALUES (?, ?, ?)
+    `).bind(alertId, reaction, timestamp),
+    env.DB.prepare(`
+      UPDATE anomaly_alerts
+      SET state = ?,
+          resolved_at = CASE WHEN source = 'test' THEN ? ELSE resolved_at END
+      WHERE alert_id = ?
+        AND state = 'active'
+    `).bind(nextState, timestamp, alertId),
+  ])
+
+  return salesJson({
+    ok: true,
+    alertId,
+    reaction,
+    state: nextState,
+    reactedAt: timestamp,
+  })
+}
+
+async function analysisAnomalyHistory(url: URL, env: Env) {
+  const requestedLimit = Number.parseInt(url.searchParams.get('limit') || '50', 10) || 50
+  const limit = Math.min(200, Math.max(1, requestedLimit))
+
+  try {
+    const [alertsResult, reactionsResult] = await Promise.all([
+      env.DB.prepare(`
+        SELECT
+          alert_id AS alertId,
+          fingerprint,
+          anomaly_id AS anomalyId,
+          severity,
+          category,
+          title,
+          summary,
+          detail,
+          source,
+          state,
+          first_detected_at AS firstDetectedAt,
+          last_detected_at AS lastDetectedAt,
+          resolved_at AS resolvedAt
+        FROM anomaly_alerts
+        ORDER BY first_detected_at DESC
+        LIMIT ?
+      `).bind(limit).all<AnomalyAlertRow>(),
+      env.DB.prepare(`
+        SELECT
+          reaction_id AS reactionId,
+          alert_id AS alertId,
+          reaction,
+          reacted_at AS reactedAt
+        FROM anomaly_alert_reactions
+        ORDER BY reacted_at DESC
+        LIMIT ?
+      `).bind(limit * 4).all<AnomalyReactionRow>(),
+    ])
+
+    const reactionsByAlert = new Map<string, AnomalyReactionRow[]>()
+    for (const reaction of reactionsResult.results || []) {
+      const bucket = reactionsByAlert.get(reaction.alertId) || []
+      bucket.push(reaction)
+      reactionsByAlert.set(reaction.alertId, bucket)
+    }
+
+    return salesJson({
+      ok: true,
+      limit,
+      items: (alertsResult.results || []).map((alert) => ({
+        ...alert,
+        reactions: reactionsByAlert.get(alert.alertId) || [],
+      })),
+    })
+  } catch (error) {
+    if (anomalyAlertTableMissing(error)) {
+      return salesJson({ ok: true, limit, items: [] })
+    }
+    throw error
+  }
+}
 
 async function handleSalesApi(request: Request, url: URL, env: Env): Promise<Response | null> {
   const skMatch = url.pathname.match(/^\/api\/sales\/receipts\/([^/]+)\/sk$/)
@@ -3234,6 +3567,29 @@ export default {
         return salesJson({
           ok: false,
           error: error instanceof Error ? error.message : 'Analysis recommendation decision API failed',
+        }, 500)
+      }
+    }
+
+    const anomalyReactionMatch = url.pathname.match(/^\/api\/analysis\/anomalies\/([^/]+)\/reaction$/)
+    if (anomalyReactionMatch && request.method === 'PUT') {
+      try {
+        return updateAnomalyAlertReaction(request, decodeURIComponent(anomalyReactionMatch[1]), env)
+      } catch (error) {
+        return salesJson({
+          ok: false,
+          error: error instanceof Error ? error.message : 'Anomaly alert reaction API failed',
+        }, 500)
+      }
+    }
+
+    if (url.pathname === '/api/analysis/anomalies/history' && request.method === 'GET') {
+      try {
+        return analysisAnomalyHistory(url, env)
+      } catch (error) {
+        return salesJson({
+          ok: false,
+          error: error instanceof Error ? error.message : 'Anomaly history API failed',
         }, 500)
       }
     }

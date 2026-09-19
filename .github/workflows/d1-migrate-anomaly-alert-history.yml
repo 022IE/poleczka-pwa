@@ -1,0 +1,94 @@
+name: D1 migrate anomaly alert history
+
+on:
+  push:
+    branches:
+      - dev
+    paths:
+      - migrations/0005_anomaly_alert_history.sql
+      - .github/workflows/d1-migrate-anomaly-alert-history.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: d1-migrate-anomaly-alert-history
+  cancel-in-progress: false
+
+jobs:
+  migrate:
+    name: Apply anomaly alert history migration
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Apply D1 migrations to poleczka-dev
+        env:
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+        run: npx --yes wrangler@latest d1 migrations apply poleczka-dev --remote
+
+      - name: Verify anomaly alert tables
+        env:
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+        run: |
+          npx --yes wrangler@latest d1 execute poleczka-dev --remote --command "
+            SELECT name FROM sqlite_master WHERE type = 'table' AND name IN ('anomaly_alerts','anomaly_alert_reactions') ORDER BY name;
+          "
+
+      - name: Create one test radar alert
+        env:
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+        run: |
+          npx --yes wrangler@latest d1 execute poleczka-dev --remote --command "
+            INSERT OR IGNORE INTO anomaly_alerts (
+              alert_id,
+              fingerprint,
+              anomaly_id,
+              severity,
+              category,
+              title,
+              summary,
+              detail,
+              source,
+              state,
+              first_detected_at,
+              last_detected_at
+            )
+            VALUES (
+              'test-radar-2026-09-19-01',
+              'test-radar-2026-09-19-01',
+              'test-radar',
+              'critical',
+              'TEST',
+              'Testowy alarm radaru',
+              'To kontrolny alert do sprawdzenia czerwonego, pulsującego radaru i okna reakcji.',
+              'Wybierz „OK, to ważne” albo „Zignoruj”. Reakcja zostanie zapisana w D1.',
+              'test',
+              'active',
+              strftime('%Y-%m-%dT%H:%M:%fZ','now'),
+              strftime('%Y-%m-%dT%H:%M:%fZ','now')
+            );
+          "
+
+      - name: Verify test alert
+        env:
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+        run: |
+          npx --yes wrangler@latest d1 execute poleczka-dev --remote --command "
+            SELECT alert_id, source, state, title
+            FROM anomaly_alerts
+            WHERE alert_id = 'test-radar-2026-09-19-01';
+          "

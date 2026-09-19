@@ -75,3 +75,20 @@ Tabela zapisuje decyzję użytkownika dla konkretnej dziennej rekomendacji:
 - `reject` — Odrzuć.
 
 Klucz `(for_date, recommendation_id)` przechowuje jedną bieżącą decyzję. `first_decided_at` zachowuje czas pierwszego wyboru, a `updated_at` czas ostatniej zmiany.
+
+
+## Migracja historii alarmów radaru — 19.09.2026
+
+Migracja `0005_anomaly_alert_history.sql` dodaje:
+- `anomaly_alerts` — trwałą historię epizodów alarmów,
+- `anomaly_alert_reactions` — historię reakcji użytkownika.
+
+Alarm otrzymuje własny `alert_id`, stabilny `fingerprint`, pełną treść, poziom ważności, źródło oraz czasy pierwszego/ostatniego wykrycia i rozwiązania.
+
+Reakcje:
+- `important` — **OK, to ważne**,
+- `ignore` — **Zignoruj**.
+
+Reakcja nie usuwa alarmu z historii. Nowy epizod tej samej anomalii może powstać dopiero po wcześniejszym ustąpieniu problemu i jego ponownym pojawieniu się.
+
+Workflow developerski po migracji tworzy jednorazowy testowy alarm `test-radar-2026-09-19-01` wyłącznie w bazie `poleczka-dev`.

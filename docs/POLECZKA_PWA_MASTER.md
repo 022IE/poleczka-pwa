@@ -459,7 +459,9 @@ Górny pasek aplikacji posiada globalny Radar anomalii zamiast dawnego avatara �
 
 - zielony radar = brak wykrytych odchyleń,
 - czerwony pulsujący radar = co najmniej jedna aktywna anomalia,
-- kliknięcie pokazuje listę problemów,
+- nowy alarm automatycznie otwiera modal z aktywnymi alarmami,
+- reakcje: `OK, to ważne` / `Zignoruj`,
+- alarmy i reakcje są trwale zapisywane w D1,
 - endpoint: `/api/analysis/anomalies`,
 - automatyczne odświeżanie co 60 sekund,
 - radar używa pełnych dni i nie porównuje niedokończonego bieżącego dnia z pełnym okresem.
@@ -660,6 +662,29 @@ Aktualnie działający model w środowisku developerskim dotyczy bazy **`poleczk
 - updated_at.
 
 Tabela zapisuje bieżącą decyzję użytkownika dla konkretnej dziennej rekomendacji. Decyzję można zmienić; czas pierwszej decyzji pozostaje zachowany. Historyczne rekomendacje pokazują zapisaną decyzję.
+
+### `anomaly_alerts`
+- alert_id,
+- fingerprint,
+- anomaly_id,
+- severity,
+- category,
+- title,
+- summary,
+- detail,
+- source,
+- state,
+- first_detected_at,
+- last_detected_at,
+- resolved_at.
+
+### `anomaly_alert_reactions`
+- reaction_id,
+- alert_id,
+- reaction (`important / ignore`),
+- reacted_at.
+
+Radar przechowuje pełną historię epizodów alarmów oraz osobną historię reakcji. Potwierdzenie lub zignorowanie alarmu nie usuwa go z D1.
 
 `line_note` pozostaje polem surowym. Polem używanym przez aplikację do relacji z dostawą jest `delivery_number`.
 
