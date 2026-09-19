@@ -6,6 +6,7 @@ import SalesPage from './SalesPage'
 import DeliveriesPage from './DeliveriesPage'
 import AnalysisPage from './AnalysisPage'
 import LeonRecommendations from './components/LeonRecommendations'
+import HeaderDateTime from './components/HeaderDateTime'
 
 // Widget publikacji jest narzędziem developerskim. W wersji finalnej ustawiamy false.
 const SHOW_DEV_PIPELINE = false
@@ -177,8 +178,6 @@ function Placeholder({ title, text }: { title: string; text: string }) {
 
 function Dashboard() {
   const now = new Date()
-  const weekday = new Intl.DateTimeFormat('pl-PL', { weekday: 'long' }).format(now)
-  const date = new Intl.DateTimeFormat('pl-PL', { day: 'numeric', month: 'long', year: 'numeric' }).format(now)
   const todayValue = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`
   const [comparisonEndDate, setComparisonEndDate] = useState(todayValue)
   const [comparisonCount, setComparisonCount] = useState(4)
@@ -300,7 +299,7 @@ function Dashboard() {
         </div>
         {SHOW_DEV_PIPELINE && <div className="header-build-slot"><BuildStatus /></div>}
         <div className="header-actions">
-          <div className="date-block"><span className="header-icon" aria-hidden="true">🗓️</span><div><b>{weekday}</b><span>{date}</span></div></div>
+          <HeaderDateTime />
           <div className="header-divider" />
           <button className="bell" aria-label="Powiadomienia">♟</button>
           <DataStatus />
