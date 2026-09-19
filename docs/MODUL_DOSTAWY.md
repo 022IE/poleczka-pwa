@@ -300,3 +300,13 @@ Przy zapisie:
 - numer dostawy jest nadawany transakcyjnie po stronie D1 jako kolejny dodatni numer,
 - `active` jest zapisywane zgodnie z przełącznikiem,
 - po poprawnym zapisie formularz jest resetowany, a lista i KPI są odświeżane.
+
+
+### Autocomplete dostawcy
+
+Pole **Dostawca** w formularzu dodawania i edycji:
+- filtruje wcześniej używanych dostawców w trakcie pisania,
+- najpierw pokazuje nazwy zaczynające się od wpisanego tekstu, następnie pozostałe zawierające dopasowanie,
+- pozwala wybrać istniejącego dostawcę jednym kliknięciem,
+- pozostaje zwykłym polem tekstowym, więc można wpisać i zapisać całkiem nową nazwę,
+- nowy dostawca po zapisaniu dostawy automatycznie pojawi się w kolejnych podpowiedziach.
