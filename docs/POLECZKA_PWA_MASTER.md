@@ -418,10 +418,12 @@ Bieżące minimum:
 - dzienny snapshot rekomendacji i tekstu Leona,
 - automatyczne przygotowanie dnia przez Worker,
 - historia dziennych rekomendacji,
+- decyzje `Zrób / Odłóż / Odrzuć` zapisywane przy rekomendacji,
+- historia decyzji widoczna przy archiwalnych rekomendacjach,
 - fallback API tworzący snapshot, jeżeli harmonogram go nie przygotował.
 
 Planowane kolejne warstwy:
-- historia decyzji i ich efektów,
+- pomiar efektów zapisanych decyzji,
 - kandydaci do promocji i symulacja przecen,
 - radar anomalii,
 - Pareto 80/20,
@@ -635,6 +637,15 @@ Aktualnie działający model w środowisku developerskim dotyczy bazy **`poleczk
 `leon_messages` i `leon_message_history` obsługują dzienny tekst pod nagłówkiem **„Leon mówi…”**. Historia zapewnia stały tekst przez cały dzień oraz brak powtórek w pełnym 100-dniowym cyklu przy 100 aktywnych wiadomościach.
 
 `leon_daily_recommendations` przechowuje maksymalnie trzy rekomendacje na dzień i jednocześnie buduje historię porad Leona. Klucz dzienny blokuje dwa wpisy na tej samej pozycji tego samego dnia. Historia jest dostępna przez `/api/analysis/recommendations/history` i prezentowana w module ANALIZY.
+
+### `leon_recommendation_decisions`
+- for_date,
+- recommendation_id,
+- decision (`do / defer / reject`),
+- first_decided_at,
+- updated_at.
+
+Tabela zapisuje bieżącą decyzję użytkownika dla konkretnej dziennej rekomendacji. Decyzję można zmienić; czas pierwszej decyzji pozostaje zachowany. Historyczne rekomendacje pokazują zapisaną decyzję.
 
 `line_note` pozostaje polem surowym. Polem używanym przez aplikację do relacji z dostawą jest `delivery_number`.
 

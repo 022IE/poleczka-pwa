@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import type { LeonRecommendation } from './LeonRecommendations'
+import type { LeonDecision, LeonRecommendation } from './LeonRecommendations'
 
 type HistoryDay = {
   date: string
@@ -24,6 +24,12 @@ function formatHistoryDate(value: string) {
     year: 'numeric',
     timeZone: 'UTC',
   }).format(date)
+}
+
+function decisionLabel(decision: LeonDecision) {
+  if (decision === 'do') return 'Zrób'
+  if (decision === 'defer') return 'Odłóż'
+  return 'Odrzuć'
 }
 
 export default function LeonRecommendationHistory() {
@@ -95,6 +101,11 @@ export default function LeonRecommendationHistory() {
                     <p>{item.summary}</p>
                     <div><strong>Dlaczego:</strong> {item.reason}</div>
                     <div><strong>Co robić:</strong> {item.action}</div>
+                    {item.decision && (
+                      <div className={`leon-history-decision is-${item.decision}`}>
+                        <strong>Decyzja:</strong> {decisionLabel(item.decision)}
+                      </div>
+                    )}
                   </article>
                 ))}
               </div>

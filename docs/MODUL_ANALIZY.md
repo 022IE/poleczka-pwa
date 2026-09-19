@@ -1,7 +1,7 @@
 # PÓŁECZKA IWONKI — MODUŁ ANALIZY
 
 **Moduł:** 07 — ANALIZY  
-**Status:** specyfikacja bieżąca v0.5  
+**Status:** specyfikacja bieżąca v0.6  
 **Dokument nadrzędny:** `POLECZKA_PWA_MASTER.md`  
 **Aktualizacja:** 19.09.2026
 
@@ -193,9 +193,14 @@ Alerty techniczne i problemy z danymi nie są mieszane z rekomendacjami biznesow
 
 ## Kierunek dalszego rozwoju
 
+Wdrożone:
+- decyzje `Zrób / Odłóż / Odrzuć` przy każdej bieżącej rekomendacji,
+- zapis decyzji i czasu jej podjęcia w D1,
+- możliwość zmiany decyzji,
+- prezentacja decyzji przy historycznych rekomendacjach.
+
 Do dołożenia:
-- zapis decyzji `Zrób / Odłóż / Odrzuć`,
-- historia skutków decyzji,
+- pomiar skutków podjętych decyzji,
 - kandydaci do promocji z symulacją,
 - radar anomalii,
 - Pareto 80/20,
@@ -315,3 +320,36 @@ Daily Leon działa na środowisku developerskim:
 - harmonogram w `wrangler.toml` uruchamia Workera co godzinę, a logika daty `Europe/Warsaw` tworzy tylko jeden zestaw na lokalny dzień.
 
 Pierwszy zapis dla 19.09.2026 został utworzony poprawnie w `poleczka-dev`.
+
+
+---
+
+# 14. Decyzje przy rekomendacjach (wdrożone)
+
+W pełnym widoku rekomendacji w module ANALIZY użytkownik może wybrać jedną z trzech decyzji:
+
+- **Zrób** — rekomendacja została zaakceptowana do wykonania,
+- **Odłóż** — rekomendacja zostaje odłożona bez automatycznego przenoszenia na kolejny dzień,
+- **Odrzuć** — użytkownik świadomie nie chce realizować tej rekomendacji.
+
+Decyzja jest zapisywana w D1 w tabeli `leon_recommendation_decisions`.
+
+Zakres danych:
+- `for_date`,
+- `recommendation_id`,
+- `decision` jako `do / defer / reject`,
+- `first_decided_at`,
+- `updated_at`.
+
+Klucz `(for_date, recommendation_id)` zapewnia jedną bieżącą decyzję dla konkretnej dziennej rekomendacji. Ponowne kliknięcie innej opcji zmienia decyzję i aktualizuje `updated_at`, ale zachowuje czas pierwszej decyzji.
+
+API:
+- `PUT /api/analysis/recommendations/decision` — zapis lub zmiana decyzji,
+- `GET /api/analysis/recommendations` — zwraca decyzję przy bieżących radach,
+- `GET /api/analysis/recommendations/history` — zwraca decyzję przy historycznych radach.
+
+Kafel „Leon mówi…” na stronie głównej pozostaje tylko szybkim podglądem. Przyciski decyzji są dostępne w pełnym module ANALIZY.
+
+Na tym etapie **Odłóż** jest statusem decyzji, a nie harmonogramem. Nie powoduje automatycznego ponowienia tej samej rekomendacji następnego dnia.
+
+Kolejna warstwa rozwoju to pomiar skutków decyzji: porównanie danych po akceptacji rekomendacji z punktem odniesienia zapisanym w dziennym snapshocie.

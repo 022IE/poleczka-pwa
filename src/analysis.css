@@ -41,6 +41,22 @@
 .leon-advice-detail span,.leon-advice-action span{font-size:11px;font-weight:800;letter-spacing:.06em;color:#9a7431;text-transform:uppercase}
 .leon-advice-detail strong,.leon-advice-action strong{font-size:13.5px;line-height:1.45;font-weight:600;color:#555c56}
 
+.leon-decision-row{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:11px;padding-top:10px;border-top:1px solid #eeeae3}
+.leon-decision-row>span{font-size:11px;font-weight:800;letter-spacing:.06em;color:#7d7466;text-transform:uppercase}
+.leon-decision-buttons{display:flex;flex-wrap:wrap;justify-content:flex-end;gap:6px}
+.leon-decision-button{appearance:none;border:1px solid #ddd6ca;border-radius:999px;background:#faf8f4;color:#656861;padding:6px 11px;font:inherit;font-size:11.5px;font-weight:700;cursor:pointer;transition:background .15s ease,border-color .15s ease,color .15s ease,transform .15s ease}
+.leon-decision-button:hover:not(:disabled){transform:translateY(-1px);border-color:#cbbda8}
+.leon-decision-button:disabled{cursor:wait;opacity:.58}
+.leon-decision-button.is-do.is-active{background:#e4eee3;border-color:#b9cfb8;color:#3d694a}
+.leon-decision-button.is-defer.is-active{background:#f5ead6;border-color:#dfc79d;color:#8c6428}
+.leon-decision-button.is-reject.is-active{background:#f7e5e5;border-color:#dfb8bb;color:#8b414a}
+.leon-decision-error{margin-top:7px;color:#9a414a;font-size:11.5px}
+.leon-history-decision{display:inline-flex!important;align-items:center;gap:4px;width:max-content;margin-top:8px!important;padding:5px 8px;border-radius:999px;font-size:11px!important;font-weight:700}
+.leon-history-decision.is-do{background:#e4eee3;color:#3d694a!important}
+.leon-history-decision.is-defer{background:#f5ead6;color:#8c6428!important}
+.leon-history-decision.is-reject{background:#f7e5e5;color:#8b414a!important}
+.leon-history-decision strong{color:inherit!important}
+
 .leon-history{margin-top:12px;border:1px solid #e7dfd2;border-radius:16px;background:rgba(255,255,255,.82);padding:18px}
 .leon-history-head{display:flex;align-items:end;justify-content:space-between;gap:16px;margin-bottom:12px}
 .leon-history-head span{font-size:9px;font-weight:800;letter-spacing:.12em;color:#9a7431}
@@ -79,4 +95,6 @@
   .leon-recommendations-head{display:grid}
   .leon-recommendations-head>strong{text-align:left}
   .leon-advice-detail,.leon-advice-action{grid-template-columns:1fr}
+  .leon-decision-row{align-items:flex-start;flex-direction:column}
+  .leon-decision-buttons{justify-content:flex-start}
 }

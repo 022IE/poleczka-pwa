@@ -1890,6 +1890,8 @@ async function leonMessageOfDay(env: Env) {
 
 
 
+type LeonRecommendationDecision = 'do' | 'defer' | 'reject'
+
 type AnalysisRecommendation = {
   id: string
   tone: 'positive' | 'warning' | 'neutral'
@@ -1899,6 +1901,8 @@ type AnalysisRecommendation = {
   reason: string
   action: string
   priority: number
+  decision?: LeonRecommendationDecision | null
+  decisionAt?: string | null
 }
 
 type RecommendationCategoryRow = {
@@ -2286,6 +2290,60 @@ function dailyRowsToRecommendations(rows: LeonDailyRecommendationRow[]): Analysi
   }))
 }
 
+
+type LeonRecommendationDecisionRow = {
+  forDate: string
+  recommendationId: string
+  decision: LeonRecommendationDecision
+  firstDecidedAt: string
+  updatedAt: string
+}
+
+function leonDecisionTableMissing(error: unknown) {
+  const message = error instanceof Error ? error.message : String(error || '')
+  return message.toLowerCase().includes('no such table: leon_recommendation_decisions')
+}
+
+async function readLeonRecommendationDecisionRows(env: Env, fromDate: string, toDate = fromDate) {
+  try {
+    const result = await env.DB.prepare(`
+      SELECT
+        for_date AS forDate,
+        recommendation_id AS recommendationId,
+        decision,
+        first_decided_at AS firstDecidedAt,
+        updated_at AS updatedAt
+      FROM leon_recommendation_decisions
+      WHERE for_date >= ?
+        AND for_date <= ?
+      ORDER BY for_date DESC, updated_at DESC
+    `).bind(fromDate, toDate).all<LeonRecommendationDecisionRow>()
+
+    return result.results || []
+  } catch (error) {
+    if (leonDecisionTableMissing(error)) return []
+    throw error
+  }
+}
+
+async function attachLeonRecommendationDecisions(
+  env: Env,
+  forDate: string,
+  items: AnalysisRecommendation[],
+) {
+  const rows = await readLeonRecommendationDecisionRows(env, forDate)
+  const decisions = new Map(rows.map((row) => [row.recommendationId, row]))
+
+  return items.map((item) => {
+    const row = decisions.get(item.id)
+    return {
+      ...item,
+      decision: row?.decision || null,
+      decisionAt: row?.updatedAt || null,
+    }
+  })
+}
+
 async function prepareLeonDay(env: Env) {
   const today = warsawYmd()
   const personalNote = await leonMessageOfDay(env)
@@ -2296,6 +2354,7 @@ async function prepareLeonDay(env: Env) {
     return {
       ok: true,
       source: 'daily-snapshot',
+      forDate: today,
       generatedAt: first.generatedAt,
       personalNote,
       period: {
@@ -2304,7 +2363,7 @@ async function prepareLeonDay(env: Env) {
         previousStart: first.previousStart,
         previousEnd: first.previousEnd,
       },
-      items: dailyRowsToRecommendations(stored),
+      items: await attachLeonRecommendationDecisions(env, today, dailyRowsToRecommendations(stored)),
     }
   }
 
@@ -2358,10 +2417,11 @@ async function prepareLeonDay(env: Env) {
       return {
         ok: true,
         source: 'live-fallback',
+        forDate: today,
         generatedAt,
         personalNote,
         period: calculated.period,
-        items: calculated.items,
+        items: await attachLeonRecommendationDecisions(env, today, calculated.items),
       }
     }
   }
@@ -2380,17 +2440,18 @@ async function prepareLeonDay(env: Env) {
         previousStart: first.previousStart,
         previousEnd: first.previousEnd,
       },
-      items: dailyRowsToRecommendations(saved),
+      items: await attachLeonRecommendationDecisions(env, today, dailyRowsToRecommendations(saved)),
     }
   }
 
   return {
     ok: true,
     source: 'live-fallback',
+    forDate: today,
     generatedAt,
     personalNote,
     period: calculated.period,
-    items: calculated.items,
+    items: await attachLeonRecommendationDecisions(env, today, calculated.items),
   }
 }
 
@@ -2442,6 +2503,11 @@ async function analysisRecommendationHistory(url: URL, env: Env) {
     if (!leonDailyTableMissing(error)) throw error
   }
 
+  const decisionRows = await readLeonRecommendationDecisionRows(env, from, today)
+  const decisionMap = new Map(
+    decisionRows.map((row) => [`${row.forDate}\n${row.recommendationId}`, row]),
+  )
+
   const daysMap = new Map<string, {
     date: string
     generatedAt: string
@@ -2463,6 +2529,7 @@ async function analysisRecommendationHistory(url: URL, env: Env) {
       daysMap.set(row.forDate, day)
     }
 
+    const decision = decisionMap.get(`${row.forDate}\n${row.recommendationId}`)
     day.items.push({
       id: row.recommendationId,
       tone: row.tone,
@@ -2472,6 +2539,8 @@ async function analysisRecommendationHistory(url: URL, env: Env) {
       reason: row.reason,
       action: row.action,
       priority: Number(row.priority || 0),
+      decision: decision?.decision || null,
+      decisionAt: decision?.updatedAt || null,
     })
   }
 
@@ -2480,6 +2549,76 @@ async function analysisRecommendationHistory(url: URL, env: Env) {
     today,
     days,
     items: Array.from(daysMap.values()),
+  })
+}
+
+
+async function updateAnalysisRecommendationDecision(request: Request, env: Env) {
+  let body: {
+    forDate?: unknown
+    recommendationId?: unknown
+    decision?: unknown
+  }
+
+  try {
+    body = await request.json() as typeof body
+  } catch {
+    return salesJson({ ok: false, error: 'Nieprawidłowy JSON.' }, 400)
+  }
+
+  const forDate = typeof body.forDate === 'string' ? body.forDate.trim() : ''
+  const recommendationId = typeof body.recommendationId === 'string' ? body.recommendationId.trim() : ''
+  const decision = body.decision
+
+  if (!validYmd(forDate) || !recommendationId) {
+    return salesJson({ ok: false, error: 'Brak daty lub identyfikatora rekomendacji.' }, 400)
+  }
+
+  if (decision !== 'do' && decision !== 'defer' && decision !== 'reject') {
+    return salesJson({ ok: false, error: 'Nieprawidłowa decyzja.' }, 400)
+  }
+
+  const recommendation = await env.DB.prepare(`
+    SELECT recommendation_id
+    FROM leon_daily_recommendations
+    WHERE for_date = ?
+      AND recommendation_id = ?
+    LIMIT 1
+  `).bind(forDate, recommendationId).first<{ recommendation_id: string }>()
+
+  if (!recommendation) {
+    return salesJson({ ok: false, error: 'Rekomendacja nie istnieje w historii Leona.' }, 404)
+  }
+
+  const timestamp = nowIso()
+
+  try {
+    await env.DB.prepare(`
+      INSERT INTO leon_recommendation_decisions (
+        for_date,
+        recommendation_id,
+        decision,
+        first_decided_at,
+        updated_at
+      )
+      VALUES (?, ?, ?, ?, ?)
+      ON CONFLICT(for_date, recommendation_id) DO UPDATE SET
+        decision = excluded.decision,
+        updated_at = excluded.updated_at
+    `).bind(forDate, recommendationId, decision, timestamp, timestamp).run()
+  } catch (error) {
+    if (leonDecisionTableMissing(error)) {
+      return salesJson({ ok: false, error: 'Mechanizm decyzji jest jeszcze wdrażany.' }, 503)
+    }
+    throw error
+  }
+
+  return salesJson({
+    ok: true,
+    forDate,
+    recommendationId,
+    decision,
+    decisionAt: timestamp,
   })
 }
 
@@ -2815,6 +2954,17 @@ export default {
     }
 
 
+
+    if (url.pathname === '/api/analysis/recommendations/decision' && request.method === 'PUT') {
+      try {
+        return updateAnalysisRecommendationDecision(request, env)
+      } catch (error) {
+        return salesJson({
+          ok: false,
+          error: error instanceof Error ? error.message : 'Analysis recommendation decision API failed',
+        }, 500)
+      }
+    }
 
     if (url.pathname === '/api/analysis/recommendations/history' && request.method === 'GET') {
       try {

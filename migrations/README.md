@@ -63,3 +63,15 @@ Tabela przechowuje dzienny snapshot maksymalnie trzech rekomendacji Leona wraz z
 Klucz `(for_date, position)` oraz unikalność `(for_date, recommendation_id)` zapewniają idempotentny zapis jednego spójnego zestawu na dzień.
 
 Historia nie jest czyszczona przy generowaniu kolejnego dnia i stanowi źródło dla widoku historii w module ANALIZY.
+
+
+## Migracja decyzji Leona — 19.09.2026
+
+Migracja `0004_leon_recommendation_decisions.sql` dodaje tabelę `leon_recommendation_decisions`.
+
+Tabela zapisuje decyzję użytkownika dla konkretnej dziennej rekomendacji:
+- `do` — Zrób,
+- `defer` — Odłóż,
+- `reject` — Odrzuć.
+
+Klucz `(for_date, recommendation_id)` przechowuje jedną bieżącą decyzję. `first_decided_at` zachowuje czas pierwszego wyboru, a `updated_at` czas ostatniej zmiany.
