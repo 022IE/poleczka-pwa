@@ -16,6 +16,7 @@ body{font-size:13.5px}
 .dashboard-header h1,.sales-header h1,.deliveries-header h1{font-size:32.25px}
 .dashboard-header p{font-size:18px}
 .date-block div{font-size:16.15px}
+.date-copy{display:grid;justify-items:center;text-align:center}
 .header-clock{display:block;margin-top:3px;font-size:22.5px;line-height:1;font-weight:700;letter-spacing:.04em;font-variant-numeric:tabular-nums;color:#20231f}
 .sync-pill strong{font-size:16.15px}
 .sync-pill small{font-size:13.6px}
