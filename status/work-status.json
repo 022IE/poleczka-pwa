@@ -1,6 +1,6 @@
 {
-  "state": "editing",
-  "label": "Wprowadzanie poprawek",
-  "task": "07 — Analizy: wycentrowanie modala alarmów i badge kategorii jak u Leona",
-  "updatedAt": "2026-09-19T12:08:29.897Z"
+  "state": "awaiting_publish",
+  "label": "Oczekiwanie na publikację",
+  "task": "07 — Analizy: modal alarmów wycentrowany względem viewportu, badge kategorii jak u Leona",
+  "updatedAt": "2026-09-19T12:09:10.764Z"
 }
