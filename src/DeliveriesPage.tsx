@@ -471,7 +471,6 @@ export default function DeliveriesPage() {
           supplierName: editSupplier.trim(),
           quantity,
           totalCost,
-          active: newActive,
         }),
       })
       const payload = await response.json() as { ok?: boolean; error?: string }
@@ -564,6 +563,7 @@ export default function DeliveriesPage() {
           supplierName: newSupplier.trim(),
           quantity,
           totalCost,
+          active: newActive,
         }),
       })
       const payload = await response.json() as { ok?: boolean; error?: string }
