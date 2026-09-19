@@ -887,6 +887,7 @@ Od 18.09.2026 wszystkie moduły PWA mają zachowywać wspólny wzorzec wizualny 
 Obowiązuje:
 - ta sama skala typografii i warstwa czytelności,
 - na desktopie boczne menu jest lekko poszerzone, a moduły wykorzystują szerzej dostępną przestrzeń roboczą zamiast pozostawiać duże boczne marginesy; wspólny kontener danych ma elastycznie rozciągać KPI, filtry, wykresy i tabele,
+- dla tabletów w poziomie obowiązuje osobny układ pośredni: węższy sidebar niż na dużym desktopie, zwarty nagłówek, 3-kolumnowe KPI zamiast ściskania 6 kart w jednym rzędzie, dwukolumnowe filtry i elastyczne przechodzenie wykresów do mniejszej liczby kolumn; widok mobilny nie powinien włączać się przedwcześnie,
 - ten sam układ nagłówka strony,
 - blok daty / kalendarza, Status integracji i avatar wyrównane do prawej krawędzi nagłówka,
 - KPI w tej samej skali wizualnej,
