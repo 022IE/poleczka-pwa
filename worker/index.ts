@@ -984,7 +984,13 @@ async function deliveryRows(url: URL, env: Env) {
     profit: number
   }>()
 
-  return salesJson({ ok: true, items: result.results || [] })
+  return salesJson({
+    ok: true,
+    items: (result.results || []).map((row) => ({
+      ...row,
+      active: Number(row.active) === 1,
+    })),
+  })
 }
 
 async function deliverySummary(url: URL, env: Env) {
