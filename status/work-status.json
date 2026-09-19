@@ -1,6 +1,6 @@
 {
-  "state": "awaiting_publish",
-  "label": "Oczekiwanie na publikację",
-  "task": "DOSTAWY — formularz dodawania dostawy zakończony",
-  "updatedAt": "2026-09-19T07:44:37.855Z"
+  "state": "editing",
+  "label": "Wprowadzanie poprawek",
+  "task": "DOSTAWY — autocomplete dostawcy z możliwością wpisania nowej nazwy",
+  "updatedAt": "2026-09-19T07:47:01.183Z"
 }
