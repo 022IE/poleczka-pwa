@@ -327,6 +327,12 @@ Reguła kosztu i zysku:
 - sprzedaż zł,
 - zysk.
 
+### Waga dostawy
+- D1 przechowuje opcjonalne `deliveries.weight_kg`,
+- formularze dodawania i edycji przyjmują wagę w kg z dokładnością do 0,1,
+- istniejące dostawy mogą mieć brak wagi (`NULL`),
+- pole będzie używane m.in. do analizy średniej liczby rzeczy na kilogram dostawy (`quantity / weight_kg`).
+
 ### Analizy
 - sprzedaż wg dostawcy,
 - rentowność dostaw,

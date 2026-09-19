@@ -21,6 +21,7 @@ type Delivery = {
   supplierName: string
   quantity: number
   totalCost: number
+  weightKg: number | null
   unitCost: number
   sold: number
   sellThrough: number
@@ -241,6 +242,7 @@ export default function DeliveriesPage() {
   const [newDate, setNewDate] = useState(localYmd())
   const [newSupplier, setNewSupplier] = useState('')
   const [newQuantity, setNewQuantity] = useState('')
+  const [newWeight, setNewWeight] = useState('')
   const [newCost, setNewCost] = useState('')
   const [newActive, setNewActive] = useState(true)
   const [nextDeliveryNumber, setNextDeliveryNumber] = useState<number | null>(null)
@@ -252,6 +254,7 @@ export default function DeliveriesPage() {
   const [editDate, setEditDate] = useState('')
   const [editSupplier, setEditSupplier] = useState('')
   const [editQuantity, setEditQuantity] = useState('')
+  const [editWeight, setEditWeight] = useState('')
   const [editCost, setEditCost] = useState('')
 
   const [deleteCandidate, setDeleteCandidate] = useState<Delivery | null>(null)
@@ -454,6 +457,7 @@ export default function DeliveriesPage() {
     setEditDate(delivery.deliveryDate)
     setEditSupplier(delivery.supplierName)
     setEditQuantity(String(delivery.quantity))
+    setEditWeight(delivery.weightKg === null ? '' : String(delivery.weightKg))
     setEditCost(String(delivery.totalCost))
   }
 
@@ -462,9 +466,18 @@ export default function DeliveriesPage() {
     if (!editDelivery) return
 
     const quantity = Number(editQuantity.replace(',', '.'))
+    const weightKg = editWeight.trim() === '' ? null : Number(editWeight.replace(',', '.'))
     const totalCost = Number(editCost.replace(',', '.'))
-    if (!editDate || !editSupplier.trim() || !Number.isInteger(quantity) || quantity <= 0 || !Number.isFinite(totalCost) || totalCost < 0) {
-      setEditError('Uzupełnij poprawnie datę, dostawcę, liczbę sztuk i koszt.')
+    if (
+      !editDate
+      || !editSupplier.trim()
+      || !Number.isInteger(quantity)
+      || quantity <= 0
+      || (weightKg !== null && (!Number.isFinite(weightKg) || weightKg <= 0 || weightKg > 999.9))
+      || !Number.isFinite(totalCost)
+      || totalCost < 0
+    ) {
+      setEditError('Uzupełnij poprawnie datę, dostawcę, liczbę sztuk, wagę i koszt.')
       return
     }
 
@@ -478,6 +491,7 @@ export default function DeliveriesPage() {
           deliveryDate: editDate,
           supplierName: editSupplier.trim(),
           quantity,
+          weightKg,
           totalCost,
         }),
       })
@@ -555,9 +569,18 @@ export default function DeliveriesPage() {
     event.preventDefault()
     setAddError('')
     const quantity = Number(newQuantity.replace(',', '.'))
+    const weightKg = newWeight.trim() === '' ? null : Number(newWeight.replace(',', '.'))
     const totalCost = Number(newCost.replace(',', '.'))
-    if (!newDate || !newSupplier.trim() || !Number.isInteger(quantity) || quantity <= 0 || !Number.isFinite(totalCost) || totalCost < 0) {
-      setAddError('Uzupełnij poprawnie datę, dostawcę, liczbę sztuk i koszt.')
+    if (
+      !newDate
+      || !newSupplier.trim()
+      || !Number.isInteger(quantity)
+      || quantity <= 0
+      || (weightKg !== null && (!Number.isFinite(weightKg) || weightKg <= 0 || weightKg > 999.9))
+      || !Number.isFinite(totalCost)
+      || totalCost < 0
+    ) {
+      setAddError('Uzupełnij poprawnie datę, dostawcę, liczbę sztuk, wagę i koszt.')
       return
     }
 
@@ -570,6 +593,7 @@ export default function DeliveriesPage() {
           deliveryDate: newDate,
           supplierName: newSupplier.trim(),
           quantity,
+          weightKg,
           totalCost,
           active: newActive,
         }),
@@ -580,6 +604,7 @@ export default function DeliveriesPage() {
       setNewDate(localYmd())
       setNewSupplier('')
       setNewQuantity('')
+      setNewWeight('')
       setNewCost('')
       setNewActive(true)
       setReloadKey((value) => value + 1)
@@ -913,8 +938,9 @@ export default function DeliveriesPage() {
               </label>
               <div className="delivery-form-pair">
                 <label><span>Ilość sztuk</span><input type="number" min="1" step="1" required value={editQuantity} onChange={(event) => setEditQuantity(event.target.value)} /></label>
-                <label><span>Koszt zakupu dostawy</span><input type="number" min="0" step="0.01" required value={editCost} onChange={(event) => setEditCost(event.target.value)} /></label>
+                <label><span>Waga (kg)</span><input type="number" min="0.1" max="999.9" step="0.1" inputMode="decimal" value={editWeight} onChange={(event) => setEditWeight(event.target.value)} placeholder="0.0" /></label>
               </div>
+              <label><span>Koszt zakupu dostawy</span><input type="number" min="0" step="0.01" required value={editCost} onChange={(event) => setEditCost(event.target.value)} /></label>
               {editError && <div className="delivery-form-error">{editError}</div>}
               <div className="delivery-modal-actions">
                 <button type="button" className="secondary" disabled={editSaving} onClick={() => setEditDelivery(null)}>Anuluj</button>
@@ -974,10 +1000,14 @@ export default function DeliveriesPage() {
 
               <fieldset className="delivery-form-section">
                 <legend>Rozliczenie</legend>
-                <div className="delivery-form-grid delivery-form-grid-three">
+                <div className="delivery-form-grid delivery-form-grid-four">
                   <label>
                     <span>Ilość sztuk</span>
                     <input type="number" min="1" step="1" inputMode="numeric" required value={newQuantity} onChange={(event) => setNewQuantity(event.target.value)} placeholder="0" />
+                  </label>
+                  <label>
+                    <span>Waga (kg)</span>
+                    <input type="number" min="0.1" max="999.9" step="0.1" inputMode="decimal" value={newWeight} onChange={(event) => setNewWeight(event.target.value)} placeholder="0.0" />
                   </label>
                   <label>
                     <span>Koszt zakupu dostawy</span>
@@ -1003,6 +1033,10 @@ export default function DeliveriesPage() {
                 <span>
                   <small>Ilość</small>
                   <strong>{newQuantity || '—'}{newQuantity ? ' szt.' : ''}</strong>
+                </span>
+                <span>
+                  <small>Waga</small>
+                  <strong>{newWeight && Number.isFinite(Number(newWeight.replace(',', '.'))) ? `${Number(newWeight.replace(',', '.')).toFixed(1)} kg` : '—'}</strong>
                 </span>
                 <span>
                   <small>Koszt zakupu</small>

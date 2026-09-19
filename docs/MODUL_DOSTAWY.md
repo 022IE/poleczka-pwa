@@ -302,6 +302,7 @@ Formularz **Dodaj dostawę** jest modalem modułu DOSTAWY i zawiera:
 
 ### Rozliczenie
 - ilość sztuk,
+- **Waga (kg)** — opcjonalna liczba z dokładnością do 0,1 kg, zakres 0,1–999,9 kg,
 - koszt zakupu całej dostawy,
 - cena/szt. — wyliczana na żywo jako `total_cost / quantity`, readonly.
 
@@ -338,3 +339,16 @@ Modal od razu korzysta z liczby dokumentów sprzedaży powiązanych z dostawą:
 - jeśli dokumenty istnieją, pokazuje komunikat **„Dla tej dostawy występują już dokumenty sprzedaży. Dostawy nie można usunąć.”**,
 - przycisk **Usuń dostawę** jest wtedy nieaktywny,
 - backendowe zabezpieczenie usuwania pozostaje dodatkową warstwą ochrony.
+
+
+### Waga dostawy — 19.09.2026
+
+Tabela `deliveries` zawiera opcjonalne pole `weight_kg REAL`.
+
+Zasady:
+- wartość jest podawana w kilogramach,
+- interfejs przyjmuje format do jednego miejsca po przecinku, np. `125.4`,
+- zakres: `0.1–999.9 kg`,
+- istniejące dostawy po migracji mają `NULL`, dopóki waga nie zostanie uzupełniona,
+- pole jest dostępne w formularzu **Dodaj dostawę** i **Edytuj dostawę**,
+- wartość jest przeznaczona m.in. do przyszłego liczenia średniej liczby rzeczy na 1 kg dostawy: `quantity / weight_kg`.

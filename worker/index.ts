@@ -958,6 +958,7 @@ async function deliveryRows(url: URL, env: Env) {
       d.supplier_name AS supplierName,
       d.quantity AS quantity,
       d.total_cost AS totalCost,
+      d.weight_kg AS weightKg,
       d.active AS active,
       ROUND(d.total_cost / NULLIF(d.quantity, 0), 2) AS unitCost,
       COALESCE(s.sold, 0) AS sold,
@@ -992,6 +993,7 @@ async function deliveryRows(url: URL, env: Env) {
     supplierName: string
     quantity: number
     totalCost: number
+    weightKg: number | null
     active: number
     unitCost: number
     sold: number
@@ -1130,7 +1132,7 @@ async function deliveryItems(deliveryNumber: number, env: Env) {
 }
 
 async function createDelivery(request: Request, env: Env) {
-  let body: { deliveryDate?: unknown; supplierName?: unknown; quantity?: unknown; totalCost?: unknown; active?: unknown }
+  let body: { deliveryDate?: unknown; supplierName?: unknown; quantity?: unknown; weightKg?: unknown; totalCost?: unknown; active?: unknown }
   try {
     body = await request.json() as typeof body
   } catch {
@@ -1140,18 +1142,30 @@ async function createDelivery(request: Request, env: Env) {
   const deliveryDate = typeof body.deliveryDate === 'string' ? body.deliveryDate.trim() : ''
   const supplierName = typeof body.supplierName === 'string' ? body.supplierName.trim() : ''
   const quantity = Number(body.quantity)
+  const rawWeightKg = body.weightKg
+  const weightKg = rawWeightKg === null || rawWeightKg === undefined || rawWeightKg === ''
+    ? null
+    : Number(rawWeightKg)
   const totalCost = Number(body.totalCost)
   const active = typeof body.active === 'boolean' ? body.active : true
 
-  if (!validYmd(deliveryDate) || !supplierName || !Number.isInteger(quantity) || quantity <= 0 || !Number.isFinite(totalCost) || totalCost < 0) {
+  if (
+    !validYmd(deliveryDate)
+    || !supplierName
+    || !Number.isInteger(quantity)
+    || quantity <= 0
+    || (weightKg !== null && (!Number.isFinite(weightKg) || weightKg <= 0 || weightKg > 999.9))
+    || !Number.isFinite(totalCost)
+    || totalCost < 0
+  ) {
     return salesJson({ ok: false, error: 'Invalid delivery data' }, 400)
   }
 
   const row = await env.DB.prepare(`
-    INSERT INTO deliveries (delivery_number, delivery_date, supplier_name, quantity, total_cost, active)
+    INSERT INTO deliveries (delivery_number, delivery_date, supplier_name, quantity, total_cost, weight_kg, active)
     SELECT
       COALESCE(MAX(CASE WHEN delivery_number > 0 THEN delivery_number END), 0) + 1,
-      ?, ?, ?, ?, ?
+      ?, ?, ?, ?, ?, ?
     FROM deliveries
     RETURNING
       delivery_number AS deliveryNumber,
@@ -1159,13 +1173,22 @@ async function createDelivery(request: Request, env: Env) {
       supplier_name AS supplierName,
       quantity,
       total_cost AS totalCost,
+      weight_kg AS weightKg,
       active
-  `).bind(deliveryDate, supplierName, quantity, money(totalCost), active ? 1 : 0).first<{
+  `).bind(
+    deliveryDate,
+    supplierName,
+    quantity,
+    money(totalCost),
+    weightKg === null ? null : Math.round(weightKg * 10) / 10,
+    active ? 1 : 0,
+  ).first<{
     deliveryNumber: number
     deliveryDate: string
     supplierName: string
     quantity: number
     totalCost: number
+    weightKg: number | null
     active: number
   }>()
 
@@ -1177,7 +1200,7 @@ async function createDelivery(request: Request, env: Env) {
 
 
 async function updateDelivery(request: Request, deliveryNumber: number, env: Env) {
-  let body: { deliveryDate?: unknown; supplierName?: unknown; quantity?: unknown; totalCost?: unknown }
+  let body: { deliveryDate?: unknown; supplierName?: unknown; quantity?: unknown; weightKg?: unknown; totalCost?: unknown }
   try {
     body = await request.json() as typeof body
   } catch {
@@ -1187,9 +1210,21 @@ async function updateDelivery(request: Request, deliveryNumber: number, env: Env
   const deliveryDate = typeof body.deliveryDate === 'string' ? body.deliveryDate.trim() : ''
   const supplierName = typeof body.supplierName === 'string' ? body.supplierName.trim() : ''
   const quantity = Number(body.quantity)
+  const rawWeightKg = body.weightKg
+  const weightKg = rawWeightKg === null || rawWeightKg === undefined || rawWeightKg === ''
+    ? null
+    : Number(rawWeightKg)
   const totalCost = Number(body.totalCost)
 
-  if (!validYmd(deliveryDate) || !supplierName || !Number.isInteger(quantity) || quantity <= 0 || !Number.isFinite(totalCost) || totalCost < 0) {
+  if (
+    !validYmd(deliveryDate)
+    || !supplierName
+    || !Number.isInteger(quantity)
+    || quantity <= 0
+    || (weightKg !== null && (!Number.isFinite(weightKg) || weightKg <= 0 || weightKg > 999.9))
+    || !Number.isFinite(totalCost)
+    || totalCost < 0
+  ) {
     return salesJson({ ok: false, error: 'Nieprawidłowe dane dostawy.' }, 400)
   }
 
@@ -1199,6 +1234,7 @@ async function updateDelivery(request: Request, deliveryNumber: number, env: Env
       delivery_date = ?,
       supplier_name = ?,
       quantity = ?,
+      weight_kg = ?,
       total_cost = ?,
       updated_at = CURRENT_TIMESTAMP
     WHERE delivery_number = ?
@@ -1207,12 +1243,21 @@ async function updateDelivery(request: Request, deliveryNumber: number, env: Env
       delivery_date AS deliveryDate,
       supplier_name AS supplierName,
       quantity,
+      weight_kg AS weightKg,
       total_cost AS totalCost
-  `).bind(deliveryDate, supplierName, quantity, money(totalCost), deliveryNumber).first<{
+  `).bind(
+    deliveryDate,
+    supplierName,
+    quantity,
+    weightKg === null ? null : Math.round(weightKg * 10) / 10,
+    money(totalCost),
+    deliveryNumber,
+  ).first<{
     deliveryNumber: number
     deliveryDate: string
     supplierName: string
     quantity: number
+    weightKg: number | null
     totalCost: number
   }>()
 

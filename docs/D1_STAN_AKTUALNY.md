@@ -1,7 +1,7 @@
 # PÓŁECZKA IWONKI — D1 STAN AKTUALNY
 
 **Status:** dokument techniczny obowiązującego środowiska D1  
-**Aktualizacja:** 18.09.2026  
+**Aktualizacja:** 19.09.2026  
 **Gałąź robocza:** `dev`
 
 ---
@@ -251,6 +251,7 @@ CREATE TABLE deliveries (
   supplier_name TEXT NOT NULL,
   quantity INTEGER NOT NULL CHECK (quantity > 0),
   total_cost REAL NOT NULL CHECK (total_cost >= 0),
+  weight_kg REAL CHECK (weight_kg IS NULL OR (weight_kg > 0 AND weight_kg <= 999.9)),
   active BOOLEAN NOT NULL DEFAULT TRUE CHECK (active IN (0, 1)),
   created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
   updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
@@ -265,6 +266,14 @@ Pole `deliveries.active`:
 - wartość domyślna: `TRUE`,
 - jest zarządzane lokalnie przez PWA,
 - nie pochodzi z Loyverse.
+
+Pole `deliveries.weight_kg`:
+- opcjonalna waga dostawy w kilogramach,
+- typ D1: `REAL`,
+- dozwolony zakres po uzupełnieniu: `0.1–999.9`,
+- nowe wartości są normalizowane przez API do jednego miejsca po przecinku,
+- istniejące rekordy po migracji pozostają `NULL`, jeśli waga nie była wcześniej znana,
+- pole jest lokalne dla PWA i nie pochodzi z Loyverse.
 
 Dane startowe zaimportowane z arkusza:
 
