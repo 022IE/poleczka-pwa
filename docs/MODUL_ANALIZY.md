@@ -1,7 +1,7 @@
 # PÓŁECZKA IWONKI — MODUŁ ANALIZY
 
 **Moduł:** 07 — ANALIZY  
-**Status:** specyfikacja bieżąca v0.4  
+**Status:** specyfikacja bieżąca v0.5  
 **Dokument nadrzędny:** `POLECZKA_PWA_MASTER.md`  
 **Aktualizacja:** 19.09.2026
 
@@ -224,7 +224,7 @@ Na kaflu dashboardu nie pokazujemy już napisu **„Przejdź do analiz”**. Ca�
 
 ---
 
-# 13. Daily Leon — automatyczne przygotowanie dnia
+# 13. Daily Leon — automatyczne przygotowanie dnia (wdrożone)
 
 ## Cel
 
@@ -248,7 +248,7 @@ Operacja musi być **idempotentna**: wielokrotne uruchomienie tego samego dnia n
 
 ## Tabela dziennych rekomendacji
 
-Do zapisania historii rekomendacji przewidujemy tabelę `leon_daily_recommendations`.
+Historia rekomendacji jest zapisywana w tabeli `leon_daily_recommendations`.
 
 Minimalny zakres danych:
 - `for_date` — data dnia w `Europe/Warsaw`,
@@ -304,10 +304,14 @@ Endpoint zachowuje mechanizm awaryjny:
 
 Dzięki temu pojedyncze pominięcie Cron Triggera nie powoduje pustego kafla ani błędu w module ANALIZY.
 
-## Stan przejściowy
+## Stan wdrożenia
 
-Przed wdrożeniem Daily Leon:
-- rekomendacje są liczone przy każdym wywołaniu `/api/analysis/recommendations`,
-- tekst dnia jest losowany przy pierwszym wywołaniu danego dnia i następnie utrwalany w `leon_message_history`.
+Daily Leon działa na środowisku developerskim:
+- rekomendacje są zapisywane jako dzienny snapshot w D1,
+- `/api/analysis/recommendations` odczytuje gotowy snapshot i tworzy go awaryjnie, jeśli brakuje,
+- `/api/analysis/recommendations/history` udostępnia historię dziennych zestawów,
+- moduł ANALIZY pokazuje historię poprzednich dni,
+- Worker posiada `scheduled()`,
+- harmonogram w `wrangler.toml` uruchamia Workera co godzinę, a logika daty `Europe/Warsaw` tworzy tylko jeden zestaw na lokalny dzień.
 
-Po wdrożeniu sekcji 13 ten mechanizm zostaje zastąpiony dziennym snapshotem przygotowywanym automatycznie.
+Pierwszy zapis dla 19.09.2026 został utworzony poprawnie w `poleczka-dev`.

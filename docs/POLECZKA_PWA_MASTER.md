@@ -619,7 +619,7 @@ Aktualnie działający model w środowisku developerskim dotyczy bazy **`poleczk
 - message_id,
 - selected_at.
 
-### `leon_daily_recommendations` — planowana
+### `leon_daily_recommendations`
 - for_date,
 - position,
 - recommendation_id,
@@ -634,7 +634,7 @@ Aktualnie działający model w środowisku developerskim dotyczy bazy **`poleczk
 
 `leon_messages` i `leon_message_history` obsługują dzienny tekst pod nagłówkiem **„Leon mówi…”**. Historia zapewnia stały tekst przez cały dzień oraz brak powtórek w pełnym 100-dniowym cyklu przy 100 aktywnych wiadomościach.
 
-`leon_daily_recommendations` ma przechowywać maksymalnie trzy rekomendacje na dzień i jednocześnie budować historię porad Leona. Klucz dzienny musi blokować dwa wpisy na tej samej pozycji tego samego dnia.
+`leon_daily_recommendations` przechowuje maksymalnie trzy rekomendacje na dzień i jednocześnie buduje historię porad Leona. Klucz dzienny blokuje dwa wpisy na tej samej pozycji tego samego dnia. Historia jest dostępna przez `/api/analysis/recommendations/history` i prezentowana w module ANALIZY.
 
 `line_note` pozostaje polem surowym. Polem używanym przez aplikację do relacji z dostawą jest `delivery_number`.
 
