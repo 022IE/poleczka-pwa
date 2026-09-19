@@ -38,3 +38,13 @@ Weryfikacja po migracji:
 - nowe rekordy, które nie podają `sk`, otrzymują `TRUE` automatycznie.
 
 `sk` jest polem lokalnym PWA i nie pochodzi z Loyverse.
+
+
+## Migracja „Leon mówi” — 19.09.2026
+
+Migracja `0002_leon_messages.sql` dodaje:
+- tabelę `leon_messages` z pulą **100 luźnych tekstów dnia**,
+- tabelę `leon_message_history`, która zapisuje tekst wybrany dla konkretnej daty,
+- indeks historii po `message_id`.
+
+Tekst dnia jest trwały dla całego dnia i mechanizm rotacji nie dopuszcza ponownego użycia żadnego z 99 poprzednich tekstów. Przy 100 aktywnych tekstach oznacza to pełny cykl bez powtórki przez 100 dni.
