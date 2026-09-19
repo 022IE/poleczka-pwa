@@ -1,6 +1,6 @@
 {
-  "state": "awaiting_publish",
-  "label": "Oczekiwanie na publikację",
-  "task": "UI globalne — lekko szersze menu boczne i szersze panele we wszystkich modułach",
-  "updatedAt": "2026-09-19T09:49:30Z"
+  "state": "editing",
+  "label": "Wprowadzanie poprawek",
+  "task": "UI globalne — zmniejszenie odstępu pod górnym paskiem przed Leon mówi i kaflami modułów",
+  "updatedAt": "2026-09-19T09:53:20Z"
 }
