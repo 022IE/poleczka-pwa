@@ -863,6 +863,7 @@ Od 18.09.2026 wszystkie moduły PWA mają zachowywać wspólny wzorzec wizualny 
 
 Obowiązuje:
 - ta sama skala typografii i warstwa czytelności,
+- na desktopie boczne menu jest lekko poszerzone, a moduły wykorzystują szerzej dostępną przestrzeń roboczą zamiast pozostawiać duże boczne marginesy; wspólny kontener danych ma elastycznie rozciągać KPI, filtry, wykresy i tabele,
 - ten sam układ nagłówka strony,
 - blok daty / kalendarza, Status integracji i avatar wyrównane do prawej krawędzi nagłówka,
 - KPI w tej samej skali wizualnej,
