@@ -300,7 +300,7 @@ function Dashboard() {
         </div>
         {SHOW_DEV_PIPELINE && <div className="header-build-slot"><BuildStatus /></div>}
         <div className="header-actions">
-          <div className="date-block"><span className="header-icon">▣</span><div><b>{weekday}</b><span>{date}</span></div></div>
+          <div className="date-block"><span className="header-icon" aria-hidden="true">🗓️</span><div><b>{weekday}</b><span>{date}</span></div></div>
           <div className="header-divider" />
           <button className="bell" aria-label="Powiadomienia">♟</button>
           <DataStatus />
