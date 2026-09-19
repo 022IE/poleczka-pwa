@@ -1,7 +1,7 @@
 # PÓŁECZKA IWONKI — MODUŁ ANALIZY
 
 **Moduł:** 04 — ANALIZY  
-**Status:** specyfikacja bieżąca v0.2  
+**Status:** specyfikacja bieżąca v0.3  
 **Dokument nadrzędny:** `POLECZKA_PWA_MASTER.md`  
 **Aktualizacja:** 19.09.2026
 
@@ -201,3 +201,23 @@ Do dołożenia:
 - Pareto 80/20,
 - analiza przedziałów cenowych per typ artykułu,
 - podpowiadacz wyceny nowych rzeczy.
+
+
+---
+
+# 12. Tekst dnia Leona
+
+Pod nagłówkiem **„Leon mówi…”** wyświetlane jest jedno krótkie, luźne zdanie niezwiązane z analizą biznesową.
+
+Źródło:
+- tabela D1 `leon_messages` zawiera 100 tekstów,
+- tabela `leon_message_history` zapisuje, który tekst został pokazany danego dnia.
+
+Reguły rotacji:
+- tekst jest wybierany raz na dzień według czasu `Europe/Warsaw`,
+- odświeżanie strony nie zmienia tekstu w ciągu dnia,
+- wybór nie może użyć żadnego z 99 poprzednich tekstów,
+- przy 100 aktywnych wpisach pełna pula przechodzi bez powtórki przez 100 dni,
+- po pełnym cyklu tekst może wrócić.
+
+Na kaflu dashboardu nie pokazujemy już napisu **„Przejdź do analiz”**. Cały kafel pozostaje klikalny i prowadzi do modułu ANALIZY.

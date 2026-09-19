@@ -21,6 +21,11 @@ type RecommendationsResponse = {
     previousStart: string
     previousEnd: string
   }
+  personalNote: {
+    id: number
+    text: string
+    date: string
+  } | null
   items: LeonRecommendation[]
   error?: string
 }
@@ -74,10 +79,9 @@ export default function LeonRecommendations({ compact = false }: { compact?: boo
       <div className="leon-recommendations-head">
         <div>
           <h2>Leon mówi…</h2>
+          {data?.personalNote?.text && <p className="leon-personal-note">{data.personalNote.text}</p>}
         </div>
-        {compact
-          ? <strong>Przejdź do analiz <span aria-hidden="true">→</span></strong>
-          : <small>{data?.generatedAt ? `Dane przeliczone: ${new Intl.DateTimeFormat('pl-PL', { hour: '2-digit', minute: '2-digit' }).format(new Date(data.generatedAt))}` : 'Rekomendacje liczone z D1'}</small>}
+        {!compact && <small>{data?.generatedAt ? `Dane przeliczone: ${new Intl.DateTimeFormat('pl-PL', { hour: '2-digit', minute: '2-digit' }).format(new Date(data.generatedAt))}` : 'Rekomendacje liczone z D1'}</small>}
       </div>
 
       {error && <div className="leon-recommendations-state is-error">Leon nie może teraz odczytać danych: {error}</div>}

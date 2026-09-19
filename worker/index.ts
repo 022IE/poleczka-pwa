@@ -1819,6 +1819,77 @@ async function dashboardData(url: URL, env: Env) {
   })
 }
 
+type LeonMessageRow = {
+  id: number
+  message: string
+}
+
+async function leonMessageOfDay(env: Env) {
+  const today = warsawYmd()
+
+  const readToday = () => env.DB.prepare(`
+    SELECT m.id, m.message
+    FROM leon_message_history h
+    JOIN leon_messages m ON m.id = h.message_id
+    WHERE h.shown_on = ?
+    LIMIT 1
+  `).bind(today).first<LeonMessageRow>()
+
+  const existing = await readToday()
+  if (existing) {
+    return {
+      id: Number(existing.id),
+      text: String(existing.message),
+      date: today,
+    }
+  }
+
+  let candidate = await env.DB.prepare(`
+    SELECT id, message
+    FROM leon_messages
+    WHERE active = TRUE
+      AND id NOT IN (
+        SELECT message_id
+        FROM leon_message_history
+        ORDER BY shown_on DESC
+        LIMIT 99
+      )
+    ORDER BY RANDOM()
+    LIMIT 1
+  `).first<LeonMessageRow>()
+
+  // Ten fallback jest potrzebny tylko wtedy, gdy liczba aktywnych tekstów spadnie poniżej 100.
+  // Przy pełnej puli 100 wpisów normalny wybór nie pozwala na powtórkę przez 100 dni.
+  if (!candidate) {
+    candidate = await env.DB.prepare(`
+      SELECT id, message
+      FROM leon_messages
+      WHERE active = TRUE
+      ORDER BY RANDOM()
+      LIMIT 1
+    `).first<LeonMessageRow>()
+  }
+
+  if (!candidate) return null
+
+  await env.DB.prepare(`
+    INSERT OR IGNORE INTO leon_message_history (shown_on, message_id)
+    VALUES (?, ?)
+  `).bind(today, Number(candidate.id)).run()
+
+  // Ponowny odczyt rozwiązuje ewentualny równoległy pierwszy request danego dnia.
+  const selected = await readToday()
+  if (!selected) return null
+
+  return {
+    id: Number(selected.id),
+    text: String(selected.message),
+    date: today,
+  }
+}
+
+
+
 type AnalysisRecommendation = {
   id: string
   tone: 'positive' | 'warning' | 'neutral'
@@ -1874,6 +1945,8 @@ async function analysisRecommendations(env: Env) {
   const currentStartIso = warsawMidnightUtcIso(currentStart)
   const previousStartIso = warsawMidnightUtcIso(previousStart)
   const todayEndIso = warsawMidnightUtcIso(addDaysYmd(today, 1))
+
+  const personalNote = await leonMessageOfDay(env)
 
   const [salesRow, categoryResult, deliveryResult] = await Promise.all([
     env.DB.prepare(`
@@ -2139,6 +2212,7 @@ async function analysisRecommendations(env: Env) {
   return salesJson({
     ok: true,
     generatedAt: nowIso(),
+    personalNote,
     period: {
       currentStart,
       currentEnd: today,

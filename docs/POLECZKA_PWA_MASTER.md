@@ -192,6 +192,8 @@ Zasady:
 
 Docelowo rekomendacje będą powiązane z historią decyzji i oceną ich efektów.
 
+Dodatkowo pod nagłówkiem **„Leon mówi…”** wyświetlane jest jedno krótkie zdanie od Leona, celowo niezwiązane z biznesową częścią dashboardu. Pula obejmuje **100 luźnych tekstów** zapisanych w D1. Tekst jest stały przez cały dzień i rotuje bez powtórki w 100-dniowym cyklu.
+
 ### Szybki dostęp
 
 Na dashboardzie znajduje się kafelek `Vinted`, prowadzący do modułu `/vinted`.
@@ -597,6 +599,19 @@ Aktualnie działający model w środowisku developerskim dotyczy bazy **`poleczk
 - active,
 - created_at,
 - updated_at.
+
+### `leon_messages`
+- id,
+- message,
+- active,
+- created_at.
+
+### `leon_message_history`
+- shown_on,
+- message_id,
+- selected_at.
+
+Powyższe tabele obsługują dzienny tekst pod nagłówkiem **„Leon mówi…”**. Historia zapewnia stały tekst przez cały dzień oraz brak powtórek w pełnym 100-dniowym cyklu przy 100 aktywnych wiadomościach.
 
 `line_note` pozostaje polem surowym. Polem używanym przez aplikację do relacji z dostawą jest `delivery_number`.
 
