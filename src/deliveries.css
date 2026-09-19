@@ -58,3 +58,13 @@
   .delivery-add-modal{padding:18px}
   .delivery-form-status-row,.delivery-form-grid,.delivery-form-grid-three,.delivery-form-summary{grid-template-columns:1fr}
 }
+
+.supplier-autocomplete{position:relative;display:block}
+.supplier-autocomplete>input{width:100%}
+.supplier-suggestions{position:absolute;z-index:120;left:0;right:0;top:calc(100% + 5px);display:grid;padding:5px;background:#fff;border:1px solid #ded9d0;border-radius:10px;box-shadow:0 14px 30px rgba(48,39,27,.16);max-height:260px;overflow:auto}
+.supplier-suggestions button{border:0;background:transparent;text-align:left;padding:9px 10px;border-radius:7px;color:#393d39;cursor:pointer;display:grid;gap:2px}
+.supplier-suggestions button:hover,.supplier-suggestions button:focus{background:#f5f1e9;outline:none}
+.supplier-suggestions button strong{font-size:12.75px;font-weight:650}
+.supplier-suggestions button small{font-size:9.75px;color:#8a8f89}
+.supplier-suggestions .supplier-use-new{margin-top:3px;border-top:1px solid #eee9e1;border-radius:0 0 7px 7px;padding-top:10px;color:#795d34}
+.supplier-suggestions .supplier-use-new:hover{background:#f7f0e3}
