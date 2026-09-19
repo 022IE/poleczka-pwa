@@ -25,3 +25,9 @@
 
 .kpi-copy .kpi-trend.positive{color:#1c7c3d}.kpi-copy .kpi-trend.negative{color:#a34d53}.kpi-copy .kpi-trend.neutral{color:#777d78}
 .dashboard-data-note{margin:0 0 10px;padding:8px 12px;border-radius:10px;font-size:11px}.dashboard-data-note.is-error{background:#fff2f2;border:1px solid #ecd4d7;color:#8b414a}
+
+/* Sprzedaż w czasie — natychmiastowy hint wartości słupka */
+.bars i[data-tooltip]{position:relative;cursor:help;outline:none}
+.bars i[data-tooltip]::after{content:attr(data-tooltip);position:absolute;left:50%;bottom:calc(100% + 7px);z-index:30;transform:translate(-50%,4px);opacity:0;visibility:hidden;pointer-events:none;white-space:nowrap;padding:6px 9px;border:1px solid #ddd7ce;border-radius:8px;background:#fff;color:#30342f;font-style:normal;font-size:11px;font-weight:600;line-height:1.2;box-shadow:0 8px 22px rgba(54,45,32,.14);transition:opacity .12s ease,transform .12s ease,visibility .12s ease}
+.bars i[data-tooltip]:hover::after,.bars i[data-tooltip]:focus::after{opacity:1;visibility:visible;transform:translate(-50%,0)}
+.bars i[data-tooltip]:focus-visible{box-shadow:0 0 0 2px #fff,0 0 0 4px rgba(128,101,60,.25)}
