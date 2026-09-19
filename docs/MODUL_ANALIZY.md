@@ -1,7 +1,7 @@
 # PÓŁECZKA IWONKI — MODUŁ ANALIZY
 
 **Moduł:** 07 — ANALIZY  
-**Status:** specyfikacja bieżąca v0.6  
+**Status:** specyfikacja bieżąca v0.7  
 **Dokument nadrzędny:** `POLECZKA_PWA_MASTER.md`  
 **Aktualizacja:** 19.09.2026
 
@@ -202,7 +202,6 @@ Wdrożone:
 Do dołożenia:
 - pomiar skutków podjętych decyzji,
 - kandydaci do promocji z symulacją,
-- radar anomalii,
 - Pareto 80/20,
 - analiza przedziałów cenowych per typ artykułu,
 - podpowiadacz wyceny nowych rzeczy.
@@ -353,3 +352,59 @@ Kafel „Leon mówi…” na stronie głównej pozostaje tylko szybkim podgląde
 Na tym etapie **Odłóż** jest statusem decyzji, a nie harmonogramem. Nie powoduje automatycznego ponowienia tej samej rekomendacji następnego dnia.
 
 Kolejna warstwa rozwoju to pomiar skutków decyzji: porównanie danych po akceptacji rekomendacji z punktem odniesienia zapisanym w dziennym snapshocie.
+
+
+---
+
+# 15. Radar anomalii (wdrożone)
+
+Radar anomalii jest globalnym elementem górnego paska PWA i zastępuje wcześniejsze kółko z literą „I”.
+
+## Zachowanie wizualne
+
+- brak anomalii — radar ma spokojny zielony stan,
+- wykryta co najmniej jedna anomalia — radar jest mocno czerwony i pulsuje czerwienią,
+- błąd odczytu radaru — stan neutralny / ostrzegawczy, nigdy fałszywie zielony,
+- przy aktywnych anomaliach radar pokazuje licznik,
+- kliknięcie otwiera panel z listą wykrytych odchyleń.
+
+Zmiana górnego paska jest globalna i obowiązuje na dashboardzie oraz we wszystkich aktywnych modułach posiadających wspólny nagłówek.
+
+## Endpoint
+
+`GET /api/analysis/anomalies`
+
+Radar odświeża dane automatycznie co 60 sekund i nie zapisuje osobnej historii w D1 w pierwszej wersji.
+
+## Reguły v1
+
+Radar porównuje **pełne dni**, dzięki czemu trwający jeszcze bieżący dzień nie generuje fałszywego alarmu.
+
+Wykrywane są:
+
+1. **Mocny spadek sprzedaży**
+   - ostatnie 7 pełnych dni vs poprzednie 7 pełnych dni,
+   - alarm od spadku co najmniej 35%,
+   - ostrzejszy stan od 50%.
+
+2. **Mocny spadek średniego paragonu**
+   - przy sensownej liczbie paragonów po obu stronach porównania,
+   - alarm od spadku co najmniej 30%.
+
+3. **Skok udziału rabatów**
+   - udział rabatów co najmniej 20% wartości przed rabatem,
+   - jednocześnie wzrost co najmniej o 10 p.p. względem poprzedniego okresu.
+
+4. **Sprzedaż bez rozpoznanej dostawy**
+   - pozycje z `delivery_number IS NULL` lub `-1` w ostatnich 7 pełnych dniach.
+
+5. **Błędne powiązanie dostawy**
+   - pozycja sprzedaży wskazuje dodatni `delivery_number`, którego nie ma w `deliveries`.
+
+6. **Stara aktywna dostawa, która stoi**
+   - wiek co najmniej 21 dni,
+   - zbyt poniżej 20%,
+   - co najmniej 5 szt. pozostałych,
+   - brak sprzedaży przez 14 pełnych dni.
+
+Radar jest mechanizmem alarmowym, a nie kolejnym źródłem porad. Rekomendacje „Leon mówi…” nadal odpowiadają za decyzje i sugestie biznesowe, natomiast radar ma sygnalizować odstępstwa wymagające uwagi.

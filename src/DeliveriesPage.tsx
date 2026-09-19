@@ -2,6 +2,7 @@ import { FormEvent, useEffect, useMemo, useState } from 'react'
 import BuildStatus from './components/BuildStatus'
 import DataStatus from './components/DataStatus'
 import HeaderDateTime from './components/HeaderDateTime'
+import AnomalyRadar from './components/AnomalyRadar'
 
 const SHOW_DEV_PIPELINE = false
 
@@ -201,7 +202,7 @@ function DeliveriesHeader() {
         <div className="header-divider" />
         <button className="bell" aria-label="Powiadomienia">♟</button>
         <DataStatus />
-        <div className="avatar">I</div>
+        <AnomalyRadar />
       </div>
     </header>
   )

@@ -3,6 +3,7 @@ import DataStatus from './components/DataStatus'
 import LeonRecommendations from './components/LeonRecommendations'
 import LeonRecommendationHistory from './components/LeonRecommendationHistory'
 import HeaderDateTime from './components/HeaderDateTime'
+import AnomalyRadar from './components/AnomalyRadar'
 
 const SHOW_DEV_PIPELINE = false
 
@@ -22,7 +23,7 @@ function AnalysisHeader() {
         <div className="header-divider" />
         <button className="bell" aria-label="Powiadomienia">♟</button>
         <DataStatus />
-        <div className="avatar">I</div>
+        <AnomalyRadar />
       </div>
     </header>
   )
@@ -38,7 +39,7 @@ export default function AnalysisPage() {
         <div>
           <span>NASTĘPNE WARSTWY</span>
           <h2>Analizy, które będziemy dokładać</h2>
-          <p>Historia decyzji i ich efektów, kandydaci do promocji, radar anomalii, Pareto 80/20 oraz podpowiadacz wyceny.</p>
+          <p>Historia decyzji i ich efektów, kandydaci do promocji, Pareto 80/20 oraz podpowiadacz wyceny.</p>
         </div>
       </section>
     </div>

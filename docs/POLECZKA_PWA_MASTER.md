@@ -425,7 +425,6 @@ Bieżące minimum:
 Planowane kolejne warstwy:
 - pomiar efektów zapisanych decyzji,
 - kandydaci do promocji i symulacja przecen,
-- radar anomalii,
 - Pareto 80/20,
 - analiza przedziałów cenowych per typ artykułu,
 - podpowiadacz wyceny.
@@ -453,6 +452,21 @@ Oś X zależy od wybranego typu:
 - rok — miesiące.
 
 Po podłączeniu analizy do D1 te trzy parametry mają sterować rzeczywistymi zapytaniami i agregacjami po stronie Workera / D1.
+
+### Radar anomalii — stan wdrożony
+
+Górny pasek aplikacji posiada globalny Radar anomalii zamiast dawnego avatara „I”.
+
+- zielony radar = brak wykrytych odchyleń,
+- czerwony pulsujący radar = co najmniej jedna aktywna anomalia,
+- kliknięcie pokazuje listę problemów,
+- endpoint: `/api/analysis/anomalies`,
+- automatyczne odświeżanie co 60 sekund,
+- radar używa pełnych dni i nie porównuje niedokończonego bieżącego dnia z pełnym okresem.
+
+Pierwsza wersja wykrywa duży spadek sprzedaży, spadek średniego paragonu, skok rabatów, niezidentyfikowane dostawy, błędne relacje dostaw oraz stare aktywne dostawy bez rotacji.
+
+Radar jest alarmem. „Leon mówi…” pozostaje systemem rekomendacji i decyzji.
 
 ### Heatmapa
 Dzień tygodnia × godzina.
@@ -901,7 +915,7 @@ Obowiązuje:
 - dla tabletów w poziomie obowiązuje osobny układ pośredni: węższy sidebar niż na dużym desktopie, zwarty nagłówek, 3-kolumnowe KPI zamiast ściskania 6 kart w jednym rzędzie, dwukolumnowe filtry i elastyczne przechodzenie wykresów do mniejszej liczby kolumn; widok mobilny nie powinien włączać się przedwcześnie,
 - ten sam układ nagłówka strony,
 - **każda zmiana górnego paska i menu bocznego jest zmianą globalną i obowiązuje we wszystkich modułach PWA**; nie wdrażamy takich zmian tylko w pojedynczym ekranie, chyba że użytkownik wyraźnie wskaże wyjątek,
-- blok daty / kalendarza, Status integracji i avatar wyrównane do prawej krawędzi nagłówka; blok daty pokazuje także duży, działający zegar 24-godzinny aktualizowany co sekundę w strefie `Europe/Warsaw`; dzień tygodnia, data i zegar są wycentrowane w obrębie bloku,
+- blok daty / kalendarza, Status integracji i Radar anomalii wyrównane do prawej krawędzi nagłówka; blok daty pokazuje także duży, działający zegar 24-godzinny aktualizowany co sekundę w strefie `Europe/Warsaw`; dzień tygodnia, data i zegar są wycentrowane w obrębie bloku,
 - KPI w tej samej skali wizualnej,
 - osobny pasek filtrów pod KPI, zamiast wciskania filtrów do nagłówka tabeli,
 - pola filtrów o tych samych wysokościach, promieniach, ikonach i odstępach,

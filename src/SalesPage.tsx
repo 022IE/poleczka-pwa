@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import BuildStatus from './components/BuildStatus'
 import DataStatus from './components/DataStatus'
 import HeaderDateTime from './components/HeaderDateTime'
+import AnomalyRadar from './components/AnomalyRadar'
 
 const SHOW_DEV_PIPELINE = false
 
@@ -169,7 +170,7 @@ function SalesHeader() {
         <div className="header-divider" />
         <button className="bell" aria-label="Powiadomienia">♟<span>3</span></button>
         <DataStatus />
-        <div className="avatar">I</div>
+        <AnomalyRadar />
       </div>
     </header>
   )

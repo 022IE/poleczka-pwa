@@ -12,6 +12,7 @@ import './build-status.css'
 import './sales.css'
 import './deliveries.css'
 import './analysis.css'
+import './anomaly-radar.css'
 import './readability.css'
 
 // Gdy nowy service worker przejmie kontrolę po publikacji, odświeżamy otwartą kartę raz.

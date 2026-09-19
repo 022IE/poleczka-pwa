@@ -2636,6 +2636,265 @@ async function updateAnalysisRecommendationDecision(request: Request, env: Env) 
 }
 
 
+type AnomalySeverity = 'warning' | 'critical'
+
+type AnomalyItem = {
+  id: string
+  severity: AnomalySeverity
+  category: 'SPRZEDAŻ' | 'RABATY' | 'DOSTAWY' | 'DANE'
+  title: string
+  summary: string
+  detail: string
+}
+
+type AnomalySalesRow = {
+  currentSales: number
+  previousSales: number
+  currentReceipts: number
+  previousReceipts: number
+  currentDiscount: number
+  previousDiscount: number
+}
+
+type AnomalyCountRow = {
+  rows: number
+  units: number
+}
+
+type AnomalyStalledDeliveryRow = {
+  deliveryNumber: number
+  deliveryDate: string | null
+  supplierName: string | null
+  quantity: number
+  soldTotal: number
+  soldRecent: number
+}
+
+function anomalyPercent(value: number) {
+  return Math.round(value * 10) / 10
+}
+
+async function analysisAnomalies(env: Env) {
+  const today = warsawYmd()
+  const currentStart = addDaysYmd(today, -7)
+  const previousStart = addDaysYmd(today, -14)
+  const recent14Start = addDaysYmd(today, -14)
+  const oldDeliveryCutoff = addDaysYmd(today, -21)
+
+  const currentStartIso = warsawMidnightUtcIso(currentStart)
+  const previousStartIso = warsawMidnightUtcIso(previousStart)
+  const todayStartIso = warsawMidnightUtcIso(today)
+  const recent14StartIso = warsawMidnightUtcIso(recent14Start)
+
+  const [salesRow, unidentifiedRow, brokenLinkRow, stalledResult] = await Promise.all([
+    env.DB.prepare(`
+      SELECT
+        COALESCE(SUM(CASE WHEN receipt_date >= ? THEN total_money ELSE 0 END), 0) AS currentSales,
+        COALESCE(SUM(CASE WHEN receipt_date >= ? AND receipt_date < ? THEN total_money ELSE 0 END), 0) AS previousSales,
+        COUNT(CASE WHEN receipt_date >= ? THEN 1 END) AS currentReceipts,
+        COUNT(CASE WHEN receipt_date >= ? AND receipt_date < ? THEN 1 END) AS previousReceipts,
+        COALESCE(SUM(CASE WHEN receipt_date >= ? THEN total_discount ELSE 0 END), 0) AS currentDiscount,
+        COALESCE(SUM(CASE WHEN receipt_date >= ? AND receipt_date < ? THEN total_discount ELSE 0 END), 0) AS previousDiscount
+      FROM receipts
+      WHERE COALESCE(receipt_type, 'SALE') = 'SALE'
+        AND cancelled_at IS NULL
+        AND receipt_date >= ?
+        AND receipt_date < ?
+    `).bind(
+      currentStartIso,
+      previousStartIso,
+      currentStartIso,
+      currentStartIso,
+      previousStartIso,
+      currentStartIso,
+      currentStartIso,
+      previousStartIso,
+      currentStartIso,
+      previousStartIso,
+      todayStartIso,
+    ).first<AnomalySalesRow>(),
+
+    env.DB.prepare(`
+      SELECT COUNT(*) AS rows, COALESCE(SUM(l.quantity), 0) AS units
+      FROM receipt_lines l
+      JOIN receipts r ON r.receipt_number = l.receipt_number
+      WHERE COALESCE(r.receipt_type, 'SALE') = 'SALE'
+        AND r.cancelled_at IS NULL
+        AND r.receipt_date >= ?
+        AND r.receipt_date < ?
+        AND (l.delivery_number IS NULL OR l.delivery_number = -1)
+    `).bind(currentStartIso, todayStartIso).first<AnomalyCountRow>(),
+
+    env.DB.prepare(`
+      SELECT COUNT(*) AS rows, COALESCE(SUM(l.quantity), 0) AS units
+      FROM receipt_lines l
+      JOIN receipts r ON r.receipt_number = l.receipt_number
+      LEFT JOIN deliveries d ON d.delivery_number = l.delivery_number
+      WHERE COALESCE(r.receipt_type, 'SALE') = 'SALE'
+        AND r.cancelled_at IS NULL
+        AND r.receipt_date >= ?
+        AND r.receipt_date < ?
+        AND l.delivery_number > 0
+        AND d.delivery_number IS NULL
+    `).bind(currentStartIso, todayStartIso).first<AnomalyCountRow>(),
+
+    env.DB.prepare(`
+      WITH sold AS (
+        SELECT
+          l.delivery_number,
+          COALESCE(SUM(l.quantity), 0) AS soldTotal,
+          COALESCE(SUM(CASE WHEN r.receipt_date >= ? AND r.receipt_date < ? THEN l.quantity ELSE 0 END), 0) AS soldRecent
+        FROM receipt_lines l
+        JOIN receipts r ON r.receipt_number = l.receipt_number
+        WHERE COALESCE(r.receipt_type, 'SALE') = 'SALE'
+          AND r.cancelled_at IS NULL
+        GROUP BY l.delivery_number
+      )
+      SELECT
+        d.delivery_number AS deliveryNumber,
+        d.delivery_date AS deliveryDate,
+        d.supplier_name AS supplierName,
+        COALESCE(d.quantity, 0) AS quantity,
+        COALESCE(s.soldTotal, 0) AS soldTotal,
+        COALESCE(s.soldRecent, 0) AS soldRecent
+      FROM deliveries d
+      LEFT JOIN sold s ON s.delivery_number = d.delivery_number
+      WHERE d.delivery_number > 0
+        AND COALESCE(d.active, TRUE) = TRUE
+        AND COALESCE(d.quantity, 0) > 0
+        AND substr(COALESCE(d.delivery_date, ''), 1, 10) <= ?
+    `).bind(recent14StartIso, todayStartIso, oldDeliveryCutoff).all<AnomalyStalledDeliveryRow>(),
+  ])
+
+  const items: AnomalyItem[] = []
+  const currentSales = Number(salesRow?.currentSales || 0)
+  const previousSales = Number(salesRow?.previousSales || 0)
+  const currentReceipts = Number(salesRow?.currentReceipts || 0)
+  const previousReceipts = Number(salesRow?.previousReceipts || 0)
+  const currentDiscount = Number(salesRow?.currentDiscount || 0)
+  const previousDiscount = Number(salesRow?.previousDiscount || 0)
+
+  if (currentReceipts >= 5 && previousReceipts >= 5 && previousSales >= 300) {
+    const salesChange = ((currentSales - previousSales) / previousSales) * 100
+    if (salesChange <= -35) {
+      items.push({
+        id: 'sales-drop',
+        severity: salesChange <= -50 ? 'critical' : 'warning',
+        category: 'SPRZEDAŻ',
+        title: 'Mocny spadek sprzedaży',
+        summary: `Ostatnie 7 pełnych dni są o ${Math.abs(anomalyPercent(salesChange))}% słabsze niż poprzednie 7 dni.`,
+        detail: `${money(currentSales)} zł wobec ${money(previousSales)} zł.`,
+      })
+    }
+
+    const currentAverage = currentSales / currentReceipts
+    const previousAverage = previousSales / previousReceipts
+    if (previousAverage >= 20) {
+      const averageChange = ((currentAverage - previousAverage) / previousAverage) * 100
+      if (averageChange <= -30) {
+        items.push({
+          id: 'average-receipt-drop',
+          severity: averageChange <= -45 ? 'critical' : 'warning',
+          category: 'SPRZEDAŻ',
+          title: 'Średni paragon mocno spadł',
+          summary: `Średni paragon jest niższy o ${Math.abs(anomalyPercent(averageChange))}% względem poprzednich 7 pełnych dni.`,
+          detail: `${money(currentAverage)} zł wobec ${money(previousAverage)} zł.`,
+        })
+      }
+    }
+  }
+
+  const currentGrossBeforeDiscount = currentSales + currentDiscount
+  const previousGrossBeforeDiscount = previousSales + previousDiscount
+  const currentDiscountRate = currentGrossBeforeDiscount > 0 ? (currentDiscount / currentGrossBeforeDiscount) * 100 : 0
+  const previousDiscountRate = previousGrossBeforeDiscount > 0 ? (previousDiscount / previousGrossBeforeDiscount) * 100 : 0
+  const discountJump = currentDiscountRate - previousDiscountRate
+
+  if (currentReceipts >= 5 && currentDiscountRate >= 20 && discountJump >= 10) {
+    items.push({
+      id: 'discount-spike',
+      severity: currentDiscountRate >= 30 ? 'critical' : 'warning',
+      category: 'RABATY',
+      title: 'Nietypowo wysoki udział rabatów',
+      summary: `Rabaty stanowią ${anomalyPercent(currentDiscountRate)}% wartości przed rabatem.`,
+      detail: `To o ${anomalyPercent(discountJump)} p.p. więcej niż w poprzednich 7 pełnych dniach.`,
+    })
+  }
+
+  const unidentifiedUnits = Number(unidentifiedRow?.units || 0)
+  const unidentifiedRows = Number(unidentifiedRow?.rows || 0)
+  if (unidentifiedRows > 0) {
+    items.push({
+      id: 'unidentified-deliveries',
+      severity: unidentifiedUnits >= 3 ? 'critical' : 'warning',
+      category: 'DANE',
+      title: 'Sprzedaż bez rozpoznanej dostawy',
+      summary: `W ostatnich 7 pełnych dniach znaleziono ${unidentifiedRows} pozycji sprzedaży bez rozpoznanej dostawy.`,
+      detail: `Łącznie dotyczy to ${unidentifiedUnits} szt. Sprawdź pozycje przypisane do dostawy -1.`,
+    })
+  }
+
+  const brokenUnits = Number(brokenLinkRow?.units || 0)
+  const brokenRows = Number(brokenLinkRow?.rows || 0)
+  if (brokenRows > 0) {
+    items.push({
+      id: 'broken-delivery-links',
+      severity: 'critical',
+      category: 'DANE',
+      title: 'Błędne powiązanie z dostawą',
+      summary: `${brokenRows} pozycji sprzedaży wskazuje numer dostawy, którego nie ma w tabeli dostaw.`,
+      detail: `Łącznie ${brokenUnits} szt. wymaga sprawdzenia relacji receipt_lines.delivery_number.`,
+    })
+  }
+
+  const stalled = (stalledResult.results || [])
+    .map((row) => {
+      const quantity = Number(row.quantity || 0)
+      const soldTotal = Number(row.soldTotal || 0)
+      const soldRecent = Number(row.soldRecent || 0)
+      const remaining = Math.max(0, quantity - soldTotal)
+      const sellThrough = quantity > 0 ? (soldTotal / quantity) * 100 : 0
+      return { ...row, quantity, soldTotal, soldRecent, remaining, sellThrough }
+    })
+    .filter((row) => row.remaining >= 5 && row.sellThrough < 20 && row.soldRecent === 0)
+    .sort((a, b) => a.sellThrough - b.sellThrough || b.remaining - a.remaining)
+
+  if (stalled.length > 0) {
+    const worst = stalled[0]
+    items.push({
+      id: 'stalled-old-deliveries',
+      severity: stalled.length >= 3 || worst.sellThrough < 5 ? 'critical' : 'warning',
+      category: 'DOSTAWY',
+      title: stalled.length === 1 ? `Dostawa ${worst.deliveryNumber} stoi` : `${stalled.length} stare dostawy stoją`,
+      summary: 'Brak sprzedaży przez 14 pełnych dni przy zbycie poniżej 20%.',
+      detail: stalled.length === 1
+        ? `Dostawa ${worst.deliveryNumber}: ${anomalyPercent(worst.sellThrough)}% zbytu, zostało ${worst.remaining} szt.`
+        : `Najgorsza: dostawa ${worst.deliveryNumber}, ${anomalyPercent(worst.sellThrough)}% zbytu i ${worst.remaining} szt. pozostałych.`,
+    })
+  }
+
+  items.sort((a, b) => {
+    if (a.severity === b.severity) return a.title.localeCompare(b.title, 'pl-PL')
+    return a.severity === 'critical' ? -1 : 1
+  })
+
+  return salesJson({
+    ok: true,
+    state: items.length > 0 ? 'alert' : 'ok',
+    count: items.length,
+    criticalCount: items.filter((item) => item.severity === 'critical').length,
+    generatedAt: nowIso(),
+    period: {
+      currentStart,
+      currentEnd: addDaysYmd(today, -1),
+      previousStart,
+      previousEnd: addDaysYmd(currentStart, -1),
+    },
+    items,
+  })
+}
+
+
 async function handleSalesApi(request: Request, url: URL, env: Env): Promise<Response | null> {
   const skMatch = url.pathname.match(/^\/api\/sales\/receipts\/([^/]+)\/sk$/)
   if (skMatch && request.method === 'PATCH') {
@@ -2975,6 +3234,17 @@ export default {
         return salesJson({
           ok: false,
           error: error instanceof Error ? error.message : 'Analysis recommendation decision API failed',
+        }, 500)
+      }
+    }
+
+    if (url.pathname === '/api/analysis/anomalies' && request.method === 'GET') {
+      try {
+        return analysisAnomalies(env)
+      } catch (error) {
+        return salesJson({
+          ok: false,
+          error: error instanceof Error ? error.message : 'Anomaly radar API failed',
         }, 500)
       }
     }

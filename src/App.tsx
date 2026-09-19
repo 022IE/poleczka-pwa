@@ -7,6 +7,7 @@ import DeliveriesPage from './DeliveriesPage'
 import AnalysisPage from './AnalysisPage'
 import LeonRecommendations from './components/LeonRecommendations'
 import HeaderDateTime from './components/HeaderDateTime'
+import AnomalyRadar from './components/AnomalyRadar'
 
 // Widget publikacji jest narzędziem developerskim. W wersji finalnej ustawiamy false.
 const SHOW_DEV_PIPELINE = false
@@ -303,7 +304,7 @@ function Dashboard() {
           <div className="header-divider" />
           <button className="bell" aria-label="Powiadomienia">♟</button>
           <DataStatus />
-          <div className="avatar">I</div>
+          <AnomalyRadar />
         </div>
       </header>
 
