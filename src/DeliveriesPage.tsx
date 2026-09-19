@@ -246,6 +246,10 @@ export default function DeliveriesPage() {
   const [editQuantity, setEditQuantity] = useState('')
   const [editCost, setEditCost] = useState('')
 
+  const [deleteCandidate, setDeleteCandidate] = useState<Delivery | null>(null)
+  const [deleteSaving, setDeleteSaving] = useState(false)
+  const [deleteError, setDeleteError] = useState('')
+
   useEffect(() => {
     const timer = window.setTimeout(() => setDebouncedQuery(query.trim()), 250)
     return () => window.clearTimeout(timer)
@@ -500,18 +504,27 @@ export default function DeliveriesPage() {
     }
   }
 
-  const deleteDelivery = async (delivery: Delivery) => {
+  const askDeleteDelivery = (delivery: Delivery) => {
     setRowMenu(null)
     if (delivery.deliveryNumber <= 0) {
       setError('Dostawy technicznej -1 lub 0 nie można usunąć.')
       return
     }
-    if (!window.confirm(`Usunąć dostawę nr ${delivery.deliveryNumber} — ${delivery.supplierName}? Tej operacji nie można cofnąć.`)) return
+    setDeleteError('')
+    setDeleteCandidate(delivery)
+  }
 
+  const confirmDeleteDelivery = async () => {
+    if (!deleteCandidate) return
+    const delivery = deleteCandidate
+
+    setDeleteSaving(true)
+    setDeleteError('')
     try {
       const response = await fetch(`/api/deliveries/${delivery.deliveryNumber}`, { method: 'DELETE' })
       const payload = await response.json() as { ok?: boolean; error?: string }
       if (!response.ok || !payload.ok) throw new Error(payload.error || 'Nie udało się usunąć dostawy.')
+
       setExpanded((current) => {
         const next = new Set(current)
         next.delete(delivery.deliveryNumber)
@@ -522,9 +535,12 @@ export default function DeliveriesPage() {
         delete next[delivery.deliveryNumber]
         return next
       })
+      setDeleteCandidate(null)
       setReloadKey((value) => value + 1)
-    } catch (deleteError) {
-      setError(deleteError instanceof Error ? deleteError.message : 'Nie udało się usunąć dostawy.')
+    } catch (removeError) {
+      setDeleteError(removeError instanceof Error ? removeError.message : 'Nie udało się usunąć dostawy.')
+    } finally {
+      setDeleteSaving(false)
     }
   }
 
@@ -773,7 +789,7 @@ export default function DeliveriesPage() {
                         className="danger"
                         disabled={delivery.deliveryNumber <= 0}
                         title={delivery.deliveryNumber <= 0 ? 'Dostaw technicznych nie można usuwać' : undefined}
-                        onClick={() => void deleteDelivery(delivery)}
+                        onClick={() => askDeleteDelivery(delivery)}
                       >
                         Usuń dostawę
                       </button>
@@ -805,6 +821,65 @@ export default function DeliveriesPage() {
           </div>
         </div>
       </section>
+
+      {deleteCandidate && (
+        <div
+          className="delivery-modal-backdrop"
+          role="presentation"
+          onMouseDown={(event) => {
+            if (event.target === event.currentTarget && !deleteSaving) {
+              setDeleteCandidate(null)
+              setDeleteError('')
+            }
+          }}
+        >
+          <section className="delivery-modal delivery-delete-modal" role="alertdialog" aria-modal="true" aria-labelledby="delete-delivery-title" aria-describedby="delete-delivery-description">
+            <div className="delivery-delete-icon" aria-hidden="true">!</div>
+
+            <div className="delivery-delete-content">
+              <span className="delivery-delete-eyebrow">Usuwanie dostawy</span>
+              <h2 id="delete-delivery-title">Usunąć dostawę nr {deleteCandidate.deliveryNumber}?</h2>
+              <p id="delete-delivery-description">
+                Dostawca: <strong>{deleteCandidate.supplierName}</strong>. Tej operacji nie można cofnąć.
+              </p>
+
+              <div className="delivery-delete-summary">
+                <span><small>Data</small><strong>{displayYmd(deleteCandidate.deliveryDate)}</strong></span>
+                <span><small>Ilość</small><strong>{formatNumber(deleteCandidate.quantity)} szt.</strong></span>
+                <span><small>Koszt zakupu</small><strong>{formatMoney(deleteCandidate.totalCost)}</strong></span>
+              </div>
+
+              <div className="delivery-delete-warning">
+                Dostawę można usunąć tylko wtedy, gdy nie jest powiązana z żadną pozycją sprzedaży.
+              </div>
+
+              {deleteError && <div className="delivery-form-error">{deleteError}</div>}
+
+              <div className="delivery-modal-actions delivery-delete-actions">
+                <button
+                  type="button"
+                  className="secondary"
+                  disabled={deleteSaving}
+                  onClick={() => {
+                    setDeleteCandidate(null)
+                    setDeleteError('')
+                  }}
+                >
+                  Anuluj
+                </button>
+                <button
+                  type="button"
+                  className="danger-primary"
+                  disabled={deleteSaving}
+                  onClick={() => void confirmDeleteDelivery()}
+                >
+                  {deleteSaving ? 'Usuwanie…' : 'Usuń dostawę'}
+                </button>
+              </div>
+            </div>
+          </section>
+        </div>
+      )}
 
       {editDelivery && (
         <div className="delivery-modal-backdrop" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget && !editSaving) setEditDelivery(null) }}>
