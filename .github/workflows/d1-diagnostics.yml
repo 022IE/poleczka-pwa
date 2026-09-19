@@ -54,6 +54,13 @@ jobs:
         run: |
           npx --yes wrangler@latest d1 execute poleczka-dev --remote --command "SELECT * FROM categories LIMIT 2; SELECT * FROM items LIMIT 2; SELECT * FROM receipt_payments LIMIT 2;"
 
+      - name: Inspect deliveries weights in poleczka-dev
+        env:
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+        run: |
+          npx --yes wrangler@latest d1 execute poleczka-dev --remote --command "SELECT delivery_number, delivery_date, supplier_name, quantity, weight_kg, total_cost, active FROM deliveries ORDER BY delivery_number;"
+
       - name: Inspect poleczka-loyverse schema
         env:
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
