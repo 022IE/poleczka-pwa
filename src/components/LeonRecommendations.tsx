@@ -52,7 +52,7 @@ const DECISIONS: Array<{ value: LeonDecision; label: string }> = [
 function compactDecisionStatus(decision: LeonDecision) {
   if (decision === 'do') return { symbol: '☑', label: 'Decyzja: Zrób' }
   if (decision === 'defer') return { symbol: '⏳', label: 'Decyzja: Odłóż' }
-  return { symbol: '☒', label: 'Decyzja: Odrzuć' }
+  return { symbol: '☑', label: 'Decyzja: Odrzuć' }
 }
 
 function RecommendationBody({

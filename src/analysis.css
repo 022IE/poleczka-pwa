@@ -24,10 +24,11 @@
 .leon-advice-title-row b{font-size:14.5px;line-height:1.25}
 .leon-advice-meta{flex:0 0 auto;display:grid;justify-items:end;gap:4px}
 .leon-advice-title-row em{border-radius:999px;background:#f3efe7;padding:4px 7px;color:#897251;font-size:9px;font-style:normal;font-weight:800;letter-spacing:.06em}
-.leon-compact-decision{display:grid;place-items:center;min-width:22px;height:20px;border-radius:7px;font-size:15px;line-height:1;font-weight:800}
+.leon-compact-decision{position:relative;display:grid;place-items:center;min-width:22px;height:20px;border-radius:7px;font-size:15px;line-height:1;font-weight:800}
 .leon-compact-decision.is-do{color:#3d694a;background:#e4eee3}
 .leon-compact-decision.is-defer{color:#8c6428;background:#f5ead6}
 .leon-compact-decision.is-reject{color:#8b414a;background:#f7e5e5}
+.leon-compact-decision.is-reject::after{content:'';position:absolute;width:17px;height:2px;border-radius:999px;background:currentColor;transform:rotate(-42deg)}
 .leon-advice p{margin:5px 0 0;color:#6a706b;font-size:12px;line-height:1.4}
 .leon-recommendations-state{padding:16px;border-radius:11px;background:#f6f3ed;color:#6e716d;font-size:13px}
 .leon-recommendations-state.is-error{background:#fff2f2;color:#8b414a}
