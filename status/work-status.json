@@ -1,6 +1,6 @@
 {
-  "state": "awaiting_publish",
-  "label": "Oczekiwanie na publikację",
-  "task": "DOSTAWY — zwężono kolumnę Dostawca, menu mieści się w panelu",
-  "updatedAt": "2026-09-19T07:26:48.206Z"
+  "state": "editing",
+  "label": "Wprowadzanie poprawek",
+  "task": "Dashboard — tooltip wartości na wykresie Sprzedaż w czasie",
+  "updatedAt": "2026-09-19T07:30:00Z"
 }
